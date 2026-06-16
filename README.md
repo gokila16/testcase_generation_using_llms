@@ -1,51 +1,63 @@
-# Test Case Generation using LLMs
+# Test Case Generation using LLMs — v7 (SAGE)
 
 Automated generation of JUnit unit tests for [Apache PDFBox](https://pdfbox.apache.org/)
-using a Large Language Model with an iterative **prompt-and-repair** loop.
+using a Large Language Model. This is the **v7 / SAGE** pipeline: a multi-stage
+**plan → generate → static-check → compile/run → repair** loop driven by
+Anthropic Claude.
 
 For each public method in the target codebase, the pipeline:
 
-1. Builds a prompt from the method's metadata (signature, Javadoc, body, usage snippets).
-2. Asks the LLM to generate a JUnit test.
-3. Compiles and runs the test against the bundled PDFBox module.
-4. If compilation or the test fails, feeds the error back to the LLM and **repairs**
-   the test — retrying up to a configurable number of times.
-5. Records the outcome (passed / failed / compile-failed / error) for every method.
+1. **Plans** the test from the method's metadata, its dependency chain, caller
+   snippets, and a control-flow slice of the method body.
+2. **Generates** a JUnit test from that plan.
+3. **Statically checks** the test against an allowlist of real method/import
+   signatures (`class_inventory.json`) to catch hallucinated APIs *before* compiling.
+4. **Compiles and runs** the test against the bundled PDFBox module.
+5. **Repairs** failures by feeding the compiler/test error back to the model,
+   retrying up to a configurable number of times.
+6. Records the outcome (passed / failed / compile-failed / allowlist-failed / error)
+   for every method.
 
 ## Repository layout
 
 ```
 .
 ├── pdfbox/                 Apache PDFBox source (the system under test; bundled)
-├── inputs/                 Precomputed method metadata consumed by the pipeline
+├── inputs/                 Precomputed inputs consumed by the pipeline:
+│   ├── extracted_metadata_final.json   method metadata
+│   ├── dependency_chains.json          per-method dependency chains
+│   ├── call_graph.json                 caller snippets
+│   └── class_inventory.json            allowlist of real classes/methods
 ├── test_generator/         The pipeline
 │   ├── config.py           All settings + repo-relative paths
-│   ├── pipeline_step3.py    Entry point: the prompt-and-repair generation loop
-│   ├── smoke_test.py       Minimal end-to-end check (one method)
-│   └── src/                LLM client, prompt builder, Maven runner, reporting, ...
+│   ├── pipeline_step3.py    Entry point: the plan/generate/check/repair loop
+│   ├── run_generated_tests.py  Re-run previously generated tests
+│   └── src/                LLM client, prompt builder, allowlist checker,
+│                           CFG slicer, Java post-processor, Maven runner, ...
 ├── generated_files/        Pipeline outputs — created at run time (git-ignored)
 ├── requirements.txt
 └── .env.example
 ```
 
-> **Note on inputs.** `inputs/extracted_metadata_final.json` is shipped precomputed.
-> It is produced by an upstream extraction step that depends on the commercial
+> **Note on inputs.** The files in `inputs/` are shipped precomputed. They are
+> produced by an upstream extraction/analysis stage that depends on the commercial
 > *SciTools Understand* tool, which is **not** part of this repository. You do not
 > need it to run the pipeline.
 
 ## Branches
 
-- **`prompt-and-repair`** — the v1 pipeline described here (gpt-5-mini).
-- (`main` holds the shared PDFBox source and inputs; future pipeline variants branch from it.)
+- **`SAGE-v7`** — this pipeline.
+- **`prompt-and-repair`** — the simpler v1 pipeline (gpt-5-mini).
+- **`main`** — shared base: the PDFBox source and the common method metadata.
 
 ## Prerequisites
 
 - **Python** 3.10+
 - **JDK** capable of building PDFBox (Java 11+; developed with a Java 25 build)
 - **Apache Maven** 3.9.x
-- An **OpenAI API key**
+- An **Anthropic API key**
 
-Maven and the JDK must be on your `PATH`, or their locations set in `.env` (see below).
+Maven and the JDK must be on your `PATH`, or their locations set in `.env`.
 
 ## Setup
 
@@ -55,7 +67,7 @@ pip install -r requirements.txt
 
 # 2. Configure environment
 cp .env.example .env          # on Windows: copy .env.example .env
-#   then edit .env and set OPENAI_API_KEY (and MAVEN_EXECUTABLE / JAVA_HOME if needed)
+#   then edit .env and set ANTHROPIC_API_KEY (and MAVEN_EXECUTABLE / JAVA_HOME if needed)
 
 # 3. Install the bundled PDFBox modules into your local Maven repository (one time).
 #    PDFBox here is 4.0.0-SNAPSHOT, so its sibling modules (io, fontbox, xmpbox, ...)
@@ -73,26 +85,27 @@ cd test_generator
 python pipeline_step3.py
 ```
 
-The pipeline skips methods that already have a result, so it is safe to stop and
-resume. To verify your setup end-to-end on a single method first:
+Useful flags:
 
-```bash
-cd test_generator
-python smoke_test.py
-```
+- `--only <full_name>` — run a single method end-to-end (ignores existing results).
+  Recommended for a first smoke check.
+- `--skip-file <path.json>` — re-run everything except the unique_keys listed in the
+  file (used to protect an already-passing baseline).
+
+The pipeline skips methods that already have a result, so it is safe to stop and resume.
 
 ## Output
 
-All output is written under `generated_files/v1/` (git-ignored):
+All output is written under `generated_files/v7/` (git-ignored):
 
-- `prompts/`   — every prompt sent to the LLM
-- `responses/` — every raw LLM response
+- `plans/`     — the per-method test plan
+- `prompts/`   — every prompt sent to the model
+- `responses/` — every raw model response
 - `results/results.json` — per-method outcome
 - `results/final_report.txt` — summary report
 
 Generated test files are written into the PDFBox module under
-`pdfbox/pdfbox/generated_testsgpt5mini_v1/` while compiling/running, and cleaned up
-afterward.
+`pdfbox/pdfbox/generated_tests/` while compiling/running.
 
 ## Configuration
 
@@ -100,8 +113,8 @@ Key settings live in `test_generator/config.py`:
 
 | Setting | Meaning |
 | --- | --- |
-| `LLM_MODEL` | Model id (default `gpt-5-mini`) |
-| `LLM_MAX_TOKENS` | Completion budget (reasoning + output) |
-| `LLM_REASONING_EFFORT` | `minimal` / `low` / `medium` / `high` |
-| `MAX_RETRIES` | Repair attempts per method |
+| `LLM_MODEL` | Model id (default `claude-sonnet-4-6`) |
+| `LLM_MAX_TOKENS` | Max output tokens per call |
+| `MAX_RETRIES` | Compile/run repair attempts per method |
+| `INCLUDE_DEVELOPER_TESTED` | Process all methods, or only uncovered ones |
 | `TEST_TIMEOUT`, `MAVEN_TIMEOUT` | Per-test / per-build timeouts (seconds) |

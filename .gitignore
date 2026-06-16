@@ -17,3 +17,6 @@ generated_files/
 # Maven build output and generated tests written into the pdfbox module
 pdfbox/**/target/
 pdfbox/**/generated_testsgpt5mini_v1/
+pdfbox/**/generated_tests/
+# Stray generated test files the pipeline copies into the module's test sources
+pdfbox/**/src/test/java/**/*_*_Test.java
