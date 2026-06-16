@@ -121,10 +121,82 @@ auto-detects reasoning vs. standard models.
   is ignored.
 - `OPENAI_API_KEY` is unchanged. `LLM_MAX_TOKENS` still applies.
 
-**To switch to a different provider** (e.g. Anthropic or Gemini):
+**To switch to a different vendor** (Anthropic, Google, DeepSeek, …):
 
-1. Rewrite `src/llm_client.py` to call that provider's SDK. **Keep the same
-   contract** used by `pipeline_step3.py`: `call_llm(prompt)` returns the response
-   text as a `str`, or `None` on failure.
-2. Add the provider's SDK to `requirements.txt` (and remove `openai` if unused).
-3. Put the provider's API key in `.env` and read it in `config.py`.
+Three steps: **(1)** replace `src/llm_client.py` with one that calls the new SDK but
+keeps the **exact same contract** — `call_llm(prompt)` returns the response text as a
+`str`, or `None` on failure; **(2)** update `requirements.txt` (remove `openai` if
+unused); **(3)** set the new key in `.env` and reference it in `config.py`.
+
+Drop-in `src/llm_client.py` for each vendor (the rest of the pipeline is unchanged):
+
+<details><summary><b>Anthropic (Claude)</b></summary>
+
+```python
+import time
+import anthropic
+import config
+
+client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+
+def call_llm(prompt):
+    try:
+        resp = client.messages.create(
+            model=config.LLM_MODEL,              # e.g. 'claude-sonnet-4-6'
+            max_tokens=config.LLM_MAX_TOKENS,
+            temperature=config.LLM_TEMPERATURE,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        time.sleep(config.API_SLEEP_SEC)
+        return "".join(b.text for b in resp.content if b.type == "text") or None
+    except Exception as e:
+        print(f"  API Error: {type(e).__name__}: {e}")
+        return None
+```
+- `requirements.txt`: `anthropic`
+- `config.py`: `ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")`; `LLM_MODEL = 'claude-sonnet-4-6'`
+- `.env`: `ANTHROPIC_API_KEY=...`
+</details>
+
+<details><summary><b>Google (Gemini)</b></summary>
+
+```python
+import time
+import google.generativeai as genai           # SDK: google-generativeai (legacy)
+import config
+
+genai.configure(api_key=config.GEMINI_API_KEY)
+_model = genai.GenerativeModel(config.LLM_MODEL)   # e.g. 'gemini-2.5-pro'
+
+def call_llm(prompt):
+    try:
+        resp = _model.generate_content(
+            prompt,
+            generation_config={"temperature": config.LLM_TEMPERATURE,
+                               "max_output_tokens": config.LLM_MAX_TOKENS},
+        )
+        time.sleep(config.API_SLEEP_SEC)
+        return resp.text or None
+    except Exception as e:
+        print(f"  API Error: {type(e).__name__}: {e}")
+        return None
+```
+- `requirements.txt`: `google-generativeai`  (Google also ships a newer `google-genai` SDK with a different call style — adjust if you use it)
+- `config.py`: `GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")`; `LLM_MODEL = 'gemini-2.5-pro'`
+- `.env`: `GEMINI_API_KEY=...`
+</details>
+
+<details><summary><b>DeepSeek (OpenAI-compatible — easiest)</b></summary>
+
+DeepSeek serves an OpenAI-compatible API, so the existing OpenAI client needs only a
+different key and `base_url`:
+
+```python
+client = OpenAI(api_key=config.DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
+```
+- keep `openai` in `requirements.txt`
+- `config.py`: `DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")`; `LLM_MODEL = 'deepseek-chat'`
+- `.env`: `DEEPSEEK_API_KEY=...`
+- DeepSeek isn't a gpt-5-style reasoning model, so the standard `max_tokens` +
+  `temperature` branch applies automatically.
+</details>
