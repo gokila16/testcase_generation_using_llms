@@ -1,0 +1,19 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# IDE / OS
+.idea/
+.DS_Store
+
+# Repo-local pipeline outputs (regenerated on every run)
+generated_files/
+
+# Maven build output and generated tests written into the pdfbox module
+pdfbox/**/target/
+pdfbox/**/generated_testsgpt5mini_v1/
