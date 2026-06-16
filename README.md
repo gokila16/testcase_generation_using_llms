@@ -118,3 +118,25 @@ Key settings live in `test_generator/config.py`:
 | `MAX_RETRIES` | Compile/run repair attempts per method |
 | `INCLUDE_DEVELOPER_TESTED` | Process all methods, or only uncovered ones |
 | `TEST_TIMEOUT`, `MAVEN_TIMEOUT` | Per-test / per-build timeouts (seconds) |
+
+## Changing the model
+
+This pipeline talks to Anthropic Claude through `test_generator/src/llm_client.py`.
+
+**To use a different Claude model — no code changes:**
+
+- Edit `LLM_MODEL` in `test_generator/config.py`. Examples:
+  - `claude-opus-4-8` — most capable
+  - `claude-sonnet-4-6` — default (balanced)
+  - `claude-haiku-4-5-20251001` — fastest / cheapest
+- `ANTHROPIC_API_KEY` is unchanged. `LLM_MAX_TOKENS` and `LLM_TEMPERATURE` still apply.
+
+**To switch to a different provider** (e.g. OpenAI or Gemini):
+
+1. Rewrite `src/llm_client.py` to call that provider's SDK. **Keep the same
+   contract**, since `pipeline_step3.py` depends on it:
+   `call_llm(prompt, method_name=None, system=None)` must return a
+   `(text: str | None, was_truncated: bool)` tuple, and the `system` argument is a
+   static instruction block (sent as a cached system prompt for Claude).
+2. Add the provider's SDK to `requirements.txt` (and remove `anthropic` if unused).
+3. Put the provider's API key in `.env` and read it in `config.py`.
