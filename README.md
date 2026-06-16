@@ -105,3 +105,26 @@ Key settings live in `test_generator/config.py`:
 | `LLM_REASONING_EFFORT` | `minimal` / `low` / `medium` / `high` |
 | `MAX_RETRIES` | Repair attempts per method |
 | `TEST_TIMEOUT`, `MAVEN_TIMEOUT` | Per-test / per-build timeouts (seconds) |
+
+## Changing the model
+
+This pipeline talks to OpenAI through `test_generator/src/llm_client.py`, which
+auto-detects reasoning vs. standard models.
+
+**To use a different OpenAI model — no code changes:**
+
+- Edit `LLM_MODEL` in `test_generator/config.py`. Examples: `gpt-5`, `gpt-5-mini`
+  (default), `gpt-4o`, `o3`.
+- **Reasoning models** (`gpt-5*`, `o1`/`o3`/`o4`): `LLM_REASONING_EFFORT` applies and
+  temperature is ignored; the budget is sent as `max_completion_tokens`.
+- **Standard models** (`gpt-4o`, etc.): `LLM_TEMPERATURE` applies and reasoning effort
+  is ignored.
+- `OPENAI_API_KEY` is unchanged. `LLM_MAX_TOKENS` still applies.
+
+**To switch to a different provider** (e.g. Anthropic or Gemini):
+
+1. Rewrite `src/llm_client.py` to call that provider's SDK. **Keep the same
+   contract** used by `pipeline_step3.py`: `call_llm(prompt)` returns the response
+   text as a `str`, or `None` on failure.
+2. Add the provider's SDK to `requirements.txt` (and remove `openai` if unused).
+3. Put the provider's API key in `.env` and read it in `config.py`.
