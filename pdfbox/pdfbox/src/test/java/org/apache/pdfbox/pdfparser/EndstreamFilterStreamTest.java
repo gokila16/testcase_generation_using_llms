@@ -26,6 +26,7 @@ import java.io.OutputStream;
 import java.util.Map;
 
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
 import org.apache.pdfbox.pdmodel.PDDocumentNameDictionary;
@@ -41,7 +42,7 @@ import org.junit.jupiter.api.Test;
 class EndstreamFilterStreamTest
 {
     @Test
-    void testEndstreamFilterStream()
+    void testEndstreamFilterStream() throws IOException
     {
         EndstreamFilterStream feos = new EndstreamFilterStream();
         byte[] tab1 = { 1, 2, 3, 4 };
@@ -123,7 +124,7 @@ class EndstreamFilterStreamTest
             File f = new File(d, spec.getFile());
             try (OutputStream os = new FileOutputStream(f))
             {
-                input.transferTo(os);
+                IOUtils.copy(input, os);
             }
             assertEquals(17660, f.length());
         }

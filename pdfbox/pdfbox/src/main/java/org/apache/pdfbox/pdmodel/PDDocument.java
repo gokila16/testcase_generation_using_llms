@@ -28,14 +28,15 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.fontbox.ttf.TrueTypeFont;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
@@ -44,6 +45,7 @@ import org.apache.pdfbox.cos.COSDocument;
 import org.apache.pdfbox.cos.COSInteger;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSObject;
+import org.apache.pdfbox.cos.COSObjectKey;
 import org.apache.pdfbox.cos.COSUpdateInfo;
 import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.io.RandomAccessRead;
@@ -89,9 +91,9 @@ public class PDDocument implements Closeable
      * {@link #saveIncrementalForExternalSigning(java.io.OutputStream) saveIncrementalForExternalSigning()}
      * twice.
      */
-    private static final int[] RESERVE_BYTE_RANGE = { 0, 1000000000, 1000000000, 1000000000 };
+    private static final int[] RESERVE_BYTE_RANGE = new int[] { 0, 1000000000, 1000000000, 1000000000 };
 
-    private static final Logger LOG = LogManager.getLogger(PDDocument.class);
+    private static final Log LOG = LogFactory.getLog(PDDocument.class);
 
     /*
      * avoid concurrency issues with PDDeviceRGB
@@ -149,6 +151,9 @@ public class PDDocument implements Closeable
 
     // to make sure only one signature is added
     private boolean signatureAdded = false;
+
+    // cache for the key of all imported indirect objects
+    private final Collection<COSObjectKey> indirectObjectKeys = new HashSet<>();
 
     /**
      * Creates an empty PDF document.
@@ -215,7 +220,7 @@ public class PDDocument implements Closeable
      * 
      * @param doc The COSDocument that this document wraps.
      * @param source input representing the pdf
-     * @param permission the access permissions of the pdf
+     * @param permission he access permissions of the pdf
      * 
      */
     public PDDocument(COSDocument doc, RandomAccessRead source, AccessPermission permission)
@@ -235,6 +240,7 @@ public class PDDocument implements Closeable
     public void addPage(PDPage page)
     {
         getPages().add(page);
+        setHighestImportedObjectNumber(page);
     }
 
     /**
@@ -438,8 +444,7 @@ public class PDDocument implements Closeable
             List<PDAnnotation> annotations = page.getAnnotations();
 
             // Get the annotations of the page and append the signature-annotation to it
-            // take care that page and acroforms do not share the same array
-            // (if so, we don't need to add it twice)
+            // take care that page and acroforms do not share the same array (if so, we don't need to add it twice)
             if (!(checkFields &&
                   annotations instanceof COSArrayList &&
                   acroFormFields instanceof COSArrayList &&
@@ -644,7 +649,7 @@ public class PDDocument implements Closeable
      * Remove the page from the document. Do not use this method if other pages link to this one or
      * if your document has a structure tree for accessibility unless you are able to fix these as
      * well. In such cases it is better to use the splitter() class which will do these fixes.
-     *
+     * 
      * @param page The page to remove from the document.
      */
     public void removePage(PDPage page)
@@ -691,14 +696,10 @@ public class PDDocument implements Closeable
      */
     public PDPage importPage(PDPage page) throws IOException
     {
-        // BEWARE: when making changes here, make sure that these changes don't mess with the code
-        // in the splitter, and avoid making changes in the source document (as happened in PDFBOX-5809)
         PDPage importedPage = new PDPage(new COSDictionary(page.getCOSObject()), resourceCache);
         importedPage.getCOSObject().removeItem(COSName.PARENT);
         PDStream dest = new PDStream(this, page.getContents(), COSName.FLATE_DECODE);
         importedPage.setContents(dest);
-        // reset imported object keys to avoid overlapping object numbers
-        importedPage.getCOSObject().resetImportedObjectKeys();
         addPage(importedPage);
         importedPage.setCropBox(new PDRectangle(page.getCropBox().getCOSArray()));
         importedPage.setMediaBox(new PDRectangle(page.getMediaBox().getCOSArray()));
@@ -709,6 +710,21 @@ public class PDDocument implements Closeable
             LOG.warn("call importedPage.setResources(page.getResources()) to do this");
         }
         return importedPage;
+    }
+
+    /**
+     * Determine the highest object number from the imported page to avoid mixed up numbers when saving the new pdf.
+     * 
+     * @param importedPage the imported page.
+     */
+    private void setHighestImportedObjectNumber(PDPage importedPage)
+    {
+        importedPage.getCOSObject().getIndirectObjectKeys(indirectObjectKeys);
+        long highestImportedNumber = indirectObjectKeys.stream().map(COSObjectKey::getNumber)
+                .max(Long::compare).orElse(0L);
+        long highestXRefObjectNumber = getDocument().getHighestXRefObjectNumber();
+        getDocument().setHighestXRefObjectNumber(
+                Math.max(highestXRefObjectNumber, highestImportedNumber));
     }
 
     /**
@@ -977,8 +993,8 @@ public class PDDocument implements Closeable
         if (file.exists() && file.length() > 0)
         {
             LOG.warn(
-                    "You are overwriting the existing file {}, this will produce a corrupted file if you're also reading from it",
-                    file.getName());
+                    "You are overwriting the existing file " + file.getName()
+                            + ", this will produce a corrupted file if you're also reading from it");
         }
         try (BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(
                 new FileOutputStream(file)))
@@ -1067,7 +1083,7 @@ public class PDDocument implements Closeable
      * signed</a>. (PDFBox already does this for signature widget annotations)
      * <p>
      * Another problem with page-based modifications can occur if the page tree isn't flat: there
-     * won't be a closed update path from the catalog to the page. To fix this, add code like this:
+     * won't be an closed update path from the catalog to the page. To fix this, add code like this:
      * <pre>{@code
      * COSDictionary parent = page.getCOSObject().getCOSDictionary(COSName.PARENT);
      * while (parent != null)
@@ -1076,9 +1092,10 @@ public class PDDocument implements Closeable
      *     parent = parent.getCOSDictionary(COSName.PARENT);
      * }
      * }</pre>
+     * <p>
      * Don't use the input file as target as this will produce a corrupted file.
      *
-     * @param output stream to write to. It <i><b>must never</b></i> point to the source
+     * @param output stream to write to. It will be closed when done. It <i><b>must never</b></i> point to the source
      * file or that one will be harmed!
      * @throws IOException if the output could not be written
      * @throws IllegalStateException if the document was not loaded from a file or a stream.
@@ -1114,7 +1131,7 @@ public class PDDocument implements Closeable
      * <p>
      * Don't use the input file as target as this will produce a corrupted file.
      *
-     * @param output stream to write to. It <i><b>must never</b></i> point to the source
+     * @param output stream to write to. It will be closed when done. It <i><b>must never</b></i> point to the source
      * file or that one will be harmed!
      * @param objectsToWrite objects that <b>must</b> be part of the incremental saving.
      * @throws IOException if the output could not be written
@@ -1161,7 +1178,7 @@ public class PDDocument implements Closeable
      * <p>
      * Don't use the input file as target as this will produce a corrupted file.
      *
-     * @param output stream to write the final PDF. It <i><b>must
+     * @param output stream to write the final PDF. It will be closed when the document is closed. It <i><b>must
      * never</b></i> point to the source file or that one will be harmed!
      * @return instance to be used for external signing and setting CMS signature
      * @throws IOException if the output could not be written
@@ -1213,10 +1230,6 @@ public class PDDocument implements Closeable
      *
      * @param pageIndex the 0-based page index
      * @return the page at the given index.
-     * 
-     * @throws IllegalStateException if the requested index isn't found or doesn't point to a valid
-     * page dictionary.
-     * @throws IndexOutOfBoundsException if the requested index is higher than the page count.
      */
     public PDPage getPage(int pageIndex) // todo: REPLACE most calls to this method with BELOW method
     {

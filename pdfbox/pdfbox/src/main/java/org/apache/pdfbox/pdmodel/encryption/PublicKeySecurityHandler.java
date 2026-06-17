@@ -134,14 +134,10 @@ public final class PublicKeySecurityHandler extends SecurityHandler<PublicKeyPro
             setKeyLength(defaultCryptFilterDictionary.getLength());
             setDecryptMetadata(defaultCryptFilterDictionary.isEncryptMetaData());
         }
-        else
+        else if (encryption.getLength() != 0)
         {
-            int encryptionLength = encryption.getLength();
-            if (encryptionLength != 0)
-            {
-                setKeyLength(encryptionLength);
-                setDecryptMetadata(encryption.isEncryptMetaData());
-            }
+            setKeyLength(encryption.getLength());
+            setDecryptMetadata(encryption.isEncryptMetaData());
         }
 
         PublicKeyDecryptionMaterial material = (PublicKeyDecryptionMaterial) decryptionMaterial;
@@ -216,7 +212,7 @@ public final class PublicKeySecurityHandler extends SecurityHandler<PublicKeyPro
             if (!foundRecipient || envelopedData == null)
             {
                 throw new IOException("The certificate matches none of " + array.size()
-                        + " recipient entries" + extraInfo);
+                        + " recipient entries" + extraInfo.toString());
             }
             if (envelopedData.length != 24)
             {
@@ -249,8 +245,7 @@ public final class PublicKeySecurityHandler extends SecurityHandler<PublicKeyPro
             }
 
             byte[] mdResult;
-            int encryptionVersion = encryption.getVersion();
-            if (encryptionVersion == 4 || encryptionVersion == 5)
+            if (encryption.getVersion() == 4 || encryption.getVersion() == 5)
             {
                 if (!isDecryptMetadata())
                 {
@@ -259,7 +254,7 @@ public final class PublicKeySecurityHandler extends SecurityHandler<PublicKeyPro
                     sha1Input = Arrays.copyOf(sha1Input, sha1Input.length + 4);
                     System.arraycopy(new byte[]{ (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff}, 0, sha1Input, sha1Input.length - 4, 4);
                 }
-                if (encryptionVersion == 4)
+                if (encryption.getVersion() == 4)
                 {
                     mdResult = MessageDigests.getSHA1().digest(sha1Input);
                 }
@@ -309,11 +304,11 @@ public final class PublicKeySecurityHandler extends SecurityHandler<PublicKeyPro
             extraInfo.append(ridSerialNumber.toString(16));
             extraInfo.append(" vs. cert ");
             extraInfo.append(certSerial);
-            extraInfo.append(" issuer: rid '");
+            extraInfo.append(" issuer: rid \'");
             extraInfo.append(ktRid.getIssuer());
-            extraInfo.append("' vs. cert '");
+            extraInfo.append("\' vs. cert \'");
             extraInfo.append(materialCert == null ? "null" : materialCert.getIssuer());
-            extraInfo.append("' ");
+            extraInfo.append("\' ");
         }
     }
     

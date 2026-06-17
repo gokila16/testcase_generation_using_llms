@@ -44,7 +44,7 @@ class RC4Cipher
      *
      * @param key The RC4 key used during encryption.
      */
-    void setKey( byte[] key )
+    public void setKey( byte[] key )
     {
         b = 0;
         c = 0;
@@ -95,13 +95,21 @@ class RC4Cipher
         data[ secondIndex ] = tmp;
     }
 
-    private byte encrypt(byte aByte)
+    /**
+     * This will encrypt and write the next byte.
+     *
+     * @param aByte The byte to encrypt.
+     * @param output The stream to write to.
+     *
+     * @throws IOException If there is an error writing to the output stream.
+     */
+    public void write( byte aByte, OutputStream output ) throws IOException
     {
         b = (b + 1) % 256;
         c = (salt[b] + c) % 256;
-        swap(salt, b, c);
+        swap( salt, b, c );
         int saltIndex = (salt[b] + salt[c]) % 256;
-        return (byte) (aByte ^ (byte) salt[saltIndex]);
+        output.write(aByte ^ (byte)salt[saltIndex]);
     }
 
     /**
@@ -112,9 +120,12 @@ class RC4Cipher
      *
      * @throws IOException If there is an error writing to the output stream.
      */
-    void write(byte[] data, OutputStream output) throws IOException
+    public void write( byte[] data, OutputStream output ) throws IOException
     {
-        write(data, 0, data.length, output, new byte[data.length]);
+        for (byte aData : data)
+        {
+            write(aData, output);
+        }
     }
 
     /**
@@ -125,34 +136,31 @@ class RC4Cipher
      *
      * @throws IOException If there is an error writing to the output stream.
      */
-    void write(InputStream data, OutputStream output) throws IOException
+    public void write( InputStream data, OutputStream output ) throws IOException
     {
         byte[] buffer = new byte[1024];
         int amountRead;
         while( (amountRead = data.read( buffer )) != -1 )
         {
-            write(buffer, 0, amountRead, output, buffer);
+            write( buffer, 0, amountRead, output );
         }
     }
 
     /**
      * This will encrypt and write the data.
      *
-     * @param data The data to encrypt, may be overwritten.
+     * @param data The data to encrypt.
      * @param offset The offset into the array to start reading data from.
      * @param len The number of bytes to attempt to read.
      * @param output The stream to write to.
-     * @param buffer The buffer to use, it can be altered and be identical to the data to encrypt.
      *
      * @throws IOException If there is an error writing to the output stream.
      */
-    private void write(byte[] data, int offset, int len, OutputStream output, byte[] buffer) throws IOException
+    public void write( byte[] data, int offset, int len, OutputStream output) throws IOException
     {
-        for (int i = 0, j = offset; i < len; ++i, ++j)
+        for( int i = offset; i < offset + len; i++ )
         {
-            buffer[i] = encrypt(data[j]);
+            write( data[i], output );
         }
-
-        output.write(buffer, 0, len);
     }
 }

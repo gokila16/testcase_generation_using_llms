@@ -23,8 +23,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.fontbox.cff.CFFFont;
 import org.apache.fontbox.cff.Type2CharString;
 import org.apache.fontbox.cmap.CMap;
@@ -48,7 +48,7 @@ import org.apache.pdfbox.util.Matrix;
  */
 public class PDCIDFontType2 extends PDCIDFont
 {
-    private static final Logger LOG = LogManager.getLogger(PDCIDFontType2.class);
+    private static final Log LOG = LogFactory.getLog(PDCIDFontType2.class);
 
     private final TrueTypeFont ttf;
     private final OpenTypeFont otf;
@@ -126,16 +126,15 @@ public class PDCIDFontType2 extends PDCIDFont
                 catch (IOException e)
                 {
                     fontIsDamaged = true;
-                    LOG.warn(() -> "Could not read embedded OTF for font " + getBaseFont(), e);
+                    LOG.warn("Could not read embedded OTF for font " + getBaseFont(), e);
                 }
                 if (ttfFont instanceof OpenTypeFont && !((OpenTypeFont) ttfFont).isSupportedOTF())
                 {
                     // the OpenType font contains CFF2 outlines which are not supported yet
                     ttfFont = null;
                     fontIsDamaged = true;
-                    LOG.warn(
-                            "Found an OpenType font using CFF2 outlines which are not supported {}",
-                            fd.getFontName());
+                    LOG.warn("Found an OpenType font using CFF2 outlines which are not supported "
+                            + fd.getFontName());
                 }
 
             }
@@ -176,8 +175,8 @@ public class PDCIDFontType2 extends PDCIDFont
         }
         if (mapping.isFallback())
         {
-            LOG.warn("Using fallback font {} for CID-keyed TrueType font {}", ttfFont.getName(),
-                    getBaseFont());
+            LOG.warn("Using fallback font " + ttfFont.getName() +
+                    " for CID-keyed TrueType font " + getBaseFont());
         }
         return ttfFont;
     }
@@ -263,7 +262,7 @@ public class PDCIDFontType2 extends PDCIDFont
                 // PDFBOX-5612: should happen only if it's really the same font
                 // this is not perfect, we may have to improve this because some identical fonts
                 // have different names
-                LOG.warn("Using non-embedded GIDs in font {}", getName());
+                LOG.warn("Using non-embedded GIDs in font " + getName());
                 int cid = codeToCID(code);
                 if (cid < cid2gid.length)
                 {
@@ -284,8 +283,7 @@ public class PDCIDFontType2 extends PDCIDFont
                     {
                         // we keep track of which warnings have been issued, so we don't log multiple times
                         noMapping.add(code);
-                        LOG.warn("Failed to find a character mapping for {} in {}", code,
-                                getName());
+                        LOG.warn("Failed to find a character mapping for " + code + " in " + getName());
                     }
                     // Acrobat is willing to use the CID as a GID, even when the font isn't embedded
                     // see PDFBOX-2599
@@ -337,7 +335,7 @@ public class PDCIDFontType2 extends PDCIDFont
     {
         // todo: really we want the BBox, (for text extraction:)
         return (ttf.getHorizontalHeader().getAscender() + -ttf.getHorizontalHeader().getDescender())
-                / (float) ttf.getUnitsPerEm(); // todo: shouldn't this be the yMax/yMin?
+                / ttf.getUnitsPerEm(); // todo: shouldn't this be the yMax/yMin?
     }
 
     @Override

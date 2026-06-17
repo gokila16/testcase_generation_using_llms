@@ -42,7 +42,7 @@ class TestStructuredType extends AbstractTypeTester
 
     @ParameterizedTest
     @MethodSource("initializeParameters")
-    void testInitializedToNull(AbstractStructuredType structured, Class<? extends AbstractStructuredType> clz, String fieldName, Types type) throws ReflectiveOperationException
+    void testInitializedToNull(AbstractStructuredType structured, Class<? extends AbstractStructuredType> clz, String fieldName, Types type) throws Exception
     {
         assertNull(structured.getProperty(fieldName));
         // accessor
@@ -53,14 +53,14 @@ class TestStructuredType extends AbstractTypeTester
 
     @ParameterizedTest
     @MethodSource("initializeParameters")
-    void testSettingValue(AbstractStructuredType structured, Class<? extends AbstractStructuredType> clz, String fieldName, Types type) throws ReflectiveOperationException
+    void testSettingValue(AbstractStructuredType structured, Class<? extends AbstractStructuredType> clz, String fieldName, Types type) throws Exception
     {
         internalTestSettingValue(structured, clz, fieldName, type);
     }
 
     @ParameterizedTest
     @MethodSource("initializeParameters")
-    void testRandomSettingValue(AbstractStructuredType structured, Class<? extends AbstractStructuredType> clz, String fieldName, Types type) throws ReflectiveOperationException
+    void testRandomSettingValue(AbstractStructuredType structured, Class<? extends AbstractStructuredType> clz, String fieldName, Types type) throws Exception
     {
         initializeSeed(new Random());
         for (int i=0; i < RAND_LOOP_COUNT;i++)
@@ -68,7 +68,7 @@ class TestStructuredType extends AbstractTypeTester
             internalTestSettingValue(structured, clz, fieldName, type);        }
     }
 
-    private void internalTestSettingValue(AbstractStructuredType structured, Class<? extends AbstractStructuredType> clz, String fieldName, Types type) throws ReflectiveOperationException
+    private void internalTestSettingValue(AbstractStructuredType structured, Class<? extends AbstractStructuredType> clz, String fieldName, Types type) throws Exception
     {
         Object value = getJavaValue(type);
         structured.addSimpleProperty(fieldName, value);
@@ -88,14 +88,14 @@ class TestStructuredType extends AbstractTypeTester
 
     @ParameterizedTest
     @MethodSource("initializeParameters")
-    void testPropertyType(AbstractStructuredType structured, Class<? extends AbstractStructuredType> clz, String fieldName, Types type)
+    void testPropertyType(AbstractStructuredType structured, Class<? extends AbstractStructuredType> clz, String fieldName, Types type) throws Exception
     {
         internalTestPropertyType(structured, fieldName, type);
     }
 
     @ParameterizedTest
     @MethodSource("initializeParameters")
-    void testRandomPropertyType(AbstractStructuredType structured, Class<? extends AbstractStructuredType> clz, String fieldName, Types type)
+    void testRandomPropertyType(AbstractStructuredType structured, Class<? extends AbstractStructuredType> clz, String fieldName, Types type) throws Exception
     {
         initializeSeed(new Random());
         for (int i=0; i < RAND_LOOP_COUNT;i++)
@@ -104,7 +104,8 @@ class TestStructuredType extends AbstractTypeTester
         }
     }
 
-    private void internalTestPropertyType(AbstractStructuredType structured, String fieldName, Types type)
+
+    private void internalTestPropertyType(AbstractStructuredType structured, String fieldName, Types type) throws Exception
     {
         Object value = getJavaValue(type);
         structured.addSimpleProperty(fieldName, value);
@@ -117,14 +118,14 @@ class TestStructuredType extends AbstractTypeTester
 
     @ParameterizedTest
     @MethodSource("initializeParameters")
-    void testSetter(AbstractStructuredType structured, Class<? extends AbstractStructuredType> clz, String fieldName, Types type) throws ReflectiveOperationException
+    void testSetter(AbstractStructuredType structured, Class<? extends AbstractStructuredType> clz, String fieldName, Types type) throws Exception
     {
         internalTestSetter(structured, clz, fieldName, type);
     }
 
     @ParameterizedTest
     @MethodSource("initializeParameters")
-    void testRandomSetter(AbstractStructuredType structured, Class<? extends AbstractStructuredType> clz, String fieldName, Types type) throws ReflectiveOperationException
+    void testRandomSetter(AbstractStructuredType structured, Class<? extends AbstractStructuredType> clz, String fieldName, Types type) throws Exception
     {
         initializeSeed(new Random());
         for (int i=0; i < RAND_LOOP_COUNT;i++)
@@ -133,7 +134,7 @@ class TestStructuredType extends AbstractTypeTester
         }
     }
 
-    private void internalTestSetter(AbstractStructuredType structured, Class<? extends AbstractStructuredType> clz, String fieldName, Types type) throws ReflectiveOperationException
+    private void internalTestSetter(AbstractStructuredType structured, Class<? extends AbstractStructuredType> clz, String fieldName, Types type) throws Exception
     {
         String setter = calculateSimpleSetter(fieldName);
         Object value = getJavaValue(type);

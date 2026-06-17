@@ -52,6 +52,7 @@ import org.apache.pdfbox.util.Hex;
  */
 public class CreateVisibleSignature extends CreateSignatureBase
 {
+    private SignatureOptions signatureOptions;
     private PDVisibleSignDesigner visibleSignDesigner;
     private final PDVisibleSigProperties visibleSignatureProperties = new PDVisibleSigProperties();
     private boolean lateExternalSigning = false;
@@ -222,7 +223,6 @@ public class CreateVisibleSignature extends CreateSignatureBase
         // and read https://stackoverflow.com/a/71293901/535646
         // and https://issues.apache.org/jira/browse/PDFBOX-5382
 
-        SignatureOptions signatureOptions = null;
         try (FileOutputStream fos = new FileOutputStream(signedFile))
         {
             int accessPermissions = SigUtils.getMDPPermission(doc);
@@ -348,16 +348,14 @@ public class CreateVisibleSignature extends CreateSignatureBase
                 doc.saveIncremental(fos);
             }
         }
-        finally
-        {
-            // Do not close signatureOptions before saving, because some COSStream objects within
-            // are transferred to the signed document.
-            // Do not allow signatureOptions get out of scope before saving, because then the COSDocument
-            // in signature options might by closed by gc, which would close COSStream objects prematurely.
-            // See https://issues.apache.org/jira/browse/PDFBOX-3743
-            IOUtils.closeQuietly(signatureOptions);
-            IOUtils.closeQuietly(doc);
-        }
+        
+        // Do not close signatureOptions before saving, because some COSStream objects within
+        // are transferred to the signed document.
+        // Do not allow signatureOptions get out of scope before saving, because then the COSDocument
+        // in signature options might by closed by gc, which would close COSStream objects prematurely.
+        // See https://issues.apache.org/jira/browse/PDFBOX-3743
+        IOUtils.closeQuietly(signatureOptions);
+        IOUtils.closeQuietly(doc);
     }
 
     // Find an existing signature (assumed to be empty). You will usually not need this.

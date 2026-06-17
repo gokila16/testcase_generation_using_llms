@@ -89,10 +89,10 @@ public class XMPMediaManagementSchema extends XMPSchema
     public static final String DERIVED_FROM = "DerivedFrom";
 
     /**
-     * Set DerivedFrom property
+     * Set ResourceRef property
      * 
      * @param tt
-     *            DerivedFrom property to set
+     *            ResourceRef property to set
      */
     public void setDerivedFromProperty(ResourceRefType tt)
     {
@@ -100,13 +100,13 @@ public class XMPMediaManagementSchema extends XMPSchema
     }
 
     /**
-     * Get DerivedFrom property
+     * Get ResourceRef property
      * 
-     * @return DerivedFrom property
+     * @return ResourceRef property
      */
-    public ResourceRefType getDerivedFromProperty()
+    public ResourceRefType getResourceRefProperty()
     {
-        return getPropertyAs(DERIVED_FROM, ResourceRefType.class);
+        return (ResourceRefType) getProperty(DERIVED_FROM);
     }
 
     // --------------------------------------- DocumentID
@@ -147,7 +147,7 @@ public class XMPMediaManagementSchema extends XMPSchema
      */
     public TextType getDocumentIDProperty()
     {
-        return getPropertyAs(DOCUMENTID, TextType.class);
+        return (TextType) getProperty(DOCUMENTID);
     }
 
     /**
@@ -193,7 +193,7 @@ public class XMPMediaManagementSchema extends XMPSchema
      */
     public URLType getLastURLProperty()
     {
-        return getPropertyAs(LAST_URL, URLType.class);
+        return (URLType) getProperty(LAST_URL);
     }
 
     /**
@@ -239,7 +239,7 @@ public class XMPMediaManagementSchema extends XMPSchema
      */
     public IntegerType getSaveIDProperty()
     {
-        return getPropertyAs(SAVE_ID, IntegerType.class);
+        return (IntegerType) getProperty(SAVE_ID);
     }
 
     /**
@@ -289,7 +289,7 @@ public class XMPMediaManagementSchema extends XMPSchema
      */
     public TextType getManagerProperty()
     {
-        return getPropertyAs(MANAGER, TextType.class);
+        return (TextType) getProperty(MANAGER);
     }
 
     /**
@@ -339,7 +339,7 @@ public class XMPMediaManagementSchema extends XMPSchema
      */
     public TextType getManageToProperty()
     {
-        return getPropertyAs(MANAGETO, TextType.class);
+        return (TextType) getProperty(MANAGETO);
     }
 
     /**
@@ -389,7 +389,7 @@ public class XMPMediaManagementSchema extends XMPSchema
      */
     public TextType getManageUIProperty()
     {
-        return getPropertyAs(MANAGEUI, TextType.class);
+        return (TextType) getProperty(MANAGEUI);
     }
 
     /**
@@ -439,7 +439,7 @@ public class XMPMediaManagementSchema extends XMPSchema
      */
     public TextType getManagerVariantProperty()
     {
-        return getPropertyAs(MANAGERVARIANT, TextType.class);
+        return (TextType) getProperty(MANAGERVARIANT);
     }
 
     /**
@@ -489,7 +489,7 @@ public class XMPMediaManagementSchema extends XMPSchema
      */
     public TextType getInstanceIDProperty()
     {
-        return getPropertyAs(INSTANCEID, TextType.class);
+        return (TextType) getProperty(INSTANCEID);
     }
 
     /**
@@ -511,12 +511,13 @@ public class XMPMediaManagementSchema extends XMPSchema
 
     /**
      * set ManageFrom Property
-     *
-     * @param managedFrom ManageFrom Property to set
+     * 
+     * @param resourceRef
+     *            ManageFrom Property to set
      */
-    public void setManagedFromProperty(ResourceRefType managedFrom)
+    public void setManagedFromProperty(ResourceRefType resourceRef)
     {
-        addProperty(managedFrom);
+        addProperty(resourceRef);
     }
 
     /**
@@ -526,7 +527,7 @@ public class XMPMediaManagementSchema extends XMPSchema
      */
     public ResourceRefType getManagedFromProperty()
     {
-        return getPropertyAs(MANAGED_FROM, ResourceRefType.class);
+        return (ResourceRefType) getProperty(MANAGED_FROM);
     }
 
     // --------------------------------------- OriginalDocumentID
@@ -565,7 +566,7 @@ public class XMPMediaManagementSchema extends XMPSchema
      */
     public TextType getOriginalDocumentIDProperty()
     {
-        return getPropertyAs(ORIGINALDOCUMENTID, TextType.class);
+        return (TextType) getProperty(ORIGINALDOCUMENTID);
     }
 
     /**
@@ -615,7 +616,7 @@ public class XMPMediaManagementSchema extends XMPSchema
      */
     public TextType getRenditionClassProperty()
     {
-        return getPropertyAs(RENDITIONCLASS, TextType.class);
+        return (TextType) getProperty(RENDITIONCLASS);
     }
 
     /**
@@ -665,7 +666,7 @@ public class XMPMediaManagementSchema extends XMPSchema
      */
     public TextType getRenditionParamsProperty()
     {
-        return getPropertyAs(RENDITIONPARAMS, TextType.class);
+        return (TextType) getProperty(RENDITIONPARAMS);
     }
 
     /**
@@ -715,7 +716,7 @@ public class XMPMediaManagementSchema extends XMPSchema
      */
     public TextType getVersionIDProperty()
     {
-        return getPropertyAs(VERSIONID, TextType.class);
+        return (TextType) getProperty(VERSIONID);
     }
 
     /**
@@ -747,7 +748,7 @@ public class XMPMediaManagementSchema extends XMPSchema
      */
     public ArrayProperty getVersionsProperty()
     {
-        return getPropertyAs(VERSIONS, ArrayProperty.class);
+        return (ArrayProperty) getProperty(VERSIONS);
     }
 
     public List<String> getVersions()
@@ -779,7 +780,17 @@ public class XMPMediaManagementSchema extends XMPSchema
      */
     public ArrayProperty getHistoryProperty()
     {
-        return getPropertyAs(HISTORY, ArrayProperty.class);
+        return (ArrayProperty) getProperty(HISTORY);
+    }
+
+    /**
+     * Get List of History values
+     * 
+     * @return List of History values
+     */
+    public List<String> getHistory()
+    {
+        return getUnqualifiedSequenceValueList(HISTORY);
     }
 
     // --------------------------------------- Ingredients
@@ -806,7 +817,7 @@ public class XMPMediaManagementSchema extends XMPSchema
      */
     public ArrayProperty getIngredientsProperty()
     {
-        return getPropertyAs(INGREDIENTS, ArrayProperty.class);
+        return (ArrayProperty) getProperty(INGREDIENTS);
     }
 
     /**

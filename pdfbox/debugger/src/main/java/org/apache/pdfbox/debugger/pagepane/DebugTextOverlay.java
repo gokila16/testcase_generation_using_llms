@@ -24,11 +24,13 @@ import java.awt.Stroke;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Rectangle2D;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.List;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.fontbox.util.BoundingBox;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -52,7 +54,7 @@ import org.apache.pdfbox.util.Vector;
  */
 final class DebugTextOverlay
 {
-    private static final Logger LOG = LogManager.getLogger(DebugTextOverlay.class);
+    private static final Log LOG = LogFactory.getLog(DebugTextOverlay.class);
 
     private final PDDocument document;
     private final int pageIndex;
@@ -93,7 +95,8 @@ final class DebugTextOverlay
             setStartPage(pageIndex + 1);
             setEndPage(pageIndex + 1);
 
-            writeText(document, Writer.nullWriter());
+            Writer dummy = new OutputStreamWriter(new ByteArrayOutputStream());
+            writeText(document, dummy);
 
             if (DebugTextOverlay.this.showTextStripperBeads)
             {
@@ -218,7 +221,7 @@ final class DebugTextOverlay
             }
             catch (IOException ex)
             {
-                LOG.error(() -> "Couldn't get bounds for code " + code + " at position (" +
+                LOG.error("Couldn't get bounds for code " + code + " at position (" +
                         at.getTranslateX() + "," + at.getTranslateY() + ")", ex);
             }
             if (bbox == null)

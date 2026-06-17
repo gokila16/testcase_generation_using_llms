@@ -30,12 +30,12 @@ import org.apache.fontbox.cff.CharStringCommand.Type2KeyWord;
 public class Type2CharStringParser
 {
     // 1-byte commands
-    private static final int CALLSUBR = CharStringCommand.CALLSUBR.getValue();
-    private static final int CALLGSUBR = CharStringCommand.CALLGSUBR.getValue();
+    private static final int CALLSUBR = CharStringCommand.Key.CALLSUBR.getHashValue();
+    private static final int CALLGSUBR = CharStringCommand.Key.CALLGSUBR.getHashValue();
 
     // not yet supported commands
-    private static final int HINTMASK = CharStringCommand.HINTMASK.getValue();
-    private static final int CNTRMASK = CharStringCommand.CNTRMASK.getValue();
+    private static final int HINTMASK = CharStringCommand.Key.HINTMASK.getHashValue();
+    private static final int CNTRMASK = CharStringCommand.Key.CNTRMASK.getHashValue();
 
     private final String fontName;
 
@@ -55,12 +55,13 @@ public class Type2CharStringParser
      * @param bytes the given mapping as byte array
      * @param globalSubrIndex array containing all global subroutines
      * @param localSubrIndex array containing all local subroutines
+     * @param glyphName the name of the current glyph
      * 
      * @return the Type2 sequence
      * @throws IOException if an error occurs during reading
      */
-    public List<Object> parse(byte[] bytes, byte[][] globalSubrIndex, byte[][] localSubrIndex)
-            throws IOException
+    public List<Object> parse(byte[] bytes, byte[][] globalSubrIndex, byte[][] localSubrIndex,
+            String glyphName) throws IOException
     {
         GlyphData glyphData = new GlyphData();
         parseSequence(bytes, globalSubrIndex, localSubrIndex, glyphData);
@@ -71,7 +72,6 @@ public class Type2CharStringParser
             GlyphData glyphData) throws IOException
     {
         DataInput input = new DataInputByteArray(bytes);
-
         while (input.hasRemaining())
         {
             int b0 = input.readUnsignedByte();
@@ -254,4 +254,5 @@ public class Type2CharStringParser
         {
         }
     }
+
 }

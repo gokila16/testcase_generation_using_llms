@@ -88,7 +88,7 @@ public class PDFText2HTML extends PDFTextStripper
     protected String getTitle()
     {
         String titleGuess = document.getDocumentInformation().getTitle();
-        if(titleGuess != null && !titleGuess.isEmpty())
+        if(titleGuess != null && titleGuess.length() > 0)
         {
             return titleGuess;
         }
@@ -362,7 +362,7 @@ public class PDFText2HTML extends PDFTextStripper
             {
                 String tag = stateList.get(i);
                 tagsBuilder.append(closeTag(tag));
-                if (tag.equals(endTag))
+                if (endTag != null && tag.equals(endTag))
                 {
                     return i;
                 }

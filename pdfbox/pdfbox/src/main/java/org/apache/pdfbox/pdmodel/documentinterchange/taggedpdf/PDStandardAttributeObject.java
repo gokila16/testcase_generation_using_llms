@@ -41,7 +41,7 @@ public abstract class PDStandardAttributeObject extends PDAttributeObject
     /**
      * Default constructor.
      */
-    protected PDStandardAttributeObject()
+    public PDStandardAttributeObject()
     {
     }
 
@@ -50,7 +50,7 @@ public abstract class PDStandardAttributeObject extends PDAttributeObject
      * 
      * @param dictionary the dictionary
      */
-    protected PDStandardAttributeObject(COSDictionary dictionary)
+    public PDStandardAttributeObject(COSDictionary dictionary)
     {
         super(dictionary);
     }

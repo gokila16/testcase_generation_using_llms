@@ -52,7 +52,7 @@ class TestHelloWorld
 
         new File(outputFile).delete();
 
-        String[] args = { outputFile, message, fontFile };
+        String[] args = new String[] { outputFile, message, fontFile };
         HelloWorldTTF.main(args);
 
         checkOutputFile(outputFile, message);
@@ -69,7 +69,7 @@ class TestHelloWorld
 
         new File(outputFile).delete();
 
-        String[] args = { outputFile, message };
+        String[] args = new String[] { outputFile, message };
         HelloWorld.main(args);
 
         checkOutputFile(outputFile, message);

@@ -78,9 +78,8 @@ final class JPEGUtil
             jfifChild.setAttribute("minorVersion", "2");
         }
         jfifChild.setAttribute("resUnits", "1"); // inch
-        String dpiString = Integer.toString(dpi);
-        jfifChild.setAttribute("Xdensity", dpiString);
-        jfifChild.setAttribute("Ydensity", dpiString);
+        jfifChild.setAttribute("Xdensity", Integer.toString(dpi));
+        jfifChild.setAttribute("Ydensity", Integer.toString(dpi));
         if (jfifChild.getAttribute("thumbWidth").isEmpty())
         {
             jfifChild.setAttribute("thumbWidth", "0");

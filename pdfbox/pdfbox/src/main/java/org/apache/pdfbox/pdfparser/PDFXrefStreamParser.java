@@ -24,10 +24,10 @@ import java.util.NoSuchElementException;
 
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDocument;
 import org.apache.pdfbox.cos.COSInteger;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSStream;
-import org.apache.pdfbox.io.RandomAccessRead;
 import org.apache.pdfbox.cos.COSObjectKey;
 
 /**
@@ -36,22 +36,24 @@ import org.apache.pdfbox.cos.COSObjectKey;
  *
  *  @author Justin LeFebvre
  */
-public class PDFXrefStreamParser
+public class PDFXrefStreamParser extends BaseParser
 {
     private final int[] w = new int[3];
     private ObjectNumbers objectNumbers = null;
-    private final RandomAccessRead source;
 
     /**
      * Constructor.
      *
      * @param stream The stream to parse.
+     * @param document The document for the current parsing.
      *
      * @throws IOException If there is an error initializing the stream.
      */
-    public PDFXrefStreamParser(COSStream stream) throws IOException
+    public PDFXrefStreamParser(COSStream stream, COSDocument document)
+            throws IOException
     {
-        source = stream.createView();
+        super(stream.createView());
+        this.document = document;
         try
         {
             initParserValues(stream);
@@ -83,11 +85,6 @@ public class PDFXrefStreamParser
         {
             throw new IOException("Incorrect /W array in XRef: " + Arrays.toString(w));
         }
-        if (w[0] + w[1] + w[2] > 20)
-        {
-            // PDFBOX-6037
-            throw new IOException("Incorrect /W array in XRef: " + Arrays.toString(w));
-        }
 
         COSArray indexArray = stream.getCOSArray(COSName.INDEX);
         if (indexArray == null)
@@ -97,7 +94,7 @@ public class PDFXrefStreamParser
             indexArray.add(COSInteger.ZERO);
             indexArray.add(COSInteger.get(stream.getInt(COSName.SIZE, 0)));
         }
-        if (indexArray.isEmpty() || indexArray.size() % 2 == 1)
+        if (indexArray.size() == 0 || indexArray.size() % 2 == 1)
         {
             throw new IOException(
                     "Wrong number of values for /Index array in XRef: " + Arrays.toString(w));
@@ -112,6 +109,7 @@ public class PDFXrefStreamParser
         {
             source.close();
         }
+        document = null;
         objectNumbers = null;
     }
 
@@ -124,7 +122,7 @@ public class PDFXrefStreamParser
     public void parse(XrefTrailerResolver resolver) throws IOException
     {
         byte[] currLine = new byte[w[0] + w[1] + w[2]];
-        while (!source.isEOF() && objectNumbers.hasNext())
+        while (!isEOF() && objectNumbers.hasNext())
         {
             readNextValue(currLine);
             // get the current objID

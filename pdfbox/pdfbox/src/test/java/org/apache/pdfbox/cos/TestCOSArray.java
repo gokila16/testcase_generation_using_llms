@@ -37,7 +37,7 @@ class TestCOSArray
     {
         COSArray cosArray = new COSArray();
         assertEquals(0, cosArray.size());
-        Assertions.assertThrows(NullPointerException.class, () -> new COSArray(null),
+        Assertions.assertThrows(IllegalArgumentException.class, () -> new COSArray(null),
                 "Constructor should have thrown an exception");
 
         cosArray = new COSArray(Arrays.asList(COSName.A, COSName.B, COSName.C));
@@ -112,7 +112,7 @@ class TestCOSArray
     @Test
     void testConvertFloat2COSStringAndBack()
     {
-        float[] floatArrayStart = { 1f, 0.1f, 0.02f };
+        float[] floatArrayStart = new float[] { 1f, 0.1f, 0.02f };
         COSArray cosArray = new COSArray();
         cosArray.setFloatArray(floatArrayStart);
 

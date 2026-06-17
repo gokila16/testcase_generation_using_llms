@@ -106,7 +106,7 @@ public class XMPRightsManagementSchema extends XMPSchema
      */
     public ArrayProperty getOwnersProperty()
     {
-        return getPropertyAs(OWNER, ArrayProperty.class);
+        return (ArrayProperty) getProperty(OWNER);
     }
 
     /**
@@ -149,7 +149,7 @@ public class XMPRightsManagementSchema extends XMPSchema
      */
     public BooleanType getMarkedProperty()
     {
-        return getPropertyAs(MARKED, BooleanType.class);
+        return (BooleanType) getProperty(MARKED);
     }
 
     /**
@@ -159,7 +159,7 @@ public class XMPRightsManagementSchema extends XMPSchema
      */
     public Boolean getMarked()
     {
-        BooleanType bt = getMarkedProperty();
+        BooleanType bt = ((BooleanType) getProperty(MARKED));
         return bt == null ? null : bt.getValue();
     }
 
@@ -194,7 +194,7 @@ public class XMPRightsManagementSchema extends XMPSchema
      */
     public ArrayProperty getUsageTermsProperty()
     {
-        return getPropertyAs(USAGETERMS, ArrayProperty.class);
+        return (ArrayProperty) getProperty(USAGETERMS);
     }
 
     /**
@@ -239,7 +239,7 @@ public class XMPRightsManagementSchema extends XMPSchema
      */
     public TextType getWebStatementProperty()
     {
-        return getPropertyAs(WEBSTATEMENT, TextType.class);
+        return ((TextType) getProperty(WEBSTATEMENT));
     }
 
     /**
@@ -249,7 +249,7 @@ public class XMPRightsManagementSchema extends XMPSchema
      */
     public String getWebStatement()
     {
-        TextType tt = getWebStatementProperty();
+        TextType tt = ((TextType) getProperty(WEBSTATEMENT));
         return tt == null ? null : tt.getStringValue();
     }
 
@@ -283,7 +283,7 @@ public class XMPRightsManagementSchema extends XMPSchema
      */
     public TextType getCertificateProperty()
     {
-        return getPropertyAs(CERTIFICATE, TextType.class);
+        return ((TextType) getProperty(CERTIFICATE));
     }
 
     /**
@@ -293,7 +293,7 @@ public class XMPRightsManagementSchema extends XMPSchema
      */
     public String getCertificate()
     {
-        TextType tt = getCertificateProperty();
+        TextType tt = ((TextType) getProperty(CERTIFICATE));
         return tt == null ? null : tt.getStringValue();
     }
 

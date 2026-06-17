@@ -148,6 +148,5 @@ class StreamImageView implements ActionListener, AncestorListener
     @Override
     public void ancestorMoved(AncestorEvent ancestorEvent)
     {
-        // do nothing
     }
 }

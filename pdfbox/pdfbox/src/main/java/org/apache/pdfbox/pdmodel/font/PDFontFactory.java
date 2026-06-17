@@ -27,8 +27,8 @@ import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSStream;
 import org.apache.pdfbox.io.RandomAccessRead;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.pdmodel.ResourceCache;
 
 /**
@@ -37,7 +37,7 @@ import org.apache.pdfbox.pdmodel.ResourceCache;
  */
 public final class PDFontFactory
 {
-    private static final Logger LOG = LogManager.getLogger(PDFontFactory.class);
+    private static final Log LOG = LogFactory.getLog(PDFontFactory.class);
 
     private static final String FONT_TYPE1C = "Type1C";
     private static final String FONT_OPEN_TYPE = "OTTO";
@@ -126,7 +126,7 @@ public final class PDFontFactory
         COSName type = dictionary.getCOSName(COSName.TYPE, COSName.FONT);
         if (!COSName.FONT.equals(type))
         {
-            LOG.error("Expected 'Font' dictionary but found '{}'", type.getName());
+            LOG.error("Expected 'Font' dictionary but found '" + type.getName() + "'");
         }
 
         COSName subType = dictionary.getCOSName(COSName.SUBTYPE);
@@ -135,22 +135,22 @@ public final class PDFontFactory
             COSDictionary fd = dictionary.getCOSDictionary(COSName.FONT_DESC);
             if (fd != null && fd.containsKey(COSName.FONT_FILE3))
             {
-                return new PDType1CFont(dictionary, resourceCache);
+                return new PDType1CFont(dictionary);
             }
-            return new PDType1Font(dictionary, resourceCache);
+            return new PDType1Font(dictionary);
         }
         else if (COSName.MM_TYPE1.equals(subType))
         {
             COSDictionary fd = dictionary.getCOSDictionary(COSName.FONT_DESC);
             if (fd != null && fd.containsKey(COSName.FONT_FILE3))
             {
-                return new PDType1CFont(dictionary, resourceCache);
+                return new PDType1CFont(dictionary);
             }
             return new PDMMType1Font(dictionary);
         }
         else if (COSName.TRUE_TYPE.equals(subType))
         {
-            return new PDTrueTypeFont(dictionary, resourceCache);
+            return new PDTrueTypeFont(dictionary);
         }
         else if (COSName.TYPE3.equals(subType))
         {
@@ -170,7 +170,7 @@ public final class PDFontFactory
                     fixType0Subtype(descendantFont, fontDescriptor, fontTypeFromFont.getSubtype());
                 }
             }
-            return new PDType0Font(dictionary, resourceCache);
+            return new PDType0Font(dictionary);
         }
         else if (COSName.CID_FONT_TYPE0.equals(subType))
         {
@@ -184,16 +184,16 @@ public final class PDFontFactory
         {
             // assuming Type 1 font (see PDFBOX-1988) because it seems that Adobe Reader does this
             // however, we may need more sophisticated logic perhaps looking at the FontFile
-            LOG.warn("Invalid font subtype '{}'", subType);
-            return new PDType1Font(dictionary, resourceCache);
+            LOG.warn("Invalid font subtype '" + subType + "'");
+            return new PDType1Font(dictionary);
         }
     }
 
     private static void fixType0Subtype(COSDictionary descendantFont, COSDictionary fontDescriptor,
             COSName newSubType)
     {
-        LOG.warn("Try to fix different descendant font types for font {}",
-                fontDescriptor.getNameAsString(COSName.FONT_NAME));
+        LOG.warn("Try to fix different descendant font types for font "
+                + fontDescriptor.getNameAsString(COSName.FONT_NAME));
         if (COSName.CID_FONT_TYPE0.equals(newSubType)
                 && !fontDescriptor.containsKey(COSName.FONT_FILE3)
                 && fontDescriptor.containsKey(COSName.FONT_FILE2))
@@ -310,7 +310,7 @@ public final class PDFontFactory
     private static COSDictionary getDescendantFont(COSDictionary dictionary)
     {
         COSArray descendantFonts = dictionary.getCOSArray(COSName.DESCENDANT_FONTS);
-        if (descendantFonts != null && !descendantFonts.isEmpty())
+        if (descendantFonts != null && descendantFonts.size() > 0)
         {
             COSBase descendantFontDictBase = descendantFonts.getObject(0);
             if (descendantFontDictBase instanceof COSDictionary)
@@ -358,6 +358,7 @@ public final class PDFontFactory
         }
         return header;
     }
+
     /**
      * Creates a new PDCIDFont instance with the appropriate subclass.
      *
@@ -373,15 +374,19 @@ public final class PDFontFactory
         {
             throw new IOException("Expected 'Font' dictionary but found '" + type.getName() + "'");
         }
+
         COSName subType = dictionary.getCOSName(COSName.SUBTYPE);
         if (COSName.CID_FONT_TYPE0.equals(subType))
         {
             return new PDCIDFontType0(dictionary, parent);
         }
-        if (COSName.CID_FONT_TYPE2.equals(subType))
+        else if (COSName.CID_FONT_TYPE2.equals(subType))
         {
             return new PDCIDFontType2(dictionary, parent);
         }
-        throw new IOException("Invalid font type: " + type);
+        else
+        {
+            throw new IOException("Invalid font type: " + type);
+        }
     }
 }

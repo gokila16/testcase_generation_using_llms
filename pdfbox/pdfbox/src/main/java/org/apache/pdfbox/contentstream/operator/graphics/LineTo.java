@@ -20,8 +20,8 @@ import java.io.IOException;
 import java.util.List;
 import java.awt.geom.Point2D;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.contentstream.PDFGraphicsStreamEngine;
 import org.apache.pdfbox.contentstream.operator.MissingOperandException;
 import org.apache.pdfbox.cos.COSBase;
@@ -36,7 +36,7 @@ import org.apache.pdfbox.contentstream.operator.OperatorName;
  */
 public class LineTo extends GraphicsOperatorProcessor
 {
-    private static final Logger LOG = LogManager.getLogger(LineTo.class);
+    private static final Log LOG = LogFactory.getLog(LineTo.class);
     
     public LineTo(PDFGraphicsStreamEngine context)
     {
@@ -69,7 +69,7 @@ public class LineTo extends GraphicsOperatorProcessor
 
         if (context.getCurrentPoint() == null)
         {
-            LOG.warn("LineTo ({},{}) without initial MoveTo", pos.x, pos.y);
+            LOG.warn("LineTo (" + pos.x + "," + pos.y + ") without initial MoveTo");
             context.moveTo(pos.x, pos.y);
         }
         else

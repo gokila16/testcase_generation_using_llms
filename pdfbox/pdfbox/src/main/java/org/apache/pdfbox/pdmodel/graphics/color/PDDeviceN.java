@@ -107,6 +107,21 @@ public class PDDeviceN extends PDSpecialColorSpace
         initialColor = new PDColor(initial, this);
     }
 
+    /**
+     * Creates a new DeviceN color space from the given COS array.
+     * 
+     * @param deviceN an array containing the color space information
+     * 
+     * @throws IOException if the colorspace could not be created
+     * 
+     * @deprecated use {@link PDDeviceN#PDDeviceN(COSArray, PDResources)}
+     */
+    @Deprecated
+    public PDDeviceN(COSArray deviceN) throws IOException
+    {
+        this(deviceN, null);
+    }
+
     // initializes the color conversion cache
     private void initColorConversionCache(PDResources resources) throws IOException
     {
@@ -122,10 +137,9 @@ public class PDDeviceN extends PDSpecialColorSpace
 
         // process components
         colorantToComponent = new int[numColorants];
-        PDDeviceNProcess process = attributes.getProcess();
-        if (process != null)
+        if (attributes.getProcess() != null)
         {
-            List<String> components = process.getComponents();
+            List<String> components = attributes.getProcess().getComponents();
 
             // map each colorant name to the corresponding process component name (if any)
             for (int c = 0; c < numColorants; c++)
@@ -134,7 +148,7 @@ public class PDDeviceN extends PDSpecialColorSpace
             }
 
             // process color space
-            processColorSpace = process.getColorSpace();
+            processColorSpace = attributes.getProcess().getColorSpace();
         }
         else
         {
@@ -361,7 +375,7 @@ public class PDDeviceN extends PDSpecialColorSpace
 
     private float[] toRGBWithAttributes(float[] value) throws IOException
     {
-        float[] rgbValue = { 1, 1, 1 };
+        float[] rgbValue = new float[] { 1, 1, 1 };
 
         // look up each colorant
         for (int c = 0; c < numColorants; c++)

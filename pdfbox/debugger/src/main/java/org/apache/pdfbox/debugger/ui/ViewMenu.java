@@ -41,6 +41,7 @@ public class ViewMenu extends MenuBase
     private JCheckBoxMenuItem showFontBBox;
     private JCheckBoxMenuItem showGlyphBounds;
     private JCheckBoxMenuItem allowSubsampling;
+    private JMenuItem extractTextMenuItem;
     private JCheckBoxMenuItem repairAcroFormMenuItem;
 
     private final PDFDebugger pdfDebugger;
@@ -224,13 +225,9 @@ public class ViewMenu extends MenuBase
 
         viewMenu.addSeparator();
 
-        JMenuItem extractTextMenuItem = new JMenuItem(EXTRACT_TEXT);
+        extractTextMenuItem = new JMenuItem(EXTRACT_TEXT);
         extractTextMenuItem.setEnabled(false);
         viewMenu.add(extractTextMenuItem);
-
-        TextStripperMenu textStripperMenu = TextStripperMenu.getInstance();
-        textStripperMenu.setEnableMenu(false);
-        viewMenu.add(textStripperMenu.getMenu());
 
         viewMenu.addSeparator();
 

@@ -156,6 +156,7 @@ public class NamingTable extends TTFTable
 
     private void readInterestingStrings()
     {
+        // extract strings of interest
         fontFamily = getEnglishName(NameRecord.NAME_FONT_FAMILY_NAME);
         fontSubFamily = getEnglishName(NameRecord.NAME_FONT_SUB_FAMILY_NAME);
 

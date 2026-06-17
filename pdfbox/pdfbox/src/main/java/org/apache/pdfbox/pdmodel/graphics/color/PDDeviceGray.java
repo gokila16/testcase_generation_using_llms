@@ -84,7 +84,6 @@ public final class PDDeviceGray extends PDDeviceColorSpace
         int height = raster.getHeight();
 
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-        WritableRaster dstRaster = image.getRaster();
 
         int[] gray = new int[1];
         int[] rgb = new int[3];
@@ -96,7 +95,7 @@ public final class PDDeviceGray extends PDDeviceColorSpace
                 rgb[0] = gray[0];
                 rgb[1] = gray[0];
                 rgb[2] = gray[0];
-                dstRaster.setPixel(x, y, rgb);
+                image.getRaster().setPixel(x, y, rgb);
             }
         }
 

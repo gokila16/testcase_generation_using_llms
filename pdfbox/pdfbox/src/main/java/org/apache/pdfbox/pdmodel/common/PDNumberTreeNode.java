@@ -23,8 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
@@ -41,7 +41,7 @@ import org.apache.pdfbox.cos.COSNull;
  */
 public class PDNumberTreeNode implements COSObjectable
 {
-    private static final Logger LOG = LogManager.getLogger(PDNumberTreeNode.class );
+    private static final Log LOG = LogFactory.getLog( PDNumberTreeNode.class );
 
     private final COSDictionary node;
     private Class<? extends COSObjectable> valueType = null;
@@ -91,21 +91,10 @@ public class PDNumberTreeNode implements COSObjectable
         COSArray kids = node.getCOSArray(COSName.KIDS);
         if( kids != null )
         {
-            List<PDNumberTreeNode> pdObjects = new ArrayList<>(kids.size());
+            List<PDNumberTreeNode> pdObjects = new ArrayList<>();
             for( int i=0; i<kids.size(); i++ )
             {
-                COSBase base = kids.getObject(i);
-                PDNumberTreeNode childNode;
-                if (base instanceof COSDictionary)
-                {
-                    childNode = createChildNode((COSDictionary) base);
-                }
-                else
-                {
-                    LOG.warn("Bad child node at position {}", i);
-                    childNode = new PDNumberTreeNode(valueType);
-                }
-                pdObjects.add(childNode);
+                pdObjects.add( createChildNode( (COSDictionary)kids.getObject(i) ) );
             }
             retval = new COSArrayList<>(pdObjects,kids);
         }
@@ -191,19 +180,17 @@ public class PDNumberTreeNode implements COSObjectable
         COSArray numbersArray = node.getCOSArray(COSName.NUMS);
         if (numbersArray != null)
         {
-            int size = numbersArray.size();
             indices = new HashMap<>();
-            if (size % 2 != 0)
+            if (numbersArray.size() % 2 != 0)
             {
-                LOG.warn("Numbers array has odd size: {}", size);
+                LOG.warn("Numbers array has odd size: " + numbersArray.size());
             }
-            for (int i = 0; i + 1 < size; i += 2)
+            for (int i = 0; i + 1 < numbersArray.size(); i += 2)
             {
                 COSBase base = numbersArray.getObject(i);
                 if (!(base instanceof COSInteger))
                 {
-                    LOG.error("page labels ignored, index {} should be a number, but is {}", i,
-                            base);
+                    LOG.error("page labels ignored, index " + i + " should be a number, but is " + base);
                     return null;
                 }
                 COSInteger key = (COSInteger) base;
@@ -288,7 +275,7 @@ public class PDNumberTreeNode implements COSObjectable
     /**
      * Get the highest value for a key in the number map.
      *
-     * @return The highest value for a key in the map or null if missing.
+     * @return The highest value for a key in the map.
      */
     public Integer getUpperLimit()
     {
@@ -329,7 +316,7 @@ public class PDNumberTreeNode implements COSObjectable
     /**
      * Get the lowest value for a key in the number map.
      *
-     * @return The lowest value for a key in the map or null if missing.
+     * @return The lowest value for a key in the map.
      */
     public Integer getLowerLimit()
     {

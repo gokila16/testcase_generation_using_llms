@@ -17,7 +17,6 @@
 package org.apache.pdfbox.debugger.pagepane;
 
 import java.awt.Graphics2D;
-
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.debugger.PDFDebugger;
 import org.apache.pdfbox.debugger.ui.ImageUtil;
@@ -62,14 +61,13 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.debugger.ui.ErrorDialog;
 import org.apache.pdfbox.debugger.ui.HighResolutionImageIcon;
 import org.apache.pdfbox.debugger.ui.ImageTypeMenu;
 import org.apache.pdfbox.debugger.ui.RenderDestinationMenu;
 import org.apache.pdfbox.debugger.ui.TextDialog;
-import org.apache.pdfbox.debugger.ui.TextStripperMenu;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.fixup.AcroFormDefaultFixup;
 import org.apache.pdfbox.pdmodel.fixup.PDDocumentFixup;
@@ -94,7 +92,7 @@ import org.apache.pdfbox.text.PDFTextStripper;
  */
 public class PagePane implements ActionListener, AncestorListener, MouseMotionListener, MouseListener
 {
-    private static final Logger LOG = LogManager.getLogger(PagePane.class);
+    private static final Log LOG = LogFactory.getLog(PagePane.class);
     private final PDDocument document;
     private final JLabel statuslabel;
     private final PDPage page;
@@ -120,13 +118,6 @@ public class PagePane implements ActionListener, AncestorListener, MouseMotionLi
         pageIndex = document.getPages().indexOf(page);
         this.document = document;
         this.statuslabel = statuslabel;
-    }
-
-    /**
-     * Initialization, to be called immediately after construction.
-     */
-    public void init()
-    {
         initUI();
         initRectMap();
     }
@@ -223,7 +214,7 @@ public class PagePane implements ActionListener, AncestorListener, MouseMotionLi
                 // (checking widget.getPage() also works, but it is sometimes null)
                 if (dictionarySet.contains(widget.getCOSObject()) && widget.getRectangle() != null)
                 {
-                    rectMap.put(widget.getRectangle(), "Field name: " + field.getFullyQualifiedName() + ", value: " + field.getValueAsString());
+                    rectMap.put(widget.getRectangle(), "Field name: " + field.getFullyQualifiedName());
                 }
             }
         }
@@ -318,8 +309,6 @@ public class PagePane implements ActionListener, AncestorListener, MouseMotionLi
             PDFTextStripper stripper = new PDFTextStripper();
             stripper.setStartPage(pageIndex + 1);
             stripper.setEndPage(pageIndex + 1);
-            stripper.setSortByPosition(TextStripperMenu.isSorted());
-            stripper.setIgnoreContentStreamSpaceGlyphs(TextStripperMenu.isIgnoreSpaces());
             textDialog.setText(stripper.getText(document));
         }
         catch (IOException ex)
@@ -586,10 +575,10 @@ public class PagePane implements ActionListener, AncestorListener, MouseMotionLi
                 label.setIcon(new HighResolutionImageIcon(image, label.getWidth(), label.getHeight()));
                 label.setText(null);
             }
-            catch (InterruptedException | ExecutionException ex)
+            catch (InterruptedException | ExecutionException e)
             {
-                label.setText(ex.getMessage());
-                new ErrorDialog(ex).setVisible(true);
+                label.setText(e.getMessage());
+                throw new RuntimeException(e);
             }
         }
     }

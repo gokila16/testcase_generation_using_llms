@@ -28,6 +28,7 @@ import java.util.Set;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageTree;
@@ -294,7 +295,7 @@ public final class ExtractTTFFonts
                 try (OutputStream os = new FileOutputStream(name + ".ttf");
                      InputStream is = ff2Stream.createInputStream())
                 {
-                    is.transferTo(os);
+                    IOUtils.copy(is, os);
                 }
             }
         }

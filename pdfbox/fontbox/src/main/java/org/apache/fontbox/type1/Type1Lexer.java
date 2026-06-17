@@ -22,8 +22,9 @@ package org.apache.fontbox.type1;
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 /**
  * Lexer for the ASCII portions of an Adobe Type 1 font.
  *
@@ -47,7 +48,7 @@ class Type1Lexer
     /**
      * Log instance.
      */
-    private static final Logger LOG = LogManager.getLogger(Type1Lexer.class);
+    private static final Log LOG = LogFactory.getLog(Type1Lexer.class);
     
     private final ByteBuffer buffer;
     private Token aheadToken;
@@ -501,10 +502,6 @@ class Type1Lexer
      */
     private Token readCharString(int length) throws IOException
     {
-        if (length > buffer.array().length)
-        {
-            throw new IOException("String length " + length + " is larger than input");
-        }
         try
         {
             buffer.get(); // space

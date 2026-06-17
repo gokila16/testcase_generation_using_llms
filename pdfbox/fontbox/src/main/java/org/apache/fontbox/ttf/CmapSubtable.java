@@ -26,8 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 /**
  * A "cmap" subtable.
  * 
@@ -35,7 +36,7 @@ import org.apache.logging.log4j.LogManager;
  */
 public class CmapSubtable implements CmapLookup
 {
-    private static final Logger LOG = LogManager.getLogger(CmapSubtable.class);
+    private static final Log LOG = LogFactory.getLog(CmapSubtable.class);
 
     private static final long LEAD_OFFSET = 0xD800l - (0x10000 >> 10);
     private static final long SURROGATE_OFFSET = 0x10000l - (0xD800 << 10) - 0xDC00;
@@ -414,11 +415,11 @@ public class CmapSubtable implements CmapLookup
         {
             int start = startCount[i];
             int end = endCount[i];
+            int delta = idDelta[i];
+            int rangeOffset = idRangeOffset[i];
+            long segmentRangeOffset = idRangeOffsetPosition + (i * 2L) + rangeOffset;
             if (start != 65535 && end != 65535)
             {
-                int delta = idDelta[i];
-                int rangeOffset = idRangeOffset[i];
-                long segmentRangeOffset = idRangeOffsetPosition + (i * 2L) + rangeOffset;
                 for (int j = start; j <= end; j++)
                 {
                     if (rangeOffset == 0)
@@ -553,8 +554,7 @@ public class CmapSubtable implements CmapLookup
                 {
                     if (!maxLoggingReached && !logged.contains(p))
                     {
-                        LOG.warn("glyphId {} for charcode {} ignored, numGlyphs is {}", p, charCode,
-                                numGlyphs);
+                        LOG.warn("glyphId " + p + " for charcode " + charCode + " ignored, numGlyphs is " + numGlyphs);
                         logged.add(p);
                         if (logged.size() > 10)
                         {

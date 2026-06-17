@@ -18,7 +18,6 @@ package org.apache.pdfbox.pdmodel.interactive.form;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -51,7 +50,6 @@ import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
 import org.apache.pdfbox.pdmodel.interactive.annotation.PDAppearanceDictionary;
 import org.apache.pdfbox.pdmodel.interactive.annotation.PDAppearanceEntry;
 import org.apache.pdfbox.rendering.TestPDFToImage;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -123,7 +121,7 @@ class PDAcroFormTest
         if (!TestPDFToImage.doTestFile(file, IN_DIR.getAbsolutePath(), OUT_DIR.getAbsolutePath()))
         {
             // don't fail, rendering is different on different systems, result must be viewed manually
-            System.err.println("Rendering of " + file + " failed or is not identical to expected rendering in " + IN_DIR + " directory");
+            System.out.println("Rendering of " + file + " failed or is not identical to expected rendering in " + IN_DIR + " directory");
         }
         
     }
@@ -157,7 +155,7 @@ class PDAcroFormTest
         if (!TestPDFToImage.doTestFile(file, IN_DIR.getAbsolutePath(), OUT_DIR.getAbsolutePath()))
         {
             // don't fail, rendering is different on different systems, result must be viewed manually
-            System.err.println("Rendering of " + file + " failed or is not identical to expected rendering in " + IN_DIR + " directory");
+            System.out.println("Rendering of " + file + " failed or is not identical to expected rendering in " + IN_DIR + " directory");
         }
     }
     
@@ -343,8 +341,8 @@ class PDAcroFormTest
             assertNotNull(helv);
             assertNotNull(zadb);
             // make sure that font wasn't overwritten
-            assertInstanceOf(PDType1Font.class, helv);
-            assertInstanceOf(PDType1Font.class, zadb);
+            assertTrue(helv instanceof PDType1Font);
+            assertTrue(zadb instanceof PDType1Font);
             PDType1Font helvType1 = (PDType1Font) helv;
             PDType1Font zadbType1 = (PDType1Font) zadb;
             assertEquals(FontName.HELVETICA.getName(), helv.getName());

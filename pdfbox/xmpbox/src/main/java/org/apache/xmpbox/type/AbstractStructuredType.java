@@ -36,12 +36,29 @@ public abstract class AbstractStructuredType extends AbstractComplexProperty
 
     private String prefix;
 
-    protected AbstractStructuredType(XMPMetadata metadata)
+    public AbstractStructuredType(XMPMetadata metadata)
     {
         this(metadata, null, null, null);
     }
 
-    protected AbstractStructuredType(XMPMetadata metadata, String namespaceURI, String fieldPrefix, String propertyName)
+    public AbstractStructuredType(XMPMetadata metadata, String namespaceURI)
+    {
+        this(metadata, namespaceURI, null, null);
+        StructuredType st = this.getClass().getAnnotation(StructuredType.class);
+        if (st != null)
+        {
+            // init with annotation
+            this.namespace = st.namespace();
+            this.preferedPrefix = st.preferedPrefix();
+        }
+        else
+        {
+            throw new IllegalArgumentException(" StructuredType annotation cannot be null");
+        }
+        this.prefix = this.preferedPrefix;
+    }
+
+    public AbstractStructuredType(XMPMetadata metadata, String namespaceURI, String fieldPrefix, String propertyName)
     {
         super(metadata, propertyName);
         StructuredType st = this.getClass().getAnnotation(StructuredType.class);
@@ -70,7 +87,6 @@ public abstract class AbstractStructuredType extends AbstractComplexProperty
      * 
      * @return the namespace URI
      */
-    @Override
     public final String getNamespace()
     {
         return namespace;
@@ -86,7 +102,6 @@ public abstract class AbstractStructuredType extends AbstractComplexProperty
      * 
      * @return the prefix specified
      */
-    @Override
     public final String getPrefix()
     {
         return prefix;
@@ -111,12 +126,15 @@ public abstract class AbstractStructuredType extends AbstractComplexProperty
 
     protected String getPropertyValueAsString(String fieldName)
     {
-        AbstractField absProp = getProperty(fieldName);
-        if (absProp instanceof AbstractSimpleProperty)
+        AbstractSimpleProperty absProp = (AbstractSimpleProperty) getProperty(fieldName);
+        if (absProp == null)
         {
-            return ((AbstractSimpleProperty) absProp).getStringValue();
+            return null;
         }
-        return null;
+        else
+        {
+            return absProp.getStringValue();
+        }
     }
 
     protected Calendar getDatePropertyAsCalendar(String fieldName)

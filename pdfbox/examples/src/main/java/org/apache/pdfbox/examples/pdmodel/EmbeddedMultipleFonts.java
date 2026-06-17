@@ -146,7 +146,7 @@ public class EmbeddedMultipleFonts
             }
             if (!found)
             {
-                throw new IllegalArgumentException("Could not show '" + text.charAt(i)
+                throw new IllegalArgumentException("Could not show '" + text.substring(i, i + 1)
                         + "' with the fonts provided");
             }
         }

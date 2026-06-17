@@ -19,7 +19,6 @@ package org.apache.pdfbox.multipdf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -56,7 +55,7 @@ class PageExtractorTest
      * Test of extract method, of class org.apache.pdfbox.util.PageExtractor.
      */
     @Test
-    void testExtract() throws IOException
+    void testExtract() throws Exception
     {
         PDDocument sourcePdf = null;
         PDDocument result = null;

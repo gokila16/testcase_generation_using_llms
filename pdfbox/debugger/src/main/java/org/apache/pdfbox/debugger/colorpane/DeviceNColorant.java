@@ -32,7 +32,6 @@ public class DeviceNColorant
      */
     public DeviceNColorant()
     {
-        // do nothing
     }
 
     public String getName()

@@ -25,8 +25,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.pdmodel.PDResources;
 
 /**
@@ -41,7 +41,7 @@ public final class PDDeviceNAttributes
     /**
      * Log instance.
      */
-    private static final Logger LOG = LogManager.getLogger(PDDeviceNAttributes.class);
+    private static final Log LOG = LogFactory.getLog(PDDeviceNAttributes.class);
 
     private final COSDictionary dictionary;
 
@@ -95,6 +95,18 @@ public final class PDDeviceNAttributes
             }
         }
         return new COSDictionaryMap<>(actuals, colorants);
+    }
+
+    /**
+     * Returns a map of colorants and their associated Separation color space.
+     * @return map of colorants to color spaces, never null.
+     * @throws IOException If there is an error reading a color space
+     * @deprecated user {@link #getColorants(PDResources)}
+     */
+    @Deprecated
+    public Map<String, PDSeparation> getColorants() throws IOException
+    {
+        return getColorants(null);
     }
 
     /**

@@ -23,14 +23,15 @@ import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.nio.charset.StandardCharsets;
 import java.text.Bidi;
 import java.text.Normalizer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
@@ -40,8 +41,8 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.contentstream.operator.markedcontent.BeginMarkedContentSequence;
 import org.apache.pdfbox.contentstream.operator.markedcontent.BeginMarkedContentSequenceWithProperties;
 import org.apache.pdfbox.contentstream.operator.markedcontent.EndMarkedContentSequence;
@@ -71,7 +72,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
     private static float defaultIndentThreshold = 2.0f;
     private static float defaultDropThreshold = 2.5f;
 
-    private static final Logger LOG = LogManager.getLogger(PDFTextStripper.class);
+    private static final Log LOG = LogFactory.getLog(PDFTextStripper.class);
 
     // enable the ability to set the default indent/drop thresholds
     // with -D system properties:
@@ -167,14 +168,14 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      * The charactersByArticle is used to extract text by article divisions. For example a PDF that has two columns like
      * a newspaper, we want to extract the first column and then the second column. In this example the PDF would have 2
      * beads(or articles), one for each column. The size of the charactersByArticle would be 5, because not all text on
-     * the screen will fall into one of the articles. The five divisions are shown below:
-     * <ol>
-     * <li>Text before first article</li>
-     * <li>first article text</li>
-     * <li>text between first article and second article</li>
-     * <li>second article text</li>
-     * <li>text after second article</li>
-     * </ol>
+     * the screen will fall into one of the articles. The five divisions are shown below
+     *
+     * Text before first article
+     * first article text
+     * text between first article and second article
+     * second article text
+     * text after second article
+     *
      * Most PDFs won't have any beads, so charactersByArticle will contain a single entry.
      */
     protected ArrayList<List<TextPosition>> charactersByArticle = new ArrayList<>();
@@ -206,7 +207,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      * <p>IMPORTANT: By default, text extraction is done in the same sequence as the text in the PDF page content stream.
      * PDF is a graphic format, not a text format, and unlike HTML, it has no requirements that text one on page
      * be rendered in a certain order. The order is the one that was determined by the software that created the
-     * PDF. To get text sorted from left to right and top to bottom, use {@link #setSortByPosition(boolean)}.
+     * PDF. To get text sorted from left to right and top to botton, use {@link #setSortByPosition(boolean)}.
      * 
      * @param doc The document to get the text from.
      * @return The text of the PDF document.
@@ -519,7 +520,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
                 // a custom mergesort implementation (which is slower, unfortunately).
                 try
                 {
-                    textList.sort(comparator);
+                    Collections.sort(textList, comparator);
                 }
                 catch (IllegalArgumentException e)
                 {
@@ -1070,14 +1071,12 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      * This will set the first page to be extracted by this class.
      *
      * @param startPageValue New value of 1-based startPage property.
-     * 
-     * @throws IllegalArgumentException if the parameter is below 1.
      */
     public void setStartPage(int startPageValue)
     {
         if (startPageValue <= 0)
         {
-            throw new IllegalArgumentException("Parameter must be 1-based, but is " + startPageValue);
+            LOG.warn("Parameter must be 1-based, but is " + startPageValue);
         }
         startPage = startPageValue;
     }
@@ -1098,14 +1097,12 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      * This will set the last page to be extracted by this class.
      *
      * @param endPageValue New value of 1-based endPage property.
-     *
-     * @throws IllegalArgumentException if the parameter is below 1.
      */
     public void setEndPage(int endPageValue)
     {
         if (endPageValue <= 0)
         {
-            throw new IllegalArgumentException("Parameter must be 1-based, but is " + endPageValue);
+            LOG.warn("Parameter must be 1-based, but is " + endPageValue);
         }
         endPage = endPageValue;
     }
@@ -1194,7 +1191,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
     }
 
     /**
-     * By default the text stripper will attempt to remove text that overlaps each other. Word paints the same
+     * By default the text stripper will attempt to remove text that overlapps each other. Word paints the same
      * character several times in order to make it look bold. By setting this to false all text will be extracted, which
      * means that certain sections will be duplicated, but better performance will be noticed.
      *
@@ -1813,7 +1810,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
     {
         if (listOfPatterns == null)
         {
-            listOfPatterns = new ArrayList<>(LIST_ITEM_EXPRESSIONS.length);
+            listOfPatterns = new ArrayList<>();
             for (String expression : LIST_ITEM_EXPRESSIONS)
             {
                 Pattern p = Pattern.compile(expression);
@@ -1876,7 +1873,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      */
     private List<WordWithTextPositions> normalize(List<LineItem> line)
     {
-        List<WordWithTextPositions> normalized = new ArrayList<>();
+        List<WordWithTextPositions> normalized = new LinkedList<>();
         StringBuilder lineBuilder = new StringBuilder();
         List<TextPosition> wordPositions = new ArrayList<>();
 
@@ -1981,8 +1978,8 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
         }
         catch (IOException e)
         {
-            LOG.warn("Could not parse BidiMirroring.txt, mirroring char map will be empty: {}",
-                    e.getMessage(), e);
+            LOG.warn("Could not parse BidiMirroring.txt, mirroring char map will be empty: "
+                    + e.getMessage(), e);
         }
     }
 
@@ -1994,7 +1991,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      */
     private static void parseBidiFile(InputStream inputStream) throws IOException
     {
-        LineNumberReader rd = new LineNumberReader(new InputStreamReader(inputStream, StandardCharsets.US_ASCII));
+        LineNumberReader rd = new LineNumberReader(new InputStreamReader(inputStream));
 
         do
         {

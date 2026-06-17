@@ -16,8 +16,8 @@
  */
 package org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
@@ -30,19 +30,19 @@ import org.apache.pdfbox.pdmodel.common.PDDictionaryWrapper;
  */
 public abstract class PDOutlineNode extends PDDictionaryWrapper
 {
-    private static final Logger LOG = LogManager.getLogger(PDOutlineNode.class);
+    private static final Log LOG = LogFactory.getLog(PDOutlineNode.class);
 
     /**
      * Default Constructor.
      */
-    protected PDOutlineNode()
+    public PDOutlineNode()
     {
     }
 
     /**
      * @param dict The dictionary storage.
      */
-    protected PDOutlineNode(COSDictionary dict)
+    public PDOutlineNode(COSDictionary dict)
     {
         super(dict);
     }

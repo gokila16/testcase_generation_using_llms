@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.awt.image.BufferedImage;
@@ -37,11 +36,12 @@ import java.util.List;
 import java.util.Map;
 import javax.crypto.Cipher;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.io.RandomAccessRead;
 import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
@@ -59,6 +59,7 @@ import org.apache.pdfbox.pdmodel.encryption.StandardSecurityHandler;
 import org.apache.pdfbox.pdmodel.graphics.image.ValidateXImage;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.text.PDFTextStripper;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -80,7 +81,7 @@ class TestSymmetricKeyEncryption
     /**
      * Logger instance.
      */
-    private static final Logger LOG = LogManager.getLogger(TestSymmetricKeyEncryption.class);
+    private static final Log LOG = LogFactory.getLog(TestSymmetricKeyEncryption.class);
 
     private static final File TESTRESULTSDIR = new File("target/test-output/crypto");
 
@@ -205,10 +206,10 @@ class TestSymmetricKeyEncryption
     /**
      * Protect a document with a key and try to reopen it with that key and compare.
      *
-     * @throws IOException If there is an unexpected error during the test.
+     * @throws Exception If there is an unexpected error during the test.
      */
     @Test
-    void testProtection() throws IOException
+    void testProtection() throws Exception
     {
         String filename = "Acroform-PDFBOX-2333.pdf";
         byte[] inputFileAsByteArray = getFileResourceAsByteArray(filename);
@@ -289,10 +290,10 @@ class TestSymmetricKeyEncryption
      * Protect a document with an embedded PDF with a key and try to reopen it
      * with that key and compare.
      *
-     * @throws IOException If there is an unexpected error during the test.
+     * @throws Exception If there is an unexpected error during the test.
      */
     @Test
-    void testProtectionInnerAttachment() throws IOException
+    void testProtectionInnerAttachment() throws Exception
     {
         String testFileName = "preEnc_20141025_105451.pdf";
         byte[] inputFileWithEmbeddedFileAsByteArray = getFileResourceAsByteArray(testFileName);
@@ -395,7 +396,7 @@ class TestSymmetricKeyEncryption
             srcImgTab.add(pdfRenderer.renderImage(i));
             try (InputStream unfilteredStream = document.getPage(i).getContents())
             {
-                srcContentStreamTab.add(unfilteredStream.readAllBytes());
+                srcContentStreamTab.add(IOUtils.toByteArray(unfilteredStream));
             }
         }
 
@@ -413,7 +414,7 @@ class TestSymmetricKeyEncryption
                 // compare content streams
                 try (InputStream unfilteredStream = encryptedDoc.getPage(i).getContents())
                 {
-                    byte[] bytes = unfilteredStream.readAllBytes();
+                    byte[] bytes = IOUtils.toByteArray(unfilteredStream);
                     assertArrayEquals(srcContentStreamTab.get(i),bytes, "content stream of page " + i + " not identical");
                 }
             }
@@ -490,7 +491,7 @@ class TestSymmetricKeyEncryption
         Map<String, PDComplexFileSpecification> embeddedFileNames = embeddedFiles.getNames();
         assertEquals(1, embeddedFileNames.size());
         Map.Entry<String, PDComplexFileSpecification> entry = embeddedFileNames.entrySet().iterator().next();
-        LOG.info("Processing embedded file {}:", entry.getKey());
+        LOG.info("Processing embedded file " + entry.getKey() + ":");
         PDComplexFileSpecification complexFileSpec = entry.getValue();
         PDEmbeddedFile embeddedFile = complexFileSpec.getEmbeddedFile();
 
@@ -498,10 +499,10 @@ class TestSymmetricKeyEncryption
         try (FileOutputStream fos = new FileOutputStream(resultFile);
              InputStream is = embeddedFile.createInputStream())
         {
-            is.transferTo(fos);
+            IOUtils.copy(is, fos);
         }
 
-        LOG.info("  size: {}", embeddedFile.getSize());
+        LOG.info("  size: " + embeddedFile.getSize());
         assertEquals(embeddedFile.getSize(), resultFile.length());
 
         return resultFile;
@@ -535,10 +536,7 @@ class TestSymmetricKeyEncryption
 
     private byte[] getFileResourceAsByteArray(String testFileName) throws IOException
     {
-        try (InputStream is = TestSymmetricKeyEncryption.class.getResourceAsStream(testFileName))
-        {
-            return is.readAllBytes();
-        }
+        return IOUtils.toByteArray(TestSymmetricKeyEncryption.class.getResourceAsStream(testFileName));
     }
 
     private byte[] getFileAsByteArray(File f) throws IOException

@@ -158,7 +158,7 @@ public abstract class PDColorSpace implements COSObjectable
         else if (colorSpace instanceof COSArray)
         {
             COSArray array = (COSArray)colorSpace;
-            if (array.isEmpty())
+            if (array.size() == 0)
             {
                 throw new IOException("Colorspace array is empty");
             }
@@ -245,26 +245,20 @@ public abstract class PDColorSpace implements COSObjectable
             throws IOException
     {
         PDColorSpace cs;
-        if (resources != null)
+        if (resources != null && resources.getResourceCache() != null)
         {
             ResourceCache resourceCache = resources.getResourceCache();
-            if (resourceCache != null)
+            cs = resourceCache.getColorSpace(colorSpace);
+            if (cs != null)
             {
-                cs = resourceCache.getColorSpace(colorSpace);
-                if (cs != null)
-                {
-                    return cs;
-                }
-            }
-            cs = create(colorSpace.getObject(), resources);
-            if (resourceCache != null && cs != null)
-            {
-                resourceCache.put(colorSpace, cs);
+                return cs;
             }
         }
-        else
+        cs = create(colorSpace.getObject(), resources);
+        if (resources != null && resources.getResourceCache() != null && cs != null)
         {
-            cs = create(colorSpace.getObject());
+            ResourceCache resourceCache = resources.getResourceCache();
+            resourceCache.put(colorSpace, cs);
         }
         return cs;
     }

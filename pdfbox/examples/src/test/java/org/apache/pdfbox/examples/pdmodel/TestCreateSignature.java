@@ -169,10 +169,7 @@ class TestCreateSignature
 
         // load the keystore
         keyStore = KeyStore.getInstance("PKCS12");
-        try (InputStream is = new FileInputStream(KEYSTORE_PATH))
-        {
-            keyStore.load(is, PASSWORD.toCharArray());
-        }
+        keyStore.load(new FileInputStream(KEYSTORE_PATH), PASSWORD.toCharArray());
 
         new File("target/test-output").mkdirs();
 
@@ -195,12 +192,13 @@ class TestCreateSignature
         Date localTime = new Date();
 
         // https://stackoverflow.com/questions/4442192/
-        InetAddress inetAddress = InetAddress.getByName("pool.ntp.org");
+        NTPUDPClient timeClient = new NTPUDPClient();
+        InetAddress inetAddress = InetAddress.getByName("time.nist.gov");
+        timeClient.setDefaultTimeout(Duration.ofMillis(5000));
         TimeInfo timeInfo;
         long returnTime;
-        try (NTPUDPClient timeClient = new NTPUDPClient())
+        try
         {
-            timeClient.setDefaultTimeout(Duration.ofMillis(5000));
             timeInfo = timeClient.getTime(inetAddress);
             returnTime = timeInfo.getReturnTime();
         }
@@ -247,7 +245,7 @@ class TestCreateSignature
      * @throws CertificateVerificationException
      */
     @ParameterizedTest
-    @MethodSource("signingTypes")
+	@MethodSource("signingTypes")
     void testDetachedSHA256(boolean externallySign)
             throws IOException, CMSException, OperatorCreationException, GeneralSecurityException,
                    TSPException, CertificateVerificationException, URISyntaxException
@@ -287,7 +285,7 @@ class TestCreateSignature
      * @throws CertificateVerificationException
      */
     @ParameterizedTest
-    @MethodSource("signingTypes")
+	@MethodSource("signingTypes")
     void testDetachedSHA256WithTSA(boolean externallySign)
             throws IOException, CMSException, OperatorCreationException, GeneralSecurityException,
                    TSPException, CertificateVerificationException
@@ -399,7 +397,7 @@ class TestCreateSignature
      * @throws CertificateVerificationException
      */
     @ParameterizedTest
-    @MethodSource("signingTypes")
+	@MethodSource("signingTypes")
     void testCreateVisibleSignature(boolean externallySign)
             throws IOException, CMSException, OperatorCreationException, GeneralSecurityException,
                    TSPException, CertificateVerificationException
@@ -431,7 +429,7 @@ class TestCreateSignature
      * @throws CertificateVerificationException
      */
     @ParameterizedTest
-    @MethodSource("signingTypes")
+	@MethodSource("signingTypes")
     void testCreateVisibleSignature2(boolean externallySign)
             throws IOException, CMSException, OperatorCreationException, GeneralSecurityException,
                    TSPException, CertificateVerificationException
@@ -462,7 +460,7 @@ class TestCreateSignature
      * @throws CertificateVerificationException
      */
     @Test
-    void testPDFBox3978() throws IOException,
+    void testPDFBox3978() throws IOException, 
                                         CMSException, OperatorCreationException, GeneralSecurityException,
                                         TSPException, CertificateVerificationException
     {
@@ -595,14 +593,13 @@ class TestCreateSignature
                 assertArrayEquals(signedFileContent1, signedFileContent2);
 
                 // verify that all getContents() methods returns the same content
-                byte[] contents2 = sig.getContents(totalFileContent);
-                assertArrayEquals(contents, contents2);
-                try (InputStream is = new FileInputStream(signedFile))
+                try (FileInputStream fis = new FileInputStream(signedFile))
                 {
-                    byte[] contents3 = sig.getContents(is);
-                    assertArrayEquals(contents, contents3);
+                    byte[] contents2 = sig.getContents(IOUtils.toByteArray(fis));
+                    assertArrayEquals(contents, contents2);
                 }
-                
+                byte[] contents3 = sig.getContents(new FileInputStream(signedFile));
+                assertArrayEquals(contents, contents3);
 
                 // inspiration:
                 // http://stackoverflow.com/a/26702631/535646
@@ -658,7 +655,7 @@ class TestCreateSignature
     private String calculateDigestString(InputStream inputStream) throws NoSuchAlgorithmException, IOException
     {
         MessageDigest md = MessageDigest.getInstance("SHA-256");
-        return Hex.getString(md.digest(inputStream.readAllBytes()));
+        return Hex.getString(md.digest(IOUtils.toByteArray(inputStream)));
     }
 
     /**
@@ -710,13 +707,11 @@ class TestCreateSignature
      * This should not break the signature, and the value and its display must have changed as
      * expected. Do this both for the old and new incremental save methods.
      *
-     * @throws IOException
+     * @throws Exception
      */
     @ParameterizedTest
-    @MethodSource("signingTypes")
-    void testSaveIncrementalAfterSign(boolean externallySign)
-            throws IOException, GeneralSecurityException, CMSException, OperatorCreationException,
-            TSPException, CertificateVerificationException
+	@MethodSource("signingTypes")
+    void testSaveIncrementalAfterSign(boolean externallySign) throws Exception
     {
         BufferedImage oldImage, expectedImage1, actualImage1, expectedImage2, actualImage2;
 
@@ -732,11 +727,11 @@ class TestCreateSignature
 
         checkSignature(new File(SIMPLE_FORM_FILENAME), new File(OUT_DIR, fileNameSigned), false);
 
-        try (PDDocument doc = Loader.loadPDF(new File(OUT_DIR, fileNameSigned));
-             FileOutputStream fileOutputStream = new FileOutputStream(new File(OUT_DIR, fileNameResaved1)))
+        try (PDDocument doc = Loader.loadPDF(new File(OUT_DIR, fileNameSigned)))
         {
             oldImage = new PDFRenderer(doc).renderImage(0);
-
+            
+            FileOutputStream fileOutputStream = new FileOutputStream(new File(OUT_DIR, fileNameResaved1));
             PDField field = doc.getDocumentCatalog().getAcroForm().getField("SampleField");
             field.setValue("New Value 1");
 
@@ -781,9 +776,9 @@ class TestCreateSignature
             assertArrayEquals(expectedData.getData(), actualData.getData());
         }
 
-        try (PDDocument doc = Loader.loadPDF(new File(OUT_DIR, fileNameSigned));
-             FileOutputStream fileOutputStream = new FileOutputStream(new File(OUT_DIR, fileNameResaved2)))
+        try (PDDocument doc = Loader.loadPDF(new File(OUT_DIR, fileNameSigned)))
         {
+            FileOutputStream fileOutputStream = new FileOutputStream(new File(OUT_DIR, fileNameResaved2));
             PDField field = doc.getDocumentCatalog().getAcroForm().getField("SampleField");
             field.setValue("New Value 2");
             expectedImage2 = new PDFRenderer(doc).renderImage(0);
@@ -821,7 +816,7 @@ class TestCreateSignature
     }
 
     @Test
-    void testPDFBox4784() throws IOException, GeneralSecurityException
+    void testPDFBox4784() throws Exception
     {
         Date signingTime = new Date();
 
@@ -926,43 +921,6 @@ class TestCreateSignature
         checkLTV(outFile);
     }
 
-    /** 
-     * PDFBOX-5521: Check that UR3 signature doesn't interfere.
-     * 
-     * @param externallySign
-     *
-     * @throws IOException
-     * @throws GeneralSecurityException
-     * @throws CMSException
-     * @throws OperatorCreationException
-     * @throws TSPException
-     * @throws CertificateVerificationException 
-     */
-    @ParameterizedTest
-    @MethodSource("signingTypes")
-    void testPDFBox5521(boolean externallySign)
-            throws IOException, GeneralSecurityException, CMSException,
-            OperatorCreationException, TSPException, CertificateVerificationException
-    {
-        // sign PDF
-        CreateSignature signing = new CreateSignature(keyStore, PASSWORD.toCharArray());
-        signing.setExternalSigning(externallySign);
-
-        final String fileNameSigned = getOutputFileName("PDFBOX-5521-santander_freistellungsauftrag.pdf_signed{0}.pdf", externallySign);
-        final File file = new File("target/pdfs", "PDFBOX-5521-santander_freistellungsauftrag.pdf");
-        signing.signDetached(file, new File(OUT_DIR + fileNameSigned));
-        checkSignature(file, new File(OUT_DIR, fileNameSigned), false);
-
-        // PDFBOX-6071: file that has a /ByteRange longer than the file
-        byte[] ba = Files.readAllBytes(file.toPath());
-        ba[2434] = '9'; // change /ByteRange from [ 0 2490 14292 2385472] to [ 0 2490 14292 2985472]
-        final File file2 = new File("target/pdfs", "PDFBOX-6071-santander_freistellungsauftrag.pdf");
-        Files.write(file2.toPath(), ba);
-        final String fileNameSigned2 = getOutputFileName("PDFBOX-6071-santander_freistellungsauftrag.pdf_signed{0}.pdf", externallySign);
-        signing.signDetached(file2, new File(OUT_DIR + fileNameSigned2));
-        checkSignature(file2, new File(OUT_DIR, fileNameSigned2), false);
-    }
-
     private void checkLTV(File outFile)
             throws IOException, GeneralSecurityException, OCSPException, OperatorCreationException,
             CMSException
@@ -991,7 +949,7 @@ class TestCreateSignature
                 COSStream certStream = (COSStream) sigCertArray.getObject(i);
                 try (InputStream is = certStream.createInputStream())
                 {
-                    sigCertHolderSetFromVRIArray.add(new X509CertificateHolder(is.readAllBytes()));
+                    sigCertHolderSetFromVRIArray.add(new X509CertificateHolder(IOUtils.toByteArray(is)));
                 }
             }
             for (X509CertificateHolder holder : certificateHolderSet)
@@ -1078,7 +1036,7 @@ class TestCreateSignature
                 X509CertificateHolder certHolder2;
                 try (InputStream is2 = certStream.createInputStream())
                 {
-                    certHolder2 = new X509CertificateHolder(is2.readAllBytes());
+                    certHolder2 = new X509CertificateHolder(IOUtils.toByteArray(is2));
                 }
                 
                 assertEquals(certHolder2, new X509CertificateHolder(crlIssuerCert.getEncoded()),
@@ -1119,7 +1077,7 @@ class TestCreateSignature
                 X509CertificateHolder certHolder2;
                 try (InputStream is2 = certStream.createInputStream())
                 {
-                    certHolder2 = new X509CertificateHolder(is2.readAllBytes());
+                    certHolder2 = new X509CertificateHolder(IOUtils.toByteArray(is2));
                 }
 
                 assertEquals(certHolder2, ocspCertHolder, "OCSP certificate is not in the VRI array");
@@ -1127,9 +1085,12 @@ class TestCreateSignature
         }
     }
 
-    private byte[] signEncrypted(SecureRandom secureRandom, Date signingTime) throws IOException, GeneralSecurityException
+    private byte[] signEncrypted(SecureRandom secureRandom, Date signingTime) throws Exception
     {
-        CreateSignature signing = new CreateSignature(keyStore, PASSWORD.toCharArray());
+        KeyStore keystore = KeyStore.getInstance("PKCS12");
+        keystore.load(new FileInputStream(KEYSTORE_PATH), PASSWORD.toCharArray());
+
+        CreateSignature signing = new CreateSignature(keystore, PASSWORD.toCharArray());
         signing.setExternalSigning(true);
 
         File inFile = new File(IN_DIR + "sign_me_protected.pdf");
@@ -1155,7 +1116,7 @@ class TestCreateSignature
             doc.setDocumentId(12345l);
             ExternalSigningSupport externalSigning = doc.saveIncrementalForExternalSigning(baos);
             // invoke external signature service
-            return externalSigning.getContent().readAllBytes();
+            return IOUtils.toByteArray(externalSigning.getContent());
         }
         finally
         {

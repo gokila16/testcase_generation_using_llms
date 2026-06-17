@@ -22,8 +22,6 @@ import org.apache.pdfbox.cos.COSFloat;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSNumber;
 import java.io.IOException;
-import java.util.Objects;
-import org.apache.pdfbox.cos.COSDictionary;
 
 /**
  * This class represents a Type 2 (exponential interpolation) function in a PDF
@@ -56,17 +54,32 @@ public class PDFunctionType2 extends PDFunction
     {
         super(function);
 
-        COSDictionary cosObject = getCOSObject();
-        c0 = Objects.requireNonNullElseGet(cosObject.getCOSArray(COSName.C0), COSArray::new);
-        if (c0.isEmpty())
+        COSArray cosArray0 = getCOSObject().getCOSArray(COSName.C0);
+        if (cosArray0 != null)
         {
-            c0.add(COSFloat.ZERO);
+            c0 = cosArray0;
+        }
+        else
+        {
+            c0 = new COSArray();
+        }
+        if (c0.size() == 0)
+        {
+            c0.add(new COSFloat(0));
         }
 
-        c1 = Objects.requireNonNullElseGet(cosObject.getCOSArray(COSName.C1), COSArray::new);
-        if (c1.isEmpty())
+        COSArray cosArray1 = getCOSObject().getCOSArray(COSName.C1);
+        if (cosArray1 != null)
         {
-            c1.add(COSFloat.ONE);
+            c1 = cosArray1;
+        }
+        else
+        {
+            c1 = new COSArray();
+        }
+        if (c1.size() == 0)
+        {
+            c1.add(new COSFloat(1));
         }
 
         exponent = getCOSObject().getFloat(COSName.N);
@@ -92,7 +105,7 @@ public class PDFunctionType2 extends PDFunction
         // exponential interpolation
         float xToN = (float) Math.pow(input[0], exponent); // x^exponent
 
-        float[] result = new float[Math.min(c0.size(), c1.size())];
+        float[] result = new float[Math.min(c0.size(),c1.size())];
         for (int j = 0; j < result.length; j++)
         {
             float c0j = ((COSNumber) c0.get(j)).floatValue();

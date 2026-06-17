@@ -30,8 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
@@ -90,7 +90,7 @@ public class PDFMergerUtility
     /**
      * Log instance.
      */
-    private static final Logger LOG = LogManager.getLogger(PDFMergerUtility.class);
+    private static final Log LOG = LogFactory.getLog(PDFMergerUtility.class);
 
     private final List<Object> sources;
     private String destinationFileName;
@@ -542,7 +542,7 @@ public class PDFMergerUtility
         mergeAcroForm(cloner, destCatalog, srcCatalog);
 
         COSArray destThreads = destCatalog.getCOSObject().getCOSArray(COSName.THREADS);
-        COSArray srcThreads = cloner.cloneForNewDocument(destCatalog.getCOSObject().getCOSArray(
+        COSArray srcThreads = (COSArray) cloner.cloneForNewDocument(destCatalog.getCOSObject().getDictionaryObject(
                 COSName.THREADS));
         if (destThreads == null)
         {
@@ -603,15 +603,9 @@ public class PDFMergerUtility
             else
             {
                 // search last sibling for dest, because /Last entry is sometimes wrong
-                Set<COSDictionary> visited = new HashSet<>();
                 PDOutlineItem destLastOutlineItem = destOutline.getFirstChild();
                 while (true)
                 {
-                    if (!visited.add(destLastOutlineItem.getCOSObject()))
-                    {
-                        LOG.warn("Outline ignored:  {}", destLastOutlineItem.getCOSObject());
-                        break; // Cycle detected
-                    }
                     PDOutlineItem outlineItem = destLastOutlineItem.getNextSibling();
                     if (outlineItem == null)
                     {
@@ -655,9 +649,9 @@ public class PDFMergerUtility
             }
             else
             {
-                destNums = destLabels.getCOSArray(COSName.NUMS);
+                destNums = (COSArray) destLabels.getDictionaryObject(COSName.NUMS);
             }
-            COSArray srcNums = srcLabels.getCOSArray(COSName.NUMS);
+            COSArray srcNums = (COSArray) srcLabels.getDictionaryObject(COSName.NUMS);
             if (srcNums != null)
             {
                 int startSize = destNums.size();
@@ -666,8 +660,7 @@ public class PDFMergerUtility
                     COSBase base = srcNums.getObject(i);
                     if (!(base instanceof COSNumber))
                     {
-                        LOG.error("page labels ignored, index {} should be a number, but is {}", i,
-                                base);
+                        LOG.error("page labels ignored, index " + i + " should be a number, but is " + base);
                         // remove what we added
                         while (destNums.size() > startSize)
                         {
@@ -987,7 +980,7 @@ public class PDFMergerUtility
             srcKArray.add(clonedSrcKEntry);
         }
 
-        if (srcKArray.isEmpty())
+        if (srcKArray.size() == 0)
         {
             return;
         }
@@ -1025,7 +1018,7 @@ public class PDFMergerUtility
             }
         }
 
-        if (dstKArray.isEmpty())
+        if (dstKArray.size() == 0)
         {
             updateParentEntry(srcKArray, destStructTree.getCOSObject(), null);
             destStructTree.setK(srcKArray);
@@ -1111,7 +1104,7 @@ public class PDFMergerUtility
         {
             if (destNames.containsKey(entry.getKey()))
             {
-                LOG.warn("key '{}' already exists in destination IDTree", entry.getKey());
+                LOG.warn("key '" + entry.getKey() + "' already exists in destination IDTree");
             }
             else
             {
@@ -1216,7 +1209,7 @@ public class PDFMergerUtility
             }
             if (destDict.containsKey(entry.getKey()))
             {
-                LOG.warn("key '{}' already exists in destination RoleMap", entry.getKey().getName());
+                LOG.warn("key '" + entry.getKey() + "' already exists in destination RoleMap");
             }
             else
             {
@@ -1357,7 +1350,7 @@ public class PDFMergerUtility
                 boolean skip = false;
                 for (PDOutputIntent dstOI : dstOutputIntents)
                 {
-                    if (srcOCI.equals(dstOI.getOutputConditionIdentifier()))
+                    if (dstOI.getOutputConditionIdentifier().equals(srcOCI))
                     {
                         skip = true;
                         break;
@@ -1453,21 +1446,18 @@ public class PDFMergerUtility
                 COSBase item = parentTreeEntry.getItem(COSName.OBJ);
                 if (item instanceof COSObject)
                 {
-                    LOG.debug(
-                            "clone potential orphan object in structure tree: {}, Type: {}, Subtype: {}, T: {}",
-                            () -> item,
-                            () -> objDict.getNameAsString(COSName.TYPE),
-                            () -> objDict.getNameAsString(COSName.SUBTYPE),
-                            () -> objDict.getNameAsString(COSName.T));
+                    LOG.debug("clone potential orphan object in structure tree: " + item +
+                            ", Type: " + objDict.getNameAsString(COSName.TYPE) +
+                            ", Subtype: " + objDict.getNameAsString(COSName.SUBTYPE) +
+                            ", T: " + objDict.getNameAsString(COSName.T));
                 }
                 else
                 {
                     // don't display in full because of stack overflow
-                    LOG.debug(
-                            "clone potential orphan object in structure tree, Type: {}, Subtype: {}, T: {}",
-                            () -> objDict.getNameAsString(COSName.TYPE),
-                            () -> objDict.getNameAsString(COSName.SUBTYPE),
-                            () -> objDict.getNameAsString(COSName.T));
+                    LOG.debug("clone potential orphan object in structure tree" +
+                            ", Type: " + objDict.getNameAsString(COSName.TYPE) +
+                            ", Subtype: " + objDict.getNameAsString(COSName.SUBTYPE) +
+                            ", T: " + objDict.getNameAsString(COSName.T));
                 }
                 parentTreeEntry.setItem(COSName.OBJ, cloner.cloneForNewDocument(objDict));
             }

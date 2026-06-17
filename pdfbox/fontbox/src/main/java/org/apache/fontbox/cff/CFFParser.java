@@ -26,9 +26,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
-
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.fontbox.ttf.FontHeaders;
 import org.apache.pdfbox.io.RandomAccessRead;
 
@@ -42,7 +41,7 @@ public class CFFParser
     /**
      * Log instance.
      */
-    private static final Logger LOG = LogManager.getLogger(CFFParser.class);
+    private static final Log LOG = LogFactory.getLog(CFFParser.class);
 
     private static final String TAG_OTTO = "OTTO";
     private static final String TAG_TTCF = "ttcf";
@@ -69,10 +68,50 @@ public class CFFParser
     }
 
     /**
+     * Parse CFF font using byte array, also passing in a byte source for future use.
+     * 
+     * @param bytes source bytes
+     * @param source source to re-read bytes from in the future
+     * @return the parsed CFF fonts
+     * @throws IOException If there is an error reading from the stream
+     */
+    public List<CFFFont> parse(byte[] bytes, ByteSource source) throws IOException
+    {
+        // TODO do we need to store the source data of the font? It isn't used at all
+        this.source = source;
+        return parse(new DataInputByteArray(bytes));
+    }
+    
+    /**
+     * Parse CFF font using a RandomAccessRead as input.
+     * 
+     * @param randomAccessRead the source to be parsed
+     * @return the parsed CFF fonts
+     * @throws IOException If there is an error reading from the stream
+     */
+    public List<CFFFont> parse(RandomAccessRead randomAccessRead) throws IOException
+    {
+        // TODO do we need to store the source data of the font? It isn't used at all
+        byte[] bytes = new byte[(int) randomAccessRead.length()];
+        randomAccessRead.seek(0);
+        int remainingBytes = bytes.length;
+        int amountRead;
+        while ((amountRead = randomAccessRead.read(bytes, bytes.length - remainingBytes,
+                remainingBytes)) > 0)
+        {
+            remainingBytes -= amountRead;
+        }
+        randomAccessRead.seek(0);
+        this.source = new CFFBytesource(bytes);
+        return parse(new DataInputRandomAccessRead(randomAccessRead));
+    }
+
+    /**
      * Extract "Registry", "Ordering" and "Supplement" properties from the first CFF subfont.
      * 
      * @param randomAccessRead the source to be parsed
      * @param outHeaders where to put results
+     *
      * @throws IOException If there is an error reading from the stream
      */
     public void parseFirstSubFontROS(RandomAccessRead randomAccessRead, FontHeaders outHeaders) throws IOException
@@ -122,45 +161,6 @@ public class CFFParser
         }
     }
 
-    /**
-     * Parse CFF font using byte array, also passing in a byte source for future use.
-     * 
-     * @param bytes source bytes
-     * @param source source to re-read bytes from in the future
-     * @return the parsed CFF fonts
-     * @throws IOException If there is an error reading from the stream
-     */
-    public List<CFFFont> parse(byte[] bytes, ByteSource source) throws IOException
-    {
-        // TODO do we need to store the source data of the font? It isn't used at all
-        this.source = source;
-        return parse(new DataInputByteArray(bytes));
-    }
-    
-    /**
-     * Parse CFF font using a RandomAccessRead as input.
-     * 
-     * @param randomAccessRead the source to be parsed
-     * @return the parsed CFF fonts
-     * @throws IOException If there is an error reading from the stream
-     */
-    public List<CFFFont> parse(RandomAccessRead randomAccessRead) throws IOException
-    {
-        // TODO do we need to store the source data of the font? It isn't used at all
-        byte[] bytes = new byte[(int) randomAccessRead.length()];
-        randomAccessRead.seek(0);
-        int remainingBytes = bytes.length;
-        int amountRead;
-        while ((amountRead = randomAccessRead.read(bytes, bytes.length - remainingBytes,
-                remainingBytes)) > 0)
-        {
-            remainingBytes -= amountRead;
-        }
-        randomAccessRead.seek(0);
-        this.source = new CFFBytesource(bytes);
-        return parse(new DataInputRandomAccessRead(randomAccessRead));
-    }
-
     private DataInput skipHeader(DataInput input) throws IOException
     {
         String firstTag = readTagName(input);
@@ -188,7 +188,7 @@ public class CFFParser
      * Parse CFF font using a DataInput as input.
      * 
      * @param input the source to be parsed
-     * @return the parsed CFF fonts
+     * 
      * @throws IOException If there is an error reading from the stream
      */
     private List<CFFFont> parse(DataInput input) throws IOException
@@ -473,7 +473,7 @@ public class CFFParser
                 case 0xb:
                     if (hasExponent)
                     {
-                        LOG.warn("duplicate 'E' ignored after {}", sb);
+                        LOG.warn("duplicate 'E' ignored after " + sb);
                         break;
                     }
                     sb.append('E');
@@ -483,7 +483,7 @@ public class CFFParser
                 case 0xc:
                     if (hasExponent)
                     {
-                        LOG.warn("duplicate 'E-' ignored after {}", sb);
+                        LOG.warn("duplicate 'E-' ignored after " + sb);
                         break;
                     }
                     sb.append("E-");
@@ -560,7 +560,6 @@ public class CFFParser
             throw new IOException("Synthetic Fonts are not supported");
         }
 
-        // determine if this is a Type 1-equivalent font or a CIDFont
         CFFFont font;
         CFFCIDFont cffCIDFont = parseROS(topDict);
         // determine if this is a Type 1-equivalent font or a CIDFont
@@ -591,12 +590,12 @@ public class CFFParser
         font.addValueToTopDict("UnderlineThickness", topDict.getNumber("UnderlineThickness", 50));
         font.addValueToTopDict("PaintType", topDict.getNumber("PaintType", 0));
         font.addValueToTopDict("CharstringType", topDict.getNumber("CharstringType", 2));
-        font.addValueToTopDict("FontMatrix", topDict.getArray("FontMatrix", List.of(
-                                                      0.001, 0.0, 0.0, 0.001,
-                                                      0.0, 0.0)));
+        font.addValueToTopDict("FontMatrix", topDict.getArray("FontMatrix", Arrays.<Number>asList(
+                                                      0.001, (double) 0, (double) 0, 0.001,
+                                                      (double) 0, (double) 0)));
         font.addValueToTopDict("UniqueID", topDict.getNumber("UniqueID", null));
         font.addValueToTopDict("FontBBox", topDict.getArray("FontBBox",
-                                                    List.of(0, 0, 0, 0)));
+                                                    Arrays.<Number> asList(0, 0, 0, 0)));
         font.addValueToTopDict("StrokeWidth", topDict.getNumber("StrokeWidth", 0));
         font.addValueToTopDict("XUID", topDict.getArray("XUID", null));
 
@@ -674,13 +673,13 @@ public class CFFParser
 
             parseCIDFontDicts(input, topDict, (CFFCIDFont) font, numEntries);
 
-            List<Map<String, Object>> fontDicts = ((CFFCIDFont) font).getFontDicts();
             List<Number> privMatrix = null;
-            if (!fontDicts.isEmpty())
+            List<Map<String, Object>> fontDicts = ((CFFCIDFont) font).getFontDicts();
+            if (!fontDicts.isEmpty() && fontDicts.get(0).containsKey("FontMatrix"))
             {
-                privMatrix = (List<Number>) fontDicts.get(0).getOrDefault("FontMatrix", null);
+                privMatrix = (List<Number>) fontDicts.get(0).get("FontMatrix");
             }
-            // some malformed fonts have FontMatrix in their Font DICT, seePDFBOX-2495
+            // some malformed fonts have FontMatrix in their Font DICT, see PDFBOX-2495
             List<Number> matrix = topDict.getArray("FontMatrix", null);
             if (matrix == null)
             {
@@ -692,7 +691,7 @@ public class CFFParser
                 {
                     // default
                     font.addValueToTopDict("FontMatrix", topDict.getArray("FontMatrix",
-                            List.of(0.001, 0.0, 0.0, 0.001, 0.0, 0.0)));
+                            Arrays.<Number> asList(0.001, 0.0, 0.0, 0.001, 0.0, 0.0)));
                 }
             }
             else if (privMatrix != null)
@@ -994,14 +993,13 @@ public class CFFParser
             throws IOException
     {
         int nSups = dataInput.readUnsignedByte();
-        CFFBuiltInEncoding.Supplement[] supplement = new CFFBuiltInEncoding.Supplement[nSups];
-        encoding.supplement = supplement;
+        encoding.supplement = new CFFBuiltInEncoding.Supplement[nSups];
         for (int i = 0; i < nSups; i++)
         {
             int code = dataInput.readUnsignedByte();
             int sid = dataInput.readUnsignedShort();
-            supplement[i] = new CFFBuiltInEncoding.Supplement(code, sid, readString(sid));
-            encoding.add(supplement[i]);
+            encoding.supplement[i] = new CFFBuiltInEncoding.Supplement(code, sid, readString(sid));
+            encoding.add(encoding.supplement[i]);
         }
     }
 
@@ -1389,7 +1387,7 @@ public class CFFParser
                             break;
                     }
                 }
-                LOG.warn("Expected boolean, got {}, returning default {}", operand, defaultValue);
+                LOG.warn("Expected boolean, got " + operand + ", returning default " + defaultValue);
                 return defaultValue;
             }
 

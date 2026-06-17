@@ -191,7 +191,7 @@ public class RandomAccessReadView implements RandomAccessRead
     }
 
     /**
-     * Ensure that the view isn't closed.
+     * Ensure that that the view isn't closed.
      * 
      * @throws IOException If RandomAccessReadView already closed
      */

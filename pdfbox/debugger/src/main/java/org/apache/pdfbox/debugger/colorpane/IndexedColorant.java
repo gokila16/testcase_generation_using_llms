@@ -30,10 +30,7 @@ public class IndexedColorant
     /**
      * Constructor.
      */
-    public IndexedColorant()
-    {
-        // do nothing
-    }
+    public IndexedColorant(){}
 
     public int getIndex()
     {

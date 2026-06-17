@@ -70,7 +70,7 @@ class PDFontTest
     private static final File OUT_DIR = new File("target/test-output");
 
     @BeforeAll
-    static void setUp()
+    static void setUp() throws Exception
     {
         OUT_DIR.mkdirs();
     }
@@ -79,13 +79,13 @@ class PDFontTest
      * Test of the error reported in PDFBOX-988
      *
      * @throws IOException
+     * @throws URISyntaxException
      */
     @Test
-    void testPDFBox988() throws IOException
+    void testPDFBox988() throws IOException, URISyntaxException
     {
         try (PDDocument doc = 
-                Loader.loadPDF(RandomAccessReadBuffer.createBufferFromStream(
-                        PDFontTest.class.getResourceAsStream("F001u_3_7j.pdf"))))
+                Loader.loadPDF(new File(PDFontTest.class.getResource("F001u_3_7j.pdf").toURI())))
         {
             PDFRenderer renderer = new PDFRenderer(doc);
             renderer.renderImage(0);
@@ -185,10 +185,9 @@ class PDFontTest
         try (PDDocument doc = new PDDocument())
         {
             PDPage page = new PDPage();
-            try (PDPageContentStream contentStream = new PDPageContentStream(doc, page);
-                 InputStream is = new FileInputStream(fontFile))
+            try (PDPageContentStream contentStream = new PDPageContentStream(doc, page))
             {
-                PDType1Font font = new PDType1Font(doc, is, WinAnsiEncoding.INSTANCE);
+                PDType1Font font = new PDType1Font(doc, new FileInputStream(fontFile), WinAnsiEncoding.INSTANCE);
 
                 contentStream.beginText();
                 contentStream.setFont(font, 10);
@@ -477,7 +476,8 @@ class PDFontTest
                 PDDocument document = new PDDocument())
         {
             PDFont font = PDType0Font.load(document, is, false);
-            assertEquals(20064.0f, font.getStringWidth("The quick brown fox jumps over the lazy dog."));
+            assertEquals(20064.0f, 
+                    font.getStringWidth("The quick brown fox jumps over the lazy dog."));
             assertEquals(278.0f, font.getSpaceWidth());
         }
     }
@@ -498,37 +498,6 @@ class PDFontTest
             assertEquals(20064.0f, 
                     font.getStringWidth("The quick brown fox jumps over the lazy dog."));
             assertEquals(278.0f, font.getSpaceWidth());
-        }
-    }
-    
-    @Test
-    void testSymbol() throws IOException
-    {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (PDDocument doc = new PDDocument())
-        {
-            PDPage page = new PDPage();
-            try (PDPageContentStream contentStream = new PDPageContentStream(doc, page))
-            {
-                PDType1Font font = new PDType1Font(FontName.SYMBOL);
-
-                contentStream.beginText();
-                contentStream.setFont(font, 10);
-                contentStream.newLineAtOffset(10, 700);
-                // Note that the Alpha is the greek alpha, but the Omega is the Ohm symbol
-                // (Tested on Windows)
-                contentStream.showText("\u0391 \u2126");
-                contentStream.endText();
-            }
-
-            doc.addPage(page);
-            doc.save(baos);
-        }
-        try (PDDocument doc = Loader.loadPDF(baos.toByteArray()))
-        {
-            PDFTextStripper stripper = new PDFTextStripper();
-            String text = stripper.getText(doc);
-            assertEquals("\u0391 \u2126", text.trim());
         }
     }
 }

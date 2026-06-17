@@ -98,10 +98,6 @@ public class PDMarkedContentReference implements COSObjectable
      */
     public void setMCID(int mcid)
     {
-        if (mcid < 0)
-        {
-            throw new IllegalArgumentException("MCID is negative");
-        }
         this.getCOSObject().setInt(COSName.MCID, mcid);
     }
 

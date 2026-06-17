@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.io.IOUtils;
 
 /**
  * The IdentityFilter filter passes the data through without any modifications.
@@ -34,7 +35,7 @@ final class IdentityFilter extends Filter
                                          COSDictionary parameters, int index)
         throws IOException
     {
-        encoded.transferTo(decoded);
+        IOUtils.copy(encoded, decoded);
         decoded.flush();
         return new DecodeResult(parameters);
     }
@@ -43,7 +44,7 @@ final class IdentityFilter extends Filter
     protected void encode(InputStream input, OutputStream encoded, COSDictionary parameters)
         throws IOException
     {
-        input.transferTo(encoded);
+        IOUtils.copy(input, encoded);
         encoded.flush();
     }
 }

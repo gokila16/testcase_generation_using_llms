@@ -18,7 +18,6 @@
 package org.apache.pdfbox.debugger.ui.textsearcher;
 
 import java.awt.Color;
-import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
@@ -35,8 +34,8 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.Highlighter;
 import javax.swing.text.JTextComponent;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.apache.pdfbox.debugger.PDFDebugger;
 
@@ -45,14 +44,14 @@ import org.apache.pdfbox.debugger.PDFDebugger;
  */
 public class Searcher implements DocumentListener, ChangeListener, ComponentListener
 {
-    private static final Logger LOG = LogManager.getLogger(Searcher.class);
+    private static final Log LOG = LogFactory.getLog(Searcher.class);
 
     private static final Highlighter.HighlightPainter PAINTER =
             new DefaultHighlighter.DefaultHighlightPainter(Color.yellow);
     private static final Highlighter.HighlightPainter SELECTION_PAINTER =
             new DefaultHighlighter.DefaultHighlightPainter(new Color(109, 216, 26));
     private final SearchEngine searchEngine;
-    private SearchPanel searchPanel;
+    private final SearchPanel searchPanel;
     private final JTextComponent textComponent;
     private int totalMatch = 0;
     private int currentMatch = -1;
@@ -97,20 +96,12 @@ public class Searcher implements DocumentListener, ChangeListener, ComponentList
     public Searcher(JTextComponent textComponent)
     {
         this.textComponent = textComponent;
+        searchPanel = new SearchPanel(this, this, this, nextAction, previousAction);
         searchEngine = new SearchEngine(textComponent, PAINTER);
 
         nextAction.setEnabled(false);
         previousAction.setEnabled(false);
     }
-
-    /**
-     * Initialization, to be called immediately after construction.
-     */
-    public void init()
-    {
-        searchPanel = new SearchPanel(this, this, this, nextAction, previousAction);
-    }
-
 
     public JPanel getSearchPanel()
     {
@@ -172,7 +163,6 @@ public class Searcher implements DocumentListener, ChangeListener, ComponentList
         else
         {
             searchPanel.updateCounterLabel(0, 0);
-            totalMatch = 0;
         }
     }
 
@@ -202,7 +192,7 @@ public class Searcher implements DocumentListener, ChangeListener, ComponentList
     {
         try
         {
-            textComponent.scrollRectToVisible((Rectangle) textComponent.modelToView2D(offset));
+            textComponent.scrollRectToVisible(textComponent.modelToView(offset));
         }
         catch (BadLocationException e)
         {

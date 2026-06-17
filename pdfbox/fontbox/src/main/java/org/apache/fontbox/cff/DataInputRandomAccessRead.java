@@ -70,7 +70,7 @@ public class DataInputRandomAccessRead implements DataInput
      * <code>setPosition(-20)</code> to move 20 bytes back!
      *
      * @param position the given position, must be 0 &le; position &lt; length.
-     * @throws IOException if the new position is out of range or when the underlying buffer has
+     * @throws IOException if the new position is out of rangeor when the underlying buffer has
      * already been closed.
      */
     @Override
@@ -92,7 +92,7 @@ public class DataInputRandomAccessRead implements DataInput
      * Read one single byte from the buffer.
      *
      * @return the byte.
-     * @throws IOException when there are no bytes to read or when the underlying buffer has already
+     * @throws IOException when there are no bytes to reador when the underlying buffer has already
      * been closed.
      */
     @Override
@@ -109,8 +109,8 @@ public class DataInputRandomAccessRead implements DataInput
      * Read one single unsigned byte from the buffer.
      *
      * @return the unsigned byte as int.
-     * @throws IOException when there are no bytes to read or when the underlying buffer has been
-     * already closed.
+     * @throws IOException when there are no bytes to read or when the underlying buffer has already
+     * been closed.
      */
     @Override
     public int readUnsignedByte() throws IOException
@@ -127,8 +127,8 @@ public class DataInputRandomAccessRead implements DataInput
      *
      * @param offset offset to the byte to be peeked, must be 0 &le; offset.
      * @return the unsigned byte as int.
-     * @throws IOException when the offset is negative or beyond end_of_buffer, or when the
-     * underlying buffer has already been closed.
+     * @throws IOException when the offset is negative or beyond end_of_buffer or when the
+     * underlying buffer has been closed already.
      */
     @Override
     public int peekUnsignedByte(int offset) throws IOException
@@ -170,8 +170,15 @@ public class DataInputRandomAccessRead implements DataInput
         {
             throw new IOException("length is negative");
         }
+        if (randomAccessRead.length() - randomAccessRead.getPosition() < length)
+        {
+            throw new IOException("Premature end of buffer reached");
+        }
         byte[] bytes = new byte[length];
-        randomAccessRead.readFully(bytes);
+        for (int i = 0; i < length; i++)
+        {
+            bytes[i] = readByte();
+        }
         return bytes;
     }
 

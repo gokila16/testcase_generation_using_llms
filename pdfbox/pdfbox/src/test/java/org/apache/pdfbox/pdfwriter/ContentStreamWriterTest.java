@@ -47,7 +47,7 @@ class ContentStreamWriterTest
 {
     private static final File TESTDIRIN = new File("target/test-output/contentstream/in");
     private static final File TESTDIROUT = new File("target/test-output/contentstream/out");
-    
+
     @BeforeAll
     static void setUp()
     {

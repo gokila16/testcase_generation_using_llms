@@ -26,8 +26,8 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSDocument;
@@ -47,7 +47,7 @@ import org.w3c.dom.Element;
  */
 public class FDFDocument implements Closeable
 {
-    private static final Logger LOG = LogManager.getLogger(FDFDocument.class);
+    private static final Log LOG = LogFactory.getLog(FDFDocument.class);
 
     private final COSDocument document;
 
@@ -70,6 +70,18 @@ public class FDFDocument implements Closeable
         // Next we need the root dictionary.
         FDFCatalog catalog = new FDFCatalog();
         setCatalog(catalog);
+    }
+
+    /**
+     * Constructor that uses an existing document. The COSDocument that is passed in must be valid.
+     *
+     * @param doc The COSDocument that this document wraps.
+     * @deprecated Use {@link #FDFDocument(COSDocument, RandomAccessRead) }
+     */
+    @Deprecated
+    public FDFDocument(COSDocument doc)
+    {
+        this(doc, null);
     }
 
     /**
@@ -138,7 +150,7 @@ public class FDFDocument implements Closeable
      */
     public FDFCatalog getCatalog()
     {
-        FDFCatalog retval;
+        FDFCatalog retval = null;
         COSDictionary trailer = document.getTrailer();
         COSDictionary root = trailer.getCOSDictionary(COSName.ROOT);
         if (root == null)

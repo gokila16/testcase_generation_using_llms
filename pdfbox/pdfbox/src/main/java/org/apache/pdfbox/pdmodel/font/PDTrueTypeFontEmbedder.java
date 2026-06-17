@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
 import org.apache.fontbox.ttf.HorizontalMetricsTable;
 import org.apache.fontbox.ttf.TrueTypeFont;
 import org.apache.pdfbox.cos.COSArray;
@@ -81,9 +79,9 @@ final class PDTrueTypeFontEmbedder extends TrueTypeEmbedder
         HorizontalMetricsTable hmtx = ttf.getHorizontalMetrics();
 
         Map<Integer, String> codeToName = getFontEncoding().getCodeToNameMap();
-        Set<Integer> codes = codeToName.keySet();
-        int firstChar = Collections.min(codes);
-        int lastChar = Collections.max(codes);
+
+        int firstChar = Collections.min(codeToName.keySet());
+        int lastChar = Collections.max(codeToName.keySet());
 
         List<Integer> widths = new ArrayList<>(lastChar - firstChar + 1);
         for (int i = 0; i < lastChar - firstChar + 1; i++)

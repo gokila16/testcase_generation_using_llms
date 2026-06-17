@@ -32,7 +32,8 @@ public final class WGL4Names
     /**
      * The 258 standard mac glyph names a used in 'post' format 1 and 2.
      */
-    private static final String[] MAC_GLYPH_NAMES = {
+    private static final String[] MAC_GLYPH_NAMES = new String[]
+    {
         ".notdef",".null", "nonmarkingreturn", "space", "exclam", "quotedbl",
         "numbersign", "dollar", "percent", "ampersand", "quotesingle",
         "parenleft", "parenright", "asterisk", "plus", "comma", "hyphen",

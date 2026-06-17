@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.Map;
 
 import java.util.Set;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
@@ -41,7 +41,7 @@ import org.apache.pdfbox.cos.COSString;
  */
 public abstract class PDNameTreeNode<T extends COSObjectable> implements COSObjectable
 {
-    private static final Logger LOG = LogManager.getLogger(PDNameTreeNode.class);
+    private static final Log LOG = LogFactory.getLog(PDNameTreeNode.class);
     
     private final COSDictionary node;
     private PDNameTreeNode<T> parent;
@@ -120,18 +120,7 @@ public abstract class PDNameTreeNode<T extends COSObjectable> implements COSObje
             List<PDNameTreeNode<T>> pdObjects = new ArrayList<>(kids.size());
             for( int i=0; i<kids.size(); i++ )
             {
-                COSBase base = kids.getObject(i);
-                PDNameTreeNode<T> childNode;
-                if (base instanceof COSDictionary)
-                {
-                    childNode = createChildNode((COSDictionary) base);
-                }
-                else
-                {
-                    LOG.warn("Bad child node at position {}", i);
-                    childNode = createChildNode(new COSDictionary());
-                }
-                pdObjects.add(childNode);
+                pdObjects.add( createChildNode( (COSDictionary)kids.getObject(i) ) );
             }
             retval = new COSArrayList<>(pdObjects, kids);
         }
@@ -191,10 +180,10 @@ public abstract class PDNameTreeNode<T extends COSObjectable> implements COSObje
                 try 
                 {
                     Map<String, T> names = getNames();
-                    if (names != null && !names.isEmpty())
+                    if (names != null && names.size() > 0)
                     {
                         Set<String> strings = names.keySet();
-                        String[] keys = strings.toArray(String[]::new);
+                        String[] keys = strings.toArray(new String[strings.size()]);
                         String lowerLimit = keys[0];
                         setLowerLimit(lowerLimit);
                         String upperLimit = keys[keys.length-1];
@@ -266,13 +255,12 @@ public abstract class PDNameTreeNode<T extends COSObjectable> implements COSObje
         COSArray namesArray = node.getCOSArray(COSName.NAMES);
         if( namesArray != null )
         {
-            int size = namesArray.size();
-            Map<String, T> names = new LinkedHashMap<>(size);
+            Map<String, T> names = new LinkedHashMap<>();
             if (namesArray.size() % 2 != 0)
             {
-                LOG.warn("Names array has odd size: {}", size);
+                LOG.warn("Names array has odd size: " + namesArray.size());
             }
-            for (int i = 0; i + 1 < size; i += 2)
+            for (int i = 0; i + 1 < namesArray.size(); i += 2)
             {
                 COSBase base = namesArray.getObject(i);
                 if (!(base instanceof COSString))

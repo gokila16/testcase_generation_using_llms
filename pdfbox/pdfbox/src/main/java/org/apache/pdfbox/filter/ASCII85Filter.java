@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.io.IOUtils;
 
 /**
  * Decodes data encoded in an ASCII base-85 representation, reproducing the original binary data.
@@ -34,7 +35,7 @@ final class ASCII85Filter extends Filter
     {
         try (ASCII85InputStream is = new ASCII85InputStream(encoded))
         {
-            is.transferTo(decoded);
+            IOUtils.copy(is, decoded);
         }
         decoded.flush();
         return new DecodeResult(parameters);
@@ -46,7 +47,7 @@ final class ASCII85Filter extends Filter
     {
         try (ASCII85OutputStream os = new ASCII85OutputStream(encoded))
         {
-            input.transferTo(os);
+            IOUtils.copy(input, os);
         }
         encoded.flush();
     }

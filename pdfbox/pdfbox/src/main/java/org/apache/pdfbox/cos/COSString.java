@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.util.Hex;
 
 /**
@@ -45,18 +45,18 @@ import org.apache.pdfbox.util.Hex;
  */
 public final class COSString extends COSBase
 {
-    private static final Logger LOG = LogManager.getLogger(COSString.class);
+    private static final Log LOG = LogFactory.getLog(COSString.class);
 
-    private final byte[] bytes;
-    private final boolean forceHexForm;
+    private byte[] bytes;
+    private boolean forceHexForm;
 
     // legacy behaviour for old PDFParser
     public static final boolean FORCE_PARSING =
             Boolean.getBoolean("org.apache.pdfbox.forceParsing");
 
     /**
-     * Creates a new PDF string from a byte array. This method can be used to read a string from
-     * an existing PDF file, or to create a new byte string.
+     * Creates a new PDF string from a byte array. This method can be used to read a string from an existing PDF file,
+     * or to create a new byte string.
      *
      * @param bytes The raw bytes of the PDF text string or byte string.
      */
@@ -135,61 +135,63 @@ public final class COSString extends COSBase
      */
     public static COSString parseHex(String hex) throws IOException
     {
-        // skip leading and trailing whitespace
-        int end = hex.length();
-        while (end > 0 && Character.isWhitespace(hex.charAt(end - 1)))
+        StringBuilder hexBuffer = new StringBuilder(hex.trim());
+
+        // if odd number then the last hex digit is assumed to be 0
+        if (hexBuffer.length() % 2 != 0)
         {
-            end--;
-        }
-        int start = 0;
-        while (start < end && Character.isWhitespace(hex.charAt(start)))
-        {
-            start++;
+            hexBuffer.append('0');
         }
 
-        int length = end - start;
+        int length = hexBuffer.length();
         ByteArrayOutputStream bytes = new ByteArrayOutputStream((length + 1) / 2);
-
-        boolean isLengthUneven = length % 2 != 0;
-        if (isLengthUneven)
-        {
-            length--;
-        }
         for (int i = 0; i < length; i += 2)
         {
-            int value = 16 * Hex.getHexValue(hex.charAt(i)) + Hex.getHexValue(hex.charAt(i + 1));
-            if (value >= 0)
+            try
             {
-                bytes.write(value);
+                bytes.write(Integer.parseInt(hexBuffer.substring(i, i + 2), 16));
             }
-            else if (FORCE_PARSING)
+            catch (NumberFormatException e)
             {
-                LOG.warn("Encountered a malformed hex string");
-                bytes.write('?'); // todo: what does Acrobat do? Any example PDFs?
-            }
-            else
-            {
-                throw new IOException("Invalid hex string: " + hex);
-            }
-        }
-        if (isLengthUneven)
-        {
-            int value = 16 * Hex.getHexValue(hex.charAt(length));
-            if (value >= 0)
-            {
-                bytes.write(value);
-            }
-            else if (FORCE_PARSING)
-            {
-                LOG.warn("Encountered a malformed hex string");
-                bytes.write('?'); // todo: what does Acrobat do? Any example PDFs?
-            }
-            else
-            {
-                throw new IOException("Invalid hex string: " + hex);
+                if (FORCE_PARSING)
+                {
+                    LOG.warn("Encountered a malformed hex string");
+                    bytes.write('?'); // todo: what does Acrobat do? Any example PDFs?
+                }
+                else
+                {
+                    throw new IOException("Invalid hex string: " + hex, e);
+                }
             }
         }
+
         return new COSString(bytes.toByteArray());
+    }
+
+    /**
+     * Sets the raw value of this string.
+     *
+     * @param value The raw bytes of the PDF text string or byte string.
+     * 
+     * @deprecated to be removed in a future release.
+     */
+    @Deprecated
+    public void setValue(byte[] value)
+    {
+        bytes = Arrays.copyOf(value, value.length);
+    }
+
+    /**
+     * Sets whether to force the string is to be written in hex form. This is needed when signing PDF files.
+     *
+     * @param value True to force hex.
+     * 
+     * @deprecated to be removed in a future release.
+     */
+    @Deprecated
+    public void setForceHexForm(boolean value)
+    {
+        this.forceHexForm = value;
     }
 
     /**

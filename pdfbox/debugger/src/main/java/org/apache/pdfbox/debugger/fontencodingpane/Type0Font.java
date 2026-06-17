@@ -19,6 +19,7 @@ package org.apache.pdfbox.debugger.fontencodingpane;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.font.PDCIDFont;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType0Font;
@@ -51,24 +52,26 @@ class Type0Font extends FontPane
     Type0Font(PDCIDFont descendantFont, PDType0Font parentFont) throws IOException
     {
         Object[][] cidtogid = readCIDToGIDMap(descendantFont, parentFont);
-        Map<String, String> attributes = new LinkedHashMap<>();
-        attributes.put("Font", descendantFont.getName());
         if (cidtogid != null)
         {
+            Map<String, String> attributes = new LinkedHashMap<>();
+            attributes.put("Font", descendantFont.getName());
             attributes.put("CIDs", Integer.toString(cidtogid.length));
             attributes.put("Embedded", Boolean.toString(descendantFont.isEmbedded()));
-            attributes.put("Encoding", getEncodingName(parentFont));
+
             view = new FontEncodingView(cidtogid, attributes, 
                     new String[]{"CID", "GID", "Unicode Character", "Glyph"}, getYBounds(cidtogid, 3));
         }
         else
         {
             Object[][] tab = readMap(descendantFont, parentFont);
+            Map<String, String> attributes = new LinkedHashMap<>();
+            attributes.put("Font", descendantFont.getName());
             attributes.put("CIDs", Integer.toString(tab.length));
             attributes.put("Glyphs", Integer.toString(totalAvailableGlyph));
             attributes.put("Standard 14", Boolean.toString(parentFont.isStandard14()));
             attributes.put("Embedded", Boolean.toString(descendantFont.isEmbedded()));
-            attributes.put("Encoding", getEncodingName(parentFont));
+
             view = new FontEncodingView(tab, attributes, 
                     new String[]{"Code", "CID", "GID", "Unicode Character", "Glyph"}, getYBounds(tab, 4));
         }
@@ -113,11 +116,9 @@ class Type0Font extends FontPane
         COSStream stream = dict.getCOSStream(COSName.CID_TO_GID_MAP);
         if (stream != null)
         {
-            byte[] mapAsBytes;
-            try (InputStream is = stream.createInputStream())
-            {
-                mapAsBytes = is.readAllBytes();
-            }
+            InputStream is = stream.createInputStream();
+            byte[] mapAsBytes = IOUtils.toByteArray(is);
+            IOUtils.closeQuietly(is);
             int numberOfInts = mapAsBytes.length / 2;
             cid2gid = new Object[numberOfInts][4];
             int offset = 0;
@@ -152,11 +153,5 @@ class Type0Font extends FontPane
         JPanel panel = new JPanel();
         panel.setPreferredSize(new Dimension(300, 500));
         return panel;
-    }
-
-    private String getEncodingName(PDFont font)
-    {
-        String encodingName = font.getCOSObject().getNameAsString(COSName.ENCODING);
-        return encodingName == null ? font.getCOSObject().getClass().getSimpleName() : encodingName;
     }
 }

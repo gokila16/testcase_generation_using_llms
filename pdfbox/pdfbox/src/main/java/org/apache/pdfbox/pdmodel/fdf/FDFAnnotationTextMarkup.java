@@ -33,8 +33,9 @@ public abstract class FDFAnnotationTextMarkup extends FDFAnnotation
     /**
      * Default constructor.
      */
-    protected FDFAnnotationTextMarkup()
+    public FDFAnnotationTextMarkup()
     {
+        super();
     }
 
     /**
@@ -42,7 +43,7 @@ public abstract class FDFAnnotationTextMarkup extends FDFAnnotation
      *
      * @param a An existing FDF Annotation.
      */
-    protected FDFAnnotationTextMarkup(COSDictionary a)
+    public FDFAnnotationTextMarkup(COSDictionary a)
     {
         super(a);
     }
@@ -54,7 +55,7 @@ public abstract class FDFAnnotationTextMarkup extends FDFAnnotation
      *
      * @throws IOException If there is an error extracting information from the element.
      */
-    protected FDFAnnotationTextMarkup(Element element) throws IOException
+    public FDFAnnotationTextMarkup(Element element) throws IOException
     {
         super(element);
 
@@ -68,21 +69,27 @@ public abstract class FDFAnnotationTextMarkup extends FDFAnnotation
         {
             throw new IOException("Error: too little numbers in attribute 'coords'");
         }
-        float[] values = parseFloats(coordsValues);
+        float[] values = new float[coordsValues.length];
+        for (int i = 0; i < coordsValues.length; i++)
+        {
+            values[i] = Float.parseFloat(coordsValues[i]);
+        }
         setCoords(values);
     }
 
     /**
      * Set the coordinates of individual words or group of words.
      * 
-     * The quadliterals shall encompass a word or group of contiguous words in the text underlying the annotation. The
+     * The quadliterals shall encompasses a word or group of contiguous words in the text underlying the annotation. The
      * coordinates for each quadrilateral shall be given in the order x1 y1 x2 y2 x3 y3 x4 y4.
      *
      * @param coords an array of 8 􏰍 n numbers specifying the coordinates of n quadrilaterals.
      */
     public void setCoords(float[] coords)
     {
-        annot.setItem(COSName.QUADPOINTS, COSArray.of(coords));
+        COSArray newQuadPoints = new COSArray();
+        newQuadPoints.setFloatArray(coords);
+        annot.setItem(COSName.QUADPOINTS, newQuadPoints);
     }
 
     /**

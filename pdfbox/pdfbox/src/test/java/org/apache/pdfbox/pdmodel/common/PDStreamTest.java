@@ -19,7 +19,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +38,7 @@ class PDStreamTest
      * Test for null filter list (PDFBOX-2948)
      */
     @Test
-    void testCreateInputStreamNullFilters() throws IOException
+    void testCreateInputStreamNullFilters() throws Exception
     {
         try (PDDocument doc = new PDDocument())
         {
@@ -63,7 +62,7 @@ class PDStreamTest
      * Test for empty filter list
      */
     @Test
-    void testCreateInputStreamEmptyFilters() throws IOException
+    void testCreateInputStreamEmptyFilters() throws Exception
     {
         try (PDDocument doc = new PDDocument())
         {
@@ -87,7 +86,7 @@ class PDStreamTest
      * Test for null stop filters
      */
     @Test
-    void testCreateInputStreamNullStopFilters() throws IOException
+    void testCreateInputStreamNullStopFilters() throws Exception
     {
         try (PDDocument doc = new PDDocument())
         {

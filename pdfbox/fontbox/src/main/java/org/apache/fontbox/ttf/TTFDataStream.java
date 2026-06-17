@@ -106,7 +106,8 @@ abstract class TTFDataStream implements Closeable
     }
 
     /**
-     * Read an unsigned byte. Similar to {@link #read()}, but throws an exception if EOF is unexpectedly reached.
+     * Read an unsigned byte. Similar to {@link #read()}, but throws an exception if EOF is
+     * unexpectedly reached.
      *
      * @return An unsigned byte.
      * @throws IOException If there is an error reading the data.

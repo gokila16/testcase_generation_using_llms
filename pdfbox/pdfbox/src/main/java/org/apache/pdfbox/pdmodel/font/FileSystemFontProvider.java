@@ -34,8 +34,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.zip.CRC32;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.fontbox.FontBoxFont;
 import org.apache.fontbox.ttf.FontHeaders;
 import org.apache.fontbox.ttf.OS2WindowsMetricsTable;
@@ -46,6 +46,7 @@ import org.apache.fontbox.ttf.TrueTypeCollection;
 import org.apache.fontbox.ttf.TrueTypeFont;
 import org.apache.fontbox.type1.Type1Font;
 import org.apache.fontbox.util.autodetect.FontFileFinder;
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
 
 /**
@@ -55,15 +56,15 @@ import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
  */
 final class FileSystemFontProvider extends FontProvider
 {
-    private static final Logger LOG = LogManager.getLogger(FileSystemFontProvider.class);
-    
+    private static final Log LOG = LogFactory.getLog(FileSystemFontProvider.class);
+
     /**
      * This option changes publicly visible behaviour: ".pdfbox.cache" file will have hash="-" for all files.
      * After implementing {@link FontHeaders}, parsing font headers is faster than checksumming anyway.
      */
     private static final boolean SKIP_CHECKSUMS = "true".equals(System.getProperty("pdfbox.fontcache.skipchecksums"));
     private static final String CHECKSUM_PLACEHOLDER = "-";
-
+    
     private final List<FSFontInfo> fontInfoList = new ArrayList<>();
     private final FontCache cache;
 
@@ -125,7 +126,7 @@ final class FileSystemFontProvider extends FontProvider
         /**
          * {@inheritDoc}
          * <p>
-         * The method returns null if there was an error opening the font.
+         * The method returns null if there is there was an error opening the font.
          * 
          */
         @Override
@@ -203,12 +204,16 @@ final class FileSystemFontProvider extends FontProvider
             try
             {
                 TrueTypeFont ttf = readTrueTypeFont(postScriptName, file);
-                LOG.debug("Loaded {} from {}", postScriptName, file);
+
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("Loaded " + postScriptName + " from " + file);
+                }
                 return ttf;
             }
             catch (IOException e)
             {
-                LOG.warn(() -> "Could not load font file: " + file, e);
+                LOG.warn("Could not load font file: " + file, e);
             }
             return null;
         }
@@ -277,12 +282,15 @@ final class FileSystemFontProvider extends FontProvider
                 OTFParser parser = new OTFParser(false);
                 OpenTypeFont otf = parser.parse(new RandomAccessReadBufferedFile(file));
 
-                LOG.debug("Loaded {} from {}", postScriptName, file);
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("Loaded " + postScriptName + " from " + file);
+                }
                 return otf;
             }
             catch (IOException e)
             {
-                LOG.warn(() -> "Could not load font file: " + file, e);
+                LOG.warn("Could not load font file: " + file, e);
             }
             return null;
         }
@@ -292,12 +300,16 @@ final class FileSystemFontProvider extends FontProvider
             try (InputStream input = new FileInputStream(file))
             {
                 Type1Font type1 = Type1Font.createWithPFB(input);
-                LOG.debug("Loaded {} from {}", postScriptName, file);
+
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("Loaded " + postScriptName + " from " + file);
+                }
                 return type1;
             }
             catch (IOException e)
             {
-                LOG.warn(() -> "Could not load font file: " + file, e);
+                LOG.warn("Could not load font file: " + file, e);
             }
             return null;
         }
@@ -325,7 +337,10 @@ final class FileSystemFontProvider extends FontProvider
         this.cache = cache;
         try
         {
-            LOG.trace("Will search the local system for fonts");
+            if (LOG.isTraceEnabled())
+            {
+                LOG.trace("Will search the local system for fonts");
+            }
 
             // scan the local system for font files
             FontFileFinder fontFileFinder = new FontFileFinder();
@@ -336,7 +351,10 @@ final class FileSystemFontProvider extends FontProvider
                 files.add(new File(font));
             }
 
-            LOG.trace("Found {} fonts on the local system", files.size());
+            if (LOG.isTraceEnabled())
+            {
+                LOG.trace("Found " + files.size() + " fonts on the local system");
+            }
 
             if (!files.isEmpty())
             {
@@ -351,8 +369,8 @@ final class FileSystemFontProvider extends FontProvider
                     LOG.info("Building on-disk font cache, this may take a while");
                     scanFonts(files);
                     saveDiskCache();
-                    LOG.info("Finished building on-disk font cache, found {} fonts",
-                            fontInfoList.size());
+                    LOG.info("Finished building on-disk font cache, found " + fontInfoList.size()
+                            + " fonts");
                 }
             }
         }
@@ -413,7 +431,7 @@ final class FileSystemFontProvider extends FontProvider
         {
             File file = getDiskCacheFile();
 
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, StandardCharsets.UTF_8)))
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(file)))
             {
                 for (FSFontInfo fontInfo : fontInfoList)
                 {
@@ -515,7 +533,7 @@ final class FileSystemFontProvider extends FontProvider
 
         if (fileExists)
         {
-            try (BufferedReader reader = new BufferedReader(new FileReader(diskCacheFile, StandardCharsets.UTF_8)))
+            try (BufferedReader reader = new BufferedReader(new FileReader(diskCacheFile)))
             {
                 // consequent lines usually share the same font file (e.g. "Courier", "Courier-Bold", "Courier-Oblique").
                 // unused if SKIP_CHECKSUMS
@@ -528,7 +546,7 @@ final class FileSystemFontProvider extends FontProvider
                     String[] parts = line.split("\\|", 12);
                     if (parts.length < 10)
                     {
-                        LOG.warn("Incorrect line '{}' in font disk cache is skipped", line);
+                        LOG.warn("Incorrect line '" + line + "' in font disk cache is skipped");
                         continue;
                     }
 
@@ -547,26 +565,26 @@ final class FileSystemFontProvider extends FontProvider
                     
                     postScriptName = parts[0];
                     format = FontFormat.valueOf(parts[1]);
-                    if (!parts[2].isEmpty())
+                    if (parts[2].length() > 0)
                     {
                         String[] ros = parts[2].split("-");
                         cidSystemInfo = new CIDSystemInfo(ros[0], ros[1], Integer.parseInt(ros[2]));
                     }
-                    if (!parts[3].isEmpty())
+                    if (parts[3].length() > 0)
                     {
                         usWeightClass = (int)Long.parseLong(parts[3], 16);
                     }
-                    if (!parts[4].isEmpty())
+                    if (parts[4].length() > 0)
                     {
                         sFamilyClass = (int)Long.parseLong(parts[4], 16);
                     }
                     ulCodePageRange1 = (int)Long.parseLong(parts[5], 16);
                     ulCodePageRange2 = (int)Long.parseLong(parts[6], 16);
-                    if (!parts[7].isEmpty())
+                    if (parts[7].length() > 0)
                     {
                         macStyle = (int)Long.parseLong(parts[7], 16);
                     }
-                    if (!parts[8].isEmpty())
+                    if (parts[8].length() > 0)
                     {
                         panose = new byte[10];
                         for (int i = 0; i < 10; i ++)
@@ -604,7 +622,7 @@ final class FileSystemFontProvider extends FontProvider
                                 }
                                 catch (IOException ex)
                                 {
-                                    LOG.debug(() -> "Error reading font file " + fontFile.getAbsolutePath(), ex);
+                                    LOG.debug("Error reading font file " + fontFile.getAbsolutePath(), ex);
                                     newHash = "<err>";
                                 }
                             }
@@ -623,13 +641,13 @@ final class FileSystemFontProvider extends FontProvider
                         }
                         else
                         {
-                            LOG.debug("Font file {} is different", fontFile.getAbsolutePath());
+                            LOG.debug("Font file " + fontFile.getAbsolutePath() + " is different");
                             continue; // don't remove from "pending"
                         }
                     }
                     else
                     {
-                        LOG.debug("Font file {} not found, skipped", fontFile.getAbsolutePath());
+                        LOG.debug("Font file " + fontFile.getAbsolutePath() + " not found, skipped");
                     }
                     pending.remove(fontFile.getAbsolutePath());
                 }
@@ -644,7 +662,7 @@ final class FileSystemFontProvider extends FontProvider
         if (!pending.isEmpty())
         {
             // re-build the entire cache if we encounter un-cached fonts (could be optimised)
-            LOG.info("{} new font files found, font cache will be re-built", pending.size());
+            LOG.info(pending.size() + " new font files found, font cache will be re-built");
             return null;
         }
         
@@ -664,7 +682,7 @@ final class FileSystemFontProvider extends FontProvider
         }
         catch (IOException e)
         {
-            LOG.warn(() -> "Could not load font file: " + ttcFile, e);
+            LOG.warn("Could not load font file: " + ttcFile, e);
             fontInfoList.add(createFSIgnored(ttcFile, FontFormat.TTF, "*skipexception*"));
         }
     }
@@ -688,13 +706,13 @@ final class FileSystemFontProvider extends FontProvider
                 fontFormat = FontFormat.TTF;
                 parser = new TTFParser(false);
             }
-            FontHeaders fontHeaders = parser.parseTableHeaders(new RandomAccessReadBufferedFile(ttfFile));
-            addTrueTypeFontImpl(fontHeaders, ttfFile,
+            FontHeaders headers = parser.parseTableHeaders(new RandomAccessReadBufferedFile(ttfFile));
+            addTrueTypeFontImpl(headers, ttfFile,
                     SKIP_CHECKSUMS ? CHECKSUM_PLACEHOLDER : computeHash(Files.newInputStream(ttfFile.toPath())));
         }
         catch (IOException e)
         {
-            LOG.warn(() -> "Could not load font file: "+ ttfFile, e);
+            LOG.warn("Could not load font file: " + ttfFile, e);
             fontInfoList.add(createFSIgnored(ttfFile, fontFormat, "*skipexception*"));
         }
     }
@@ -712,7 +730,7 @@ final class FileSystemFontProvider extends FontProvider
             if (name != null && name.contains("|"))
             {
                 fontInfoList.add(createFSIgnored(file, FontFormat.TTF, "*skippipeinname*"));
-                LOG.warn("Skipping font with '|' in name {} in file {}", name, file);
+                LOG.warn("Skipping font with '|' in name " + name + " in file " + file);
             }
             else if (name != null)
             {
@@ -771,19 +789,23 @@ final class FileSystemFontProvider extends FontProvider
                         usWeightClass, sFamilyClass, ulCodePageRange1, ulCodePageRange2,
                         macStyle, panose, this, hash, file.lastModified()));
 
-                LOG.trace("{}: '{}' / '{}' / '{}'", format::name, () -> name,
-                        fontHeaders::getFontFamily, fontHeaders::getFontSubFamily);
+                if (LOG.isTraceEnabled())
+                {
+                    LOG.trace(format.name() +": '" + name + "' / '" +
+                              fontHeaders.getFontFamily() + "' / '" +
+                              fontHeaders.getFontSubFamily() + "'");
+                }
             }
             else
             {
                 fontInfoList.add(createFSIgnored(file, FontFormat.TTF, "*skipnoname*"));
-                LOG.warn("Missing 'name' entry for PostScript name in font {}", file);
+                LOG.warn("Missing 'name' entry for PostScript name in font " + file);
             }
         }
         else
         {
             fontInfoList.add(createFSIgnored(file, FontFormat.TTF, "*skipexception*"));
-            LOG.warn("Could not load font file '{}': {}", file, error);
+            LOG.warn("Could not load font file '" + file + "': " + error);
         }
     }
 
@@ -798,26 +820,29 @@ final class FileSystemFontProvider extends FontProvider
             if (type1.getName() == null)
             {
                 fontInfoList.add(createFSIgnored(pfbFile, FontFormat.PFB, "*skipnoname*"));
-                LOG.warn("Missing 'name' entry for PostScript name in font {}", pfbFile);
+                LOG.warn("Missing 'name' entry for PostScript name in font " + pfbFile);
                 return;
             }
             if (type1.getName().contains("|"))
             {
                 fontInfoList.add(createFSIgnored(pfbFile, FontFormat.PFB, "*skippipeinname*"));
-                LOG.warn("Skipping font with '|' in name {} in file {}", type1.getName(), pfbFile);
+                LOG.warn("Skipping font with '|' in name " + type1.getName() + " in file " + pfbFile);
                 return;
             }
             String hash = SKIP_CHECKSUMS ? CHECKSUM_PLACEHOLDER : computeHash(Files.newInputStream(pfbFile.toPath()));
             fontInfoList.add(new FSFontInfo(pfbFile, FontFormat.PFB, type1.getName(),
                                             null, -1, -1, 0, 0, -1, null, this, hash, pfbFile.lastModified()));
 
-            LOG.trace("PFB: '{}' / '{}' / '{}'", type1.getName(), type1.getFamilyName(),
-                    type1.getWeight());
+            if (LOG.isTraceEnabled())
+            {
+                LOG.trace("PFB: '" + type1.getName() + "' / '" + type1.getFamilyName() + "' / '" +
+                        type1.getWeight() + "'");
+            }
         }
         catch (IOException e)
         {
             fontInfoList.add(createFSIgnored(pfbFile, FontFormat.PFB, "*skipexception*"));
-            LOG.warn(() -> "Could not load font file: " + pfbFile, e);
+            LOG.warn("Could not load font file: " + pfbFile, e);
         }
     }
 
@@ -843,13 +868,11 @@ final class FileSystemFontProvider extends FontProvider
         return fontInfoList;
     }
 
-    // closes the input
-    // doesn't use readAllBytes() because some fonts are huge (PDFBOX-5781)
     private static String computeHash(InputStream is) throws IOException
     {
         CRC32 crc = new CRC32();
 
-        try (is)
+        try
         {
             byte[] buffer = new byte[4096];
             int readBytes;
@@ -860,6 +883,10 @@ final class FileSystemFontProvider extends FontProvider
 
             long hash = crc.getValue();
             return Long.toHexString(hash);
+        }
+        finally
+        {
+            IOUtils.closeQuietly(is);
         }
     }
 }

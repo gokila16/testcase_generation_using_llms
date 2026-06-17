@@ -22,12 +22,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.apache.fontbox.ttf.CmapLookup;
 import org.apache.fontbox.ttf.model.GsubData;
 import org.apache.fontbox.ttf.model.ScriptFeature;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * 
@@ -38,7 +38,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class GsubWorkerForGujarati implements GsubWorker
 {
-    private static final Logger LOG = LogManager.getLogger(GsubWorkerForGujarati.class);
+    private static final Log LOG = LogFactory.getLog(GsubWorkerForGujarati.class);
     
     private static final String RKRF_FEATURE = "rkrf";
     private static final String VATU_FEATURE = "vatu";
@@ -72,7 +72,7 @@ public class GsubWorkerForGujarati implements GsubWorker
         this.gsubData = gsubData;
         beforeHalfGlyphIds = getBeforeHalfGlyphIds();
         rephGlyphIds = getRephGlyphIds();
-        beforeRephGlyphIds = getBeforeRephGlyphIds();
+        beforeRephGlyphIds=getbeforeRephGlyphIds();
     }
 
     @Override
@@ -91,10 +91,16 @@ public class GsubWorkerForGujarati implements GsubWorker
                             gsubData.getFeature(VATU_FEATURE),
                             intermediateGlyphsFromGsub);
                 }
-                LOG.debug("the feature {} was not found", feature);
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("the feature " + feature + " was not found");
+                }
                 continue;
             }
-            LOG.debug("applying the feature {}", feature);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("applying the feature " + feature);
+            }
             ScriptFeature scriptFeature = gsubData.getFeature(feature);
             intermediateGlyphsFromGsub = applyGsubFeature(scriptFeature,
                     intermediateGlyphsFromGsub);
@@ -108,7 +114,10 @@ public class GsubWorkerForGujarati implements GsubWorker
         Set<List<Integer>> rkrfGlyphIds = rkrfGlyphsForSubstitution.getAllGlyphIdsForSubstitution();
         if (rkrfGlyphIds.isEmpty())
         {
-            LOG.debug("Glyph substitution list for {} is empty.", rkrfGlyphsForSubstitution.getName());
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Glyph substitution list for " + rkrfGlyphsForSubstitution.getName() + " is empty.");
+            }
             return originalGlyphIds;
         }
 
@@ -208,7 +217,10 @@ public class GsubWorkerForGujarati implements GsubWorker
         Set<List<Integer>> allGlyphIdsForSubstitution = scriptFeature.getAllGlyphIdsForSubstitution();
         if (allGlyphIdsForSubstitution.isEmpty())
         {
-            LOG.debug("getAllGlyphIdsForSubstitution() for {} is empty", scriptFeature.getName());
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("getAllGlyphIdsForSubstitution() for " + scriptFeature.getName() + " is empty");
+            }
             return originalGlyphs;
         }
         GlyphArraySplitter glyphArraySplitter = new GlyphArraySplitterRegexImpl(
@@ -219,26 +231,31 @@ public class GsubWorkerForGujarati implements GsubWorker
         {
             if (scriptFeature.canReplaceGlyphs(chunk))
             {
-                List<Integer> replacementForGlyphs = scriptFeature.getReplacementForGlyphs(chunk);
-                gsubProcessedGlyphs.addAll(replacementForGlyphs);
+                Integer glyphId = scriptFeature.getReplacementForGlyphs(chunk);
+                gsubProcessedGlyphs.add(glyphId);
             }
             else
             {
                 gsubProcessedGlyphs.addAll(chunk);
             }
         });
-        LOG.debug("originalGlyphs: {}, gsubProcessedGlyphs: {}", originalGlyphs, gsubProcessedGlyphs);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("originalGlyphs: " + originalGlyphs + " gsubProcessedGlyphs: " + gsubProcessedGlyphs);
+        }
         return gsubProcessedGlyphs;
     }
 
     private List<Integer> getBeforeHalfGlyphIds()
     {
-        return List.of(getGlyphId(BEFORE_HALF_CHAR));
+        List<Integer> glyphIds = new ArrayList<>();
+        glyphIds.add(getGlyphId(BEFORE_HALF_CHAR));
+        return Collections.unmodifiableList(glyphIds);
     }
 
     private List<Integer> getRephGlyphIds()
     {
-        List<Integer> result = new ArrayList<>(REPH_CHARS.length);
+        List<Integer> result = new ArrayList<>();
         for (char character : REPH_CHARS)
         {
             result.add(getGlyphId(character));
@@ -246,9 +263,9 @@ public class GsubWorkerForGujarati implements GsubWorker
         return Collections.unmodifiableList(result);
     }
 
-    private List<Integer> getBeforeRephGlyphIds()
+    private List<Integer> getbeforeRephGlyphIds()
     {
-        List<Integer> glyphIds = new ArrayList<>(BEFORE_REPH_CHARS.length);
+        List<Integer> glyphIds = new ArrayList<>();
         for (char character : BEFORE_REPH_CHARS)
         {
             glyphIds.add(getGlyphId(character));

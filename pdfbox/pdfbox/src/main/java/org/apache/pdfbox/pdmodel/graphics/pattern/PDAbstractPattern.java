@@ -68,7 +68,7 @@ public abstract class PDAbstractPattern implements COSObjectable
     /**
      * Creates a new Pattern dictionary.
      */
-    protected PDAbstractPattern()
+    public PDAbstractPattern()
     {
         patternDictionary = new COSDictionary();
         patternDictionary.setName(COSName.TYPE, COSName.PATTERN.getName());
@@ -78,7 +78,7 @@ public abstract class PDAbstractPattern implements COSObjectable
      * Creates a new Pattern dictionary from the given COS dictionary.
      * @param dictionary The COSDictionary for this pattern.
      */
-    protected PDAbstractPattern(COSDictionary dictionary)
+    public PDAbstractPattern(COSDictionary dictionary)
     {
         patternDictionary = dictionary;
     }

@@ -20,7 +20,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.BufferedInputStream;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.io.Reader;
@@ -185,30 +185,27 @@ public class TextToPDF implements Callable<Integer>
             setTopMargin(margins[2]);
             setBottomMargin(margins[3]);
 
-            try (BufferedInputStream is = new BufferedInputStream(new FileInputStream(infile)))
+            boolean hasUtf8BOM = false;
+            if (charset.equals(StandardCharsets.UTF_8))
             {
-                if (charset.equals(StandardCharsets.UTF_8))
+                // check for utf8 BOM
+                // FileInputStream doesn't support mark/reset
+                try (InputStream is = new FileInputStream(infile))
                 {
-                    final int readLimit = 3;
-                    is.mark(readLimit);
-
-                    byte[] firstBytes = new byte[readLimit];
-                    if (is.read(firstBytes) != readLimit)
+                    if (is.read() == 0xEF && is.read() == 0xBB && is.read() == 0xBF)
                     {
-                        throw new IOException("Could not read 3 bytes, size changed?!");
+                        hasUtf8BOM = true;
                     }
-
-                    if (firstBytes[0] == (byte) 0xEF &&
-                        firstBytes[1] == (byte) 0xBB &&
-                        firstBytes[2] == (byte) 0xBF)
+                }
+            }
+            try (InputStream is = new FileInputStream(infile))
+            {
+                if (hasUtf8BOM)
+                {
+                    long skipped = is.skip(3);
+                    if (skipped != 3)
                     {
-                        //UTF-8 with BOM
-                        //3 bytes already read (skipped)
-                    }
-                    else
-                    {
-                        //It looks like UTF with no BOM or file was corrupted
-                        is.reset();
+                        throw new IOException("Could not skip 3 bytes, size changed?!");
                     }
                 }
                 try (Reader reader = new InputStreamReader(is, charset))
@@ -282,7 +279,7 @@ public class TextToPDF implements Callable<Integer>
             // the text.
             textIsEmpty = false;
 
-            String[] lineWords = nextLine.split(" ", -1);
+            String[] lineWords = nextLine.replaceAll("[\\n\\r]+$", "").split(" ", -1);
             int lineIndex = 0;
             while (lineIndex < lineWords.length)
             {
@@ -303,12 +300,15 @@ public class TextToPDF implements Callable<Integer>
                     {
                         ff = true;
                         word1 = word.substring(0, indexFF);
-                        word2 = word.substring(indexFF + 1);
+                        if (indexFF < word.length())
+                        {
+                            word2 = word.substring(indexFF + 1);
+                        }
                     }
                     // word1 is the part before ff, word2 after
                     // both can be empty
                     // word1 can also be empty without ff, if a line has many spaces
-                    if (!word1.isEmpty() || !ff)
+                    if (word1.length() > 0 || !ff)
                     {
                         if (addSpace)
                         {
@@ -320,7 +320,7 @@ public class TextToPDF implements Callable<Integer>
                         }
                         nextLineToDraw.append(word1);
                     }
-                    if (!ff || word2.isEmpty())
+                    if (!ff || word2.length() == 0)
                     {
                         lineIndex++;
                     }
@@ -422,11 +422,22 @@ public class TextToPDF implements Callable<Integer>
     }
 
     /**
-     * @return Returns the fontSize.
+     * @return Returns the fontSize, truncated to integer.
      */
-    public float getFontSize()
+    public int getFontSize()
     {
-        return fontSize;
+        return (int) fontSize;
+    }
+
+    /**
+     * @param aFontSize The fontSize to set.
+     * 
+     * @deprecated use {@link #setFontSize(float)}
+     */
+    @Deprecated
+    public void setFontSize(int aFontSize)
+    {
+        this.fontSize = aFontSize;
     }
 
     /**

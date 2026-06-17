@@ -23,8 +23,8 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
@@ -53,7 +53,7 @@ import org.w3c.dom.Text;
  * */
 public abstract class FDFAnnotation implements COSObjectable
 {
-    private static final Logger LOG = LogManager.getLogger(FDFAnnotation.class);
+    private static final Log LOG = LogFactory.getLog(FDFAnnotation.class);
 
     /**
      * An annotation flag.
@@ -104,7 +104,7 @@ public abstract class FDFAnnotation implements COSObjectable
     /**
      * Default constructor.
      */
-    protected FDFAnnotation()
+    public FDFAnnotation()
     {
         annot = new COSDictionary();
         annot.setItem(COSName.TYPE, COSName.ANNOT);
@@ -115,7 +115,7 @@ public abstract class FDFAnnotation implements COSObjectable
      *
      * @param a The FDF annotation.
      */
-    protected FDFAnnotation(COSDictionary a)
+    public FDFAnnotation(COSDictionary a)
     {
         annot = a;
     }
@@ -127,7 +127,7 @@ public abstract class FDFAnnotation implements COSObjectable
      *
      * @throws IOException If there is an error extracting data from the element.
      */
-    protected FDFAnnotation(Element element) throws IOException
+    public FDFAnnotation(Element element) throws IOException
     {
         this();
 
@@ -195,9 +195,19 @@ public abstract class FDFAnnotation implements COSObjectable
         {
             throw new IOException("Error: missing attribute 'rect'");
         }
-        float[] values = parseRectangleAttributes(
-                rect, "Error: wrong amount of numbers in attribute 'rect'");
-        setRectangle(new PDRectangle(COSArray.of(values)));
+        String[] rectValues = rect.split(",");
+        if (rectValues.length != 4)
+        {
+            throw new IOException("Error: wrong amount of numbers in attribute 'rect'");
+        }
+        float[] values = new float[4];
+        for (int i = 0; i < 4; i++)
+        {
+            values[i] = Float.parseFloat(rectValues[i]);
+        }
+        COSArray array = new COSArray();
+        array.setFloatArray(values);
+        setRectangle(new PDRectangle(array));
 
         setTitle(element.getAttribute("title"));
 
@@ -301,49 +311,8 @@ public abstract class FDFAnnotation implements COSObjectable
                 }
                 borderStyle.setDashStyle(dashPattern);
             }
+            setBorderStyle(borderStyle);
         }
-        setBorderStyle(borderStyle);
-    }
-
-    final float[] parseRectangleAttributes(String rect, String errorMessage) throws IOException
-    {
-        String[] rectValues = rect.split(",");
-        if (rectValues.length != 4)
-        {
-            throw new IOException(errorMessage);
-        }
-        float[] values = new float[4];
-        values[0] = Float.parseFloat(rectValues[0]);
-        values[1] = Float.parseFloat(rectValues[1]);
-        values[2] = Float.parseFloat(rectValues[2]);
-        values[3] = Float.parseFloat(rectValues[3]);
-        return values;
-    }
-
-    final float[] parseFloats(String[] srcValues)
-    {
-        float[] values = new float[srcValues.length];
-        for (int i = 0; i < srcValues.length; i++)
-        {
-            values[i] = Float.parseFloat(srcValues[i]);
-        }
-        return values;
-    }
-
-    final PDRectangle createRectangleFromAttributes(String rect, String errorMessage) throws IOException
-    {
-        String[] rectValues = rect.split(",");
-        if (rectValues.length != 4)
-        {
-            throw new IOException(errorMessage);
-        }
-        PDRectangle rectangle = new PDRectangle();
-        rectangle.setLowerLeftX(Float.parseFloat(rectValues[0]));
-        rectangle.setLowerLeftY(Float.parseFloat(rectValues[1]));
-        rectangle.setUpperRightX(Float.parseFloat(rectValues[2]));
-        rectangle.setUpperRightY(Float.parseFloat(rectValues[3]));
-
-        return rectangle;
     }
 
     /**
@@ -429,7 +398,7 @@ public abstract class FDFAnnotation implements COSObjectable
             }
             else
             {
-                LOG.warn("Unknown or unsupported annotation type '{}'", fdfDicName);
+                LOG.warn("Unknown or unsupported annotation type '" + fdfDicName + "'");
             }
         }
         return retval;
@@ -479,13 +448,8 @@ public abstract class FDFAnnotation implements COSObjectable
      */
     public Color getColor()
     {
-        return getColor(COSName.C);
-    }
-
-    final Color getColor(COSName colorName)
-    {
         Color retval = null;
-        COSArray array = annot.getCOSArray(colorName);
+        COSArray array = annot.getCOSArray(COSName.C);
         if (array != null)
         {
             float[] rgb = array.toFloatArray();
@@ -507,7 +471,9 @@ public abstract class FDFAnnotation implements COSObjectable
         COSArray color = null;
         if (c != null)
         {
-            color = COSArray.of(c.getRGBColorComponents(null));
+            float[] colors = c.getRGBColorComponents(null);
+            color = new COSArray();
+            color.setFloatArray(colors);
         }
         annot.setItem(COSName.C, color);
     }
@@ -1005,16 +971,16 @@ public abstract class FDFAnnotation implements COSObjectable
             }
             else if (child instanceof CDATASection)
             {
-                sb.append("<![CDATA[").append(((CDATASection) child).getData()).append("]]>");
+            	sb.append("<![CDATA[").append(((CDATASection) child).getData()).append("]]>");
             }
             else if (child instanceof Text)
             {
-                String cdata = ((Text) child).getData();
-                if (cdata!=null)
-                {
-                    cdata = cdata.replace("&", "&amp;").replace("<", "&lt;");
-                }
-                sb.append(cdata);
+            	String cdata = ((Text) child).getData();
+            	if (cdata!=null)
+            	{
+            		cdata = cdata.replace("&", "&amp;").replace("<", "&lt;");
+            	}
+            	sb.append(cdata);
             }
         }
         if (root)
@@ -1030,7 +996,7 @@ public abstract class FDFAnnotation implements COSObjectable
             String attributeNodeValue = attribute.getNodeValue();
             if (attributeNodeValue!=null)
             {
-                attributeNodeValue = attributeNodeValue.replace("\"", "&quot;");
+            	attributeNodeValue = attributeNodeValue.replace("\"", "&quot;");
             }
             builder.append(String.format(" %s=\"%s\"", attribute.getNodeName(),
                     attributeNodeValue));

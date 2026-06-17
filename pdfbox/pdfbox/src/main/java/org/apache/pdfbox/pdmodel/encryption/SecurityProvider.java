@@ -16,6 +16,7 @@
  */
 package org.apache.pdfbox.pdmodel.encryption;
 
+import java.io.IOException;
 import java.security.Provider;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -36,8 +37,10 @@ public class SecurityProvider
      * Returns the provider to be used for advanced encrypting/decrypting. Default is the BouncyCastleProvider.
      * 
      * @return the security provider
+     * 
+     * @throws IOException if the default provider can't be instantiated
      */
-    public static Provider getProvider()
+    public static Provider getProvider() throws IOException
     {
         // TODO synchronize access
         if (provider == null)

@@ -25,8 +25,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.contentstream.PDContentStream;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
@@ -37,18 +37,16 @@ import org.apache.pdfbox.cos.COSNumber;
 import org.apache.pdfbox.cos.COSObject;
 import org.apache.pdfbox.cos.COSStream;
 import org.apache.pdfbox.filter.FlateFilterDecoderStream;
+import org.apache.pdfbox.io.NonSeekableRandomAccessReadInputStream;
 import org.apache.pdfbox.io.RandomAccessInputStream;
 import org.apache.pdfbox.io.RandomAccessRead;
 import org.apache.pdfbox.io.RandomAccessReadBuffer;
-import org.apache.pdfbox.io.NonSeekableRandomAccessReadInputStream;
 import org.apache.pdfbox.io.SequenceRandomAccessRead;
 import org.apache.pdfbox.pdmodel.common.COSArrayList;
 import org.apache.pdfbox.pdmodel.common.COSObjectable;
 import org.apache.pdfbox.pdmodel.common.PDMetadata;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.common.PDStream;
-import org.apache.pdfbox.pdmodel.font.PDFont;
-import org.apache.pdfbox.pdmodel.font.PDType0Font;
 import org.apache.pdfbox.pdmodel.graphics.PDXObject;
 import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
 import org.apache.pdfbox.pdmodel.interactive.action.PDPageAdditionalActions;
@@ -69,9 +67,9 @@ public class PDPage implements COSObjectable, PDContentStream
     /**
      * Log instance
      */
-    private static final Logger LOG = LogManager.getLogger(PDPage.class);
+    private static final Log LOG = LogFactory.getLog(PDPage.class);
 
-    private static final byte[] DELIMITER = { '\n' };
+    private static final byte[] DELIMITER = new byte[] { '\n' };
 
     private final COSDictionary page;
     private PDResources pageResources;
@@ -143,40 +141,14 @@ public class PDPage implements COSObjectable, PDContentStream
                 .forEach(resourceCache::removeColorSpace);
         getIndirectResourceObjects(resources, COSName.EXT_G_STATE)
                 .forEach(resourceCache::removeExtState);
+        getIndirectResourceObjects(resources, COSName.FONT)
+                .forEach(resourceCache::removeFont);
         getIndirectResourceObjects(resources, COSName.PATTERN)
                 .forEach(resourceCache::removePattern);
         getIndirectResourceObjects(resources, COSName.PROPERTIES)
                 .forEach(resourceCache::removeProperties);
         getIndirectResourceObjects(resources, COSName.SHADING)
                 .forEach(resourceCache::removeShading);
-        for (COSObject cosObject : getIndirectResourceObjects(resources, COSName.FONT))
-        {
-            PDFont removedFont = resourceCache.removeFont(cosObject);
-            if (removedFont == null)
-            {
-                continue;
-            }
-            COSDictionary fontDict = removedFont.getCOSObject();
-            if (removedFont instanceof PDType0Font)
-            {
-                // remove PDCIDFont from cache
-                COSArray descendantFonts = fontDict.getCOSArray(COSName.DESCENDANT_FONTS);
-                if (descendantFonts != null)
-                {
-                    COSBase descendantFontBaseObject = descendantFonts.get(0);
-                    if (descendantFontBaseObject instanceof COSObject)
-                    {
-                        resourceCache.removeCIDFont((COSObject) descendantFontBaseObject);
-                    }
-                }
-            }
-            COSObject fdIndirectObject = fontDict.getCOSObject(COSName.FONT_DESC);
-            // remove PDFontDescriptor from cache
-            if (fdIndirectObject != null)
-            {
-                resourceCache.removeFontDescriptor(fdIndirectObject);
-            }
-        }
         for (COSObject cosObject : getIndirectResourceObjects(resources, COSName.XOBJECT))
         {
             PDXObject removedXObject = resourceCache.removeXObject(cosObject);
@@ -221,23 +193,22 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public Iterator<PDStream> getContentStreams()
     {
+        List<PDStream> streams = new ArrayList<>();
         COSBase base = page.getDictionaryObject(COSName.CONTENTS);
         if (base instanceof COSStream)
         {
-            return Collections.singletonList(new PDStream((COSStream) base)).iterator();
+            streams.add(new PDStream((COSStream) base));
         }
         else if (base instanceof COSArray)
         {
             COSArray array = (COSArray)base;
-            List<PDStream> streams = new ArrayList<>(array.size());
             for (int i = 0; i < array.size(); i++)
             {
                 COSStream stream = (COSStream) array.getObject(i);
                 streams.add(new PDStream(stream));
             }
-            return streams.iterator();
         }
-        return Collections.emptyIterator();
+        return streams.iterator();
     }
     
     /**
@@ -263,19 +234,23 @@ public class PDPage implements COSObjectable, PDContentStream
     {
         // return a stream based reader if there is just one stream
         COSStream contentStream = page.getCOSStream(COSName.CONTENTS);
-        if (contentStream != null && COSName.FLATE_DECODE.equals(contentStream.getFilters()))
+        if (contentStream != null)
         {
+            COSBase filter = contentStream.getFilters();
             // for now only streams using a flate filter are supported
-            try
+            if (filter instanceof COSName && ((COSName) filter).equals(COSName.FLATE_DECODE))
             {
-                FlateFilterDecoderStream decoderStream = new FlateFilterDecoderStream(
-                        contentStream.createRawInputStream());
-                return new NonSeekableRandomAccessReadInputStream(decoderStream);
-            }
-            catch (IOException exception)
-            {
-                LOG.warn("skipped malformed content stream");
-                return new RandomAccessReadBuffer(DELIMITER);
+                try
+                {
+                    FlateFilterDecoderStream decoderStream = new FlateFilterDecoderStream(
+                            contentStream.createRawInputStream());
+                    return new NonSeekableRandomAccessReadInputStream(decoderStream);
+                }
+                catch (IOException exception)
+                {
+                    LOG.warn("skipped malformed content stream");
+                    return new RandomAccessReadBuffer(DELIMITER);
+                }
             }
         }
         return getContentsForRandomAccess();
@@ -340,7 +315,7 @@ public class PDPage implements COSObjectable, PDContentStream
         }
         else if (contents instanceof COSArray)
         {
-            return !((COSArray) contents).isEmpty();
+            return ((COSArray) contents).size() > 0;
         }
         return false;
     }
@@ -685,11 +660,6 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public void setThreadBeads(List<PDThreadBead> beads)
     {
-        if (beads == null)
-        {
-            page.removeItem(COSName.B);
-            return;
-        }
         page.setItem(COSName.B, new COSArray(beads));
     }
 
@@ -876,7 +846,7 @@ public class PDPage implements COSObjectable, PDContentStream
             }
             else
             {
-                LOG.warn("Array element {} is skipped, must be a (viewport) dictionary", base2);
+                LOG.warn("Array element " + base2 + " is skipped, must be a (viewport) dictionary");
             }
         }
         return viewports;

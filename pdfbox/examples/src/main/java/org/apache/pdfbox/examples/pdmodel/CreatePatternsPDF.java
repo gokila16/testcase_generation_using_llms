@@ -124,7 +124,7 @@ public final class CreatePatternsPDF
                 pcs.addRect(455, 505, 100, 100);
                 pcs.fill();
             }
-            doc.save("c:/users/tilman/downloads/patterns.pdf");
+            doc.save("patterns.pdf");
         }
     }
 }

@@ -52,7 +52,7 @@ public abstract class AbstractSimpleProperty extends AbstractField
      * @param value
      *            the value to give
      */
-    protected AbstractSimpleProperty(XMPMetadata metadata, String namespaceURI, String prefix, String propertyName,
+    public AbstractSimpleProperty(XMPMetadata metadata, String namespaceURI, String prefix, String propertyName,
             Object value)
     {
         super(metadata, propertyName);
@@ -60,6 +60,7 @@ public abstract class AbstractSimpleProperty extends AbstractField
         this.namespace = namespaceURI;
         this.prefix = prefix;
         this.rawValue = value;
+
     }
 
     /**
@@ -98,7 +99,7 @@ public abstract class AbstractSimpleProperty extends AbstractField
     @Override
     public String toString()
     {
-        return "[" + getPropertyName() + "=" + this.getClass().getSimpleName() + ":" + getStringValue() + "]";
+        return "[" + this.getClass().getSimpleName() + ":" + getStringValue() + "]";
     }
 
     /**

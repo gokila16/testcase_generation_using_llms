@@ -19,8 +19,9 @@ package org.apache.fontbox.ttf;
 import java.io.EOFException;
 import java.io.IOException;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 /**
  * The OS/2 and Windows Metrics Table in a TrueType font, see
  * <a href="https://docs.microsoft.com/en-us/typography/opentype/spec/os2">here</a>.
@@ -33,7 +34,7 @@ public class OS2WindowsMetricsTable extends TTFTable
     /**
      * Log instance.
      */
-    private static final Logger LOG = LogManager.getLogger(OS2WindowsMetricsTable.class);
+    private static final Log LOG = LogFactory.getLog(OS2WindowsMetricsTable.class);
 
     /**
      * Weight class constant.

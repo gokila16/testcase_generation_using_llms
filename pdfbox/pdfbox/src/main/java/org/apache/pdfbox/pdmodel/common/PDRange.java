@@ -37,8 +37,8 @@ public class PDRange implements COSObjectable
     public PDRange()
     {
         rangeArray = new COSArray();
-        rangeArray.add(COSFloat.ZERO);
-        rangeArray.add(COSFloat.ONE);
+        rangeArray.add( new COSFloat( 0.0f ) );
+        rangeArray.add( new COSFloat( 1.0f ) );
         startingIndex = 0;
     }
 

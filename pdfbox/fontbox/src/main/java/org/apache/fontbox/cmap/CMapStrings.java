@@ -114,5 +114,4 @@ public class CMapStrings
         return bytes.length == 1 ? oneByteValues.get(CMap.toInt(bytes))
                 : twoByteValues.get(CMap.toInt(bytes));
     }
-
 }

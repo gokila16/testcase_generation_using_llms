@@ -81,7 +81,7 @@ public abstract class PDShading implements COSObjectable
     /**
      * Default constructor.
      */
-    protected PDShading()
+    public PDShading()
     {
         dictionary = new COSDictionary();
     }
@@ -91,7 +91,7 @@ public abstract class PDShading implements COSObjectable
      *
      * @param shadingDictionary the dictionary for this shading
      */
-    protected PDShading(COSDictionary shadingDictionary)
+    public PDShading(COSDictionary shadingDictionary)
     {
         dictionary = shadingDictionary;
     }

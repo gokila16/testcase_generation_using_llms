@@ -41,7 +41,7 @@ class PDFBoxHeadlessTest
     final ByteArrayOutputStream err = new ByteArrayOutputStream();
 
     @BeforeAll
-    static void setUp()
+    static void setHeadless()
     {
         System.setProperty("java.awt.headless", "true");
     }

@@ -22,8 +22,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -53,12 +52,6 @@ abstract class TrueTypeEmbedder implements Subsetter
     private static final int ITALIC = 1;
     private static final int OBLIQUE = 512;
     private static final String BASE25 = "BCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-    // PDF spec required tables (if present), all others will be removed
-    private static final List<String> TABLES =
-            Arrays.asList("head", "hhea", "loca", "maxp", "cvt ", "prep", "glyf", "hmtx", "fpgm",
-                    // Windows ClearType
-                    "gasp");
 
     private final PDDocument document;
     protected TrueTypeFont ttf;
@@ -94,7 +87,7 @@ abstract class TrueTypeEmbedder implements Subsetter
             InputStream is = ttf.getOriginalData();
             byte[] b = new byte[4];
             is.mark(b.length);
-            if (is.read(b) == b.length && new String(b, StandardCharsets.US_ASCII).equals("ttcf"))
+            if (is.read(b) == b.length && new String(b).equals("ttcf"))
             {
                 is.close();
                 throw new IOException("Full embedding of TrueType font collections not supported");
@@ -145,10 +138,9 @@ abstract class TrueTypeEmbedder implements Subsetter
      */
     final boolean isEmbeddingPermitted(TrueTypeFont ttf) throws IOException
     {
-        OS2WindowsMetricsTable os2 = ttf.getOS2Windows();
-        if (os2 != null)
+        if (ttf.getOS2Windows() != null)
         {
-            int fsType = os2.getFsType();
+            int fsType = ttf.getOS2Windows().getFsType();
             int maskedFsType = fsType & 0x000F;
             // PDFBOX-5191: don't check the bit because permissions are exclusive
             if (maskedFsType == OS2WindowsMetricsTable.FSTYPE_RESTRICTED)
@@ -171,10 +163,9 @@ abstract class TrueTypeEmbedder implements Subsetter
      */
     private boolean isSubsettingPermitted(TrueTypeFont ttf) throws IOException
     {
-        OS2WindowsMetricsTable os2 = ttf.getOS2Windows();
-        if (os2 != null)
+        if (ttf.getOS2Windows() != null)
         {
-            int fsType = os2.getFsType();
+            int fsType = ttf.getOS2Windows().getFsType();
             if ((fsType & OS2WindowsMetricsTable.FSTYPE_NO_SUBSETTING) ==
                           OS2WindowsMetricsTable.FSTYPE_NO_SUBSETTING)
             {
@@ -318,8 +309,22 @@ abstract class TrueTypeEmbedder implements Subsetter
             throw new IllegalStateException("Subsetting is disabled");
         }
 
+        // PDF spec required tables (if present), all others will be removed
+        List<String> tables = new ArrayList<>();
+        tables.add("head");
+        tables.add("hhea");
+        tables.add("loca");
+        tables.add("maxp");
+        tables.add("cvt ");
+        tables.add("prep");
+        tables.add("glyf");
+        tables.add("hmtx");
+        tables.add("fpgm");
+        // Windows ClearType
+        tables.add("gasp");
+
         // set the GIDs to subset
-        TTFSubsetter subsetter = new TTFSubsetter(ttf, TABLES);
+        TTFSubsetter subsetter = new TTFSubsetter(ttf, tables);
         subsetter.addAll(subsetCodePoints);
         subsetter.forceInvisible('\u200B'); // ZWSP
         subsetter.forceInvisible('\u200C'); // ZWNJ
@@ -364,8 +369,9 @@ abstract class TrueTypeEmbedder implements Subsetter
      */
     public String getTag(Map<Integer, Integer> gidToCid)
     {
-        // hash might be negative due to an overflow if the map contains lots of values
-        long num = Math.abs(gidToCid.hashCode());
+        // deterministic
+        long num = gidToCid.hashCode();
+
         // base25 encode
         StringBuilder sb = new StringBuilder();
         do

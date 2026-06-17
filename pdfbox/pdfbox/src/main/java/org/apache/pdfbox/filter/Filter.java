@@ -29,8 +29,8 @@ import java.util.zip.Deflater;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
@@ -50,7 +50,7 @@ import org.apache.pdfbox.io.RandomAccessReadWriteBuffer;
  */
 public abstract class Filter
 {
-    private static final Logger LOG = LogManager.getLogger(Filter.class);
+    private static final Log LOG = LogFactory.getLog(Filter.class);
 
     /**
      * Compression Level System Property. Set this to a value from 0 to 9 to change the zlib deflate
@@ -59,16 +59,6 @@ public abstract class Filter
      * {@code System.setProperty(Filter.SYSPROP_DEFLATELEVEL, "9");}
      */
     public static final String SYSPROP_DEFLATELEVEL = "org.apache.pdfbox.filter.deflatelevel";
-
-    /**
-     * CCITTFax decode buffer size cap System Property. Sets the maximum number of bytes that
-     * CCITTFaxFilter is allowed to pre-allocate for a single image decode buffer. PDF-controlled
-     * /Columns and /Rows values are validated against this limit before allocation to prevent
-     * denial-of-service via crafted image dimensions. The default is 256 MB. To raise the cap for
-     * high-resolution legitimate documents, use
-     * {@code System.setProperty(Filter.SYSPROP_CCITTFAX_MAXBYTES, String.valueOf(512 * 1024 * 1024L));}
-     */
-    public static final String SYSPROP_CCITTFAX_MAXBYTES = "org.apache.pdfbox.filter.ccittmaxbytes";
 
     /**
      * Constructor.
@@ -152,8 +142,8 @@ public abstract class Filter
         }
         else if (obj != null && !(filter instanceof COSArray || obj instanceof COSArray))
         {
-            LOG.error("Expected DecodeParams to be an Array or Dictionary but found {}",
-                    obj.getClass().getName());
+            LOG.error("Expected DecodeParams to be an Array or Dictionary but found " +
+                      obj.getClass().getName());
         }
         return new COSDictionary();
     }
@@ -166,7 +156,7 @@ public abstract class Filter
      * @return The image reader for the format.
      * @throws MissingImageReaderException if no image reader is found.
      */
-    public static ImageReader findImageReader(String formatName, String errorCause)
+    public static final ImageReader findImageReader(String formatName, String errorCause)
             throws MissingImageReaderException
     {
         Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName(formatName);
@@ -189,7 +179,7 @@ public abstract class Filter
      * @return The image reader for the format.
      * @throws MissingImageReaderException if no image reader is found.
      */
-    public static ImageReader findRasterReader(String formatName, String errorCause)
+    public static final ImageReader findRasterReader(String formatName, String errorCause)
             throws MissingImageReaderException
     {
         Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName(formatName);

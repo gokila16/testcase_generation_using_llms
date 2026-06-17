@@ -33,7 +33,7 @@ public abstract class GraphicsOperatorProcessor extends OperatorProcessor
     }
 
     /**
-     * GraphicsOperatorProcessor uses a specialized engine.
+     * GraphicsOperatorProcessor uses a spezialized engine.
      * 
      * @return PDFGraphicsStreamEngine to be used for processing
      */

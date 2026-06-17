@@ -19,8 +19,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.contentstream.operator.Operator;
 import org.apache.pdfbox.contentstream.operator.OperatorName;
 import org.apache.pdfbox.cos.COSArray;
@@ -42,18 +42,18 @@ import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationFreeText;
 import static org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationLine.LE_NONE;
 import org.apache.pdfbox.pdmodel.interactive.annotation.PDAppearanceStream;
 import org.apache.pdfbox.pdmodel.interactive.annotation.PDBorderEffectDictionary;
-import org.apache.pdfbox.pdmodel.interactive.AppearanceStyle;
-import org.apache.pdfbox.pdmodel.interactive.PlainText;
-import org.apache.pdfbox.pdmodel.interactive.PlainTextFormatter;
+import org.apache.pdfbox.pdmodel.interactive.annotation.layout.AppearanceStyle;
+import org.apache.pdfbox.pdmodel.interactive.annotation.layout.PlainText;
+import org.apache.pdfbox.pdmodel.interactive.annotation.layout.PlainTextFormatter;
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import org.apache.pdfbox.util.Matrix;
 
 public class PDFreeTextAppearanceHandler extends PDAbstractAppearanceHandler
 {
-    private static final Logger LOG = LogManager.getLogger(PDFreeTextAppearanceHandler.class);
+    private static final Log LOG = LogFactory.getLog(PDFreeTextAppearanceHandler.class);
 
     private static final Pattern COLOR_PATTERN =
-            Pattern.compile("color:\\s*+#([0-9a-fA-F]{6})");
+            Pattern.compile(".*color\\:\\s*\\#([0-9a-fA-F]{6}).*");
 
     private float fontSize = 10;
     private COSName fontName = COSName.HELV;
@@ -118,8 +118,6 @@ public class PDFreeTextAppearanceHandler extends PDAbstractAppearanceHandler
             }
             cs.setLineWidth(ab.width);
 
-            String lineEndingStyle = annotation.getLineEndingStyle();
-
             // draw callout line(s)
             // must be done before retangle paint to avoid a line cutting through cloud
             // see CTAN-example-Annotations.pdf
@@ -129,7 +127,7 @@ public class PDFreeTextAppearanceHandler extends PDAbstractAppearanceHandler
                 float y = pathsArray[i * 2 + 1];
                 if (i == 0)
                 {
-                    if (SHORT_STYLES.contains(lineEndingStyle))
+                    if (SHORT_STYLES.contains(annotation.getLineEndingStyle()))
                     {
                         // modify coordinate to shorten the segment
                         // https://stackoverflow.com/questions/7740507/extend-a-line-segment-a-specific-distance
@@ -157,7 +155,7 @@ public class PDFreeTextAppearanceHandler extends PDAbstractAppearanceHandler
             // paint the styles here and after line(s) draw, to avoid line crossing a filled shape       
             if (PDAnnotationFreeText.IT_FREE_TEXT_CALLOUT.equals(annotation.getIntent())
                     // check only needed to avoid q cm Q if LE_NONE
-                    && !LE_NONE.equals(lineEndingStyle)
+                    && !LE_NONE.equals(annotation.getLineEndingStyle())
                     && pathsArray.length >= 4)
             {
                 float x2 = pathsArray[2];
@@ -165,7 +163,7 @@ public class PDFreeTextAppearanceHandler extends PDAbstractAppearanceHandler
                 float x1 = pathsArray[0];
                 float y1 = pathsArray[1];
                 cs.saveGraphicsState();
-                if (ANGLED_STYLES.contains(lineEndingStyle))
+                if (ANGLED_STYLES.contains(annotation.getLineEndingStyle()))
                 {
                     // do a transform so that first "arm" is imagined flat,
                     // like in line handler.
@@ -179,7 +177,7 @@ public class PDFreeTextAppearanceHandler extends PDAbstractAppearanceHandler
                 {
                     cs.transform(Matrix.getTranslateInstance(x1, y1));
                 }
-                drawStyle(lineEndingStyle, cs, 0, 0, ab.width, hasStroke, hasBackground, false);
+                drawStyle(annotation.getLineEndingStyle(), cs, 0, 0, ab.width, hasStroke, hasBackground, false);
                 cs.restoreGraphicsState();
             }
 
@@ -290,8 +288,7 @@ public class PDFreeTextAppearanceHandler extends PDAbstractAppearanceHandler
             cs.addRect(xOffset, clipY, clipWidth, clipHeight);
             cs.clip();
 
-            String annotationContents = annotation.getContents();
-            if (annotationContents != null)
+            if (annotation.getContents() != null)
             {
                 cs.beginText();
                 cs.setFont(font, fontSize);
@@ -301,7 +298,7 @@ public class PDFreeTextAppearanceHandler extends PDAbstractAppearanceHandler
                 appearanceStyle.setFontSize(fontSize);
                 PlainTextFormatter formatter = new PlainTextFormatter.Builder(cs)
                         .style(appearanceStyle)
-                        .text(new PlainText(annotationContents))
+                        .text(new PlainText(annotation.getContents()))
                         .width(width - ab.width * 4)
                         .wrapLines(true)
                         .initialOffset(xOffset, yOffset)

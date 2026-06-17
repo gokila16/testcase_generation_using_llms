@@ -17,9 +17,19 @@
    specific language governing permissions and limitations
    under the License.
 -->
-<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.4.xsd">
-	<suppress>
-	   <packageUrl regex="true">^pkg:maven/org\.apache\.pdfbox/jbig2-imageio@.*$</packageUrl>
-	   <cpe>cpe:/a:apache:pdfbox</cpe>
-	</suppress>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <suppress>
+       <notes><![CDATA[
+       file name: lucene-core-8.11.4.jar
+       ]]></notes>
+       <packageUrl regex="true">^pkg:maven/org\.apache\.lucene/lucene-core@.*$</packageUrl>
+       <cpe>cpe:/a:apache:lucene</cpe>
+    </suppress>
+    <suppress>
+       <notes><![CDATA[
+       file name: lucene-analyzers-common-8.11.4.jar
+       ]]></notes>
+       <packageUrl regex="true">^pkg:maven/org\.apache\.lucene/lucene-analyzers-common@.*$</packageUrl>
+       <cpe>cpe:/a:apache:lucene</cpe>
+    </suppress>
 </suppressions>

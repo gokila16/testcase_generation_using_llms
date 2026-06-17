@@ -16,7 +16,6 @@
  */
 package org.apache.pdfbox.pdmodel.interactive.form;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -40,6 +39,7 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.rendering.TestPDFToImage;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -129,7 +129,7 @@ class PDAcroFormFlattenTest
         // PDFBOX-4788: non-widget annotations are not to be removed on a page that has no widget
         // annotations.
         "https://issues.apache.org/jira/secure/attachment/12994791/flatten.pdf,PDFBOX-4788.pdf",
-    
+
         // PDFBOX-4955: appearance streams with forms that are not used.
         "https://issues.apache.org/jira/secure/attachment/13011410/PDFBOX-4955.pdf,PDFBOX-4955.pdf",
 

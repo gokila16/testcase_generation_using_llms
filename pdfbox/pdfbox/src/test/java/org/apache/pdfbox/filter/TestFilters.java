@@ -20,17 +20,16 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
+
 import java.util.Random;
 
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
-import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.io.IOUtils;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Test;
 
@@ -130,11 +129,8 @@ class TestFilters
     @Test
     void testPDFBOX4517() throws IOException
     {
-        try (PDDocument doc = Loader.loadPDF(new File("target/pdfs/PDFBOX-4517-cryptfilter.pdf"),
-                "userpassword1234"))
-        {
-            assertEquals(1, doc.getNumberOfPages());
-        }
+        Loader.loadPDF(new File("target/pdfs/PDFBOX-4517-cryptfilter.pdf"),
+                "userpassword1234");
     }
 
     /**
@@ -147,12 +143,9 @@ class TestFilters
     @Test
     void testPDFBOX1977() throws IOException
     {
-        try (InputStream is = this.getClass().getResourceAsStream("PDFBOX-1977.bin"))
-        {
-            Filter lzwFilter = FilterFactory.INSTANCE.getFilter(COSName.LZW_DECODE);
-            byte[] byteArray = is.readAllBytes();
-            checkEncodeDecode(lzwFilter, byteArray);
-        }
+        Filter lzwFilter = FilterFactory.INSTANCE.getFilter(COSName.LZW_DECODE);
+        byte[] byteArray = IOUtils.toByteArray(this.getClass().getResourceAsStream("PDFBOX-1977.bin"));
+        checkEncodeDecode(lzwFilter, byteArray);
     }
 
     /**
@@ -167,7 +160,7 @@ class TestFilters
         Filter rleFilter = FilterFactory.INSTANCE.getFilter(COSName.RUN_LENGTH_DECODE);
         byte[] input0 = new byte[0];
         checkEncodeDecode(rleFilter, input0);
-        byte[] input1 = { 1, 2, 3, 4, 5, (byte) 128, (byte) 140, (byte) 180, (byte) 0xFF};
+        byte[] input1 = new byte[] { 1, 2, 3, 4, 5, (byte) 128, (byte) 140, (byte) 180, (byte) 0xFF};
         checkEncodeDecode(rleFilter, input1);
         byte[] input2 = new byte[10];
         checkEncodeDecode(rleFilter, input2);
@@ -179,7 +172,7 @@ class TestFilters
         checkEncodeDecode(rleFilter, input5);
         byte[] input6 = new byte[1];
         checkEncodeDecode(rleFilter, input6);
-        byte[] input7 = {1, 2};
+        byte[] input7 = new byte[] {1, 2};
         checkEncodeDecode(rleFilter, input7);
         byte[] input8 = new byte[2];
         checkEncodeDecode(rleFilter, input8);

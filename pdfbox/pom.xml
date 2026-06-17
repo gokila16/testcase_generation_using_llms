@@ -23,12 +23,15 @@
   <parent>
     <groupId>org.apache.pdfbox</groupId>
     <artifactId>pdfbox-parent</artifactId>
-    <version>4.0.0-SNAPSHOT</version>
+    <version>3.0.5</version>
     <relativePath>parent/pom.xml</relativePath>
   </parent>
 
   <artifactId>pdfbox-reactor</artifactId>
   <packaging>pom</packaging>
+
+  <name>Apache PDFBox Reactor</name>
+
 
   <modules>
     <module>parent</module>
@@ -36,6 +39,8 @@
     <module>fontbox</module>
     <module>xmpbox</module>
     <module>pdfbox</module>
+    <module>preflight</module>
+    <module>preflight-app</module>
     <module>debugger</module>
     <module>tools</module>
     <module>app</module>
@@ -44,38 +49,32 @@
   </modules>
 
   <scm>
-    <connection>scm:svn:https://svn.apache.org/repos/asf/pdfbox/trunk</connection>
-    <developerConnection>scm:svn:https://svn.apache.org/repos/asf/pdfbox/trunk</developerConnection>
-    <url>https://svn.apache.org/viewvc/pdfbox/trunk</url>
+      <connection>scm:svn:https://svn.apache.org/repos/asf/pdfbox/tags/3.0.5</connection>
+      <developerConnection>scm:svn:https://svn.apache.org/repos/asf/pdfbox/tags/3.0.5</developerConnection>
+      <url>https://svn.apache.org/viewvc/pdfbox/tags/3.0.5</url>
   </scm>
-  
+
   <build>
-      <plugins>
-          <plugin>
-              <groupId>org.apache.rat</groupId>
-              <artifactId>apache-rat-plugin</artifactId>
-              <configuration>
-                  <inputExcludes>
-                      <!-- already tested before -->
-                      <inputExclude>/pdfbox/**</inputExclude>
-                      <inputExclude>/fontbox/**</inputExclude>
-                      <inputExclude>/io/**</inputExclude>
-                      <inputExclude>/xmpbox/**</inputExclude>
-                      <inputExclude>/tools/**</inputExclude>
-                      <inputExclude>/examples/**</inputExclude>
-                  </inputExcludes>
-              </configuration>
-          </plugin>
-      </plugins>
+    <pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.rat</groupId>
+                <artifactId>apache-rat-plugin</artifactId>
+                <version>0.16.1</version>
+                <configuration>
+                    <excludes>
+                        <exclude>release.properties</exclude>
+                        <exclude>.github/workflows/codeql-analysis.yml</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </pluginManagement>
   </build>
 
   <profiles>
     <profile>
       <id>apache-release</id>
-      <properties>
-          <!-- needs to exist even if empty due to problems with jacoco-maven-plugin -->
-          <addmod />
-      </properties>
       <build>
         <plugins>
           <plugin>
@@ -98,7 +97,7 @@
           </plugin>
           <plugin>
             <artifactId>maven-antrun-plugin</artifactId>
-            <version>3.2.0</version>
+            <version>3.1.0</version>
             <executions>
               <execution>
                 <goals>
@@ -120,9 +119,12 @@
                         <include name="pdfbox/target/*-${project.version}-javadoc.jar*" />
                         <include name="xmpbox/target/*-${project.version}.jar*" />
                         <include name="xmpbox/target/*-${project.version}-javadoc.jar*" />
+                        <include name="preflight/target/*-${project.version}.jar*" />
+                        <include name="preflight/target/*-${project.version}-javadoc.jar*" />
                         <include name="debugger/target/*-${project.version}.jar*" />
                         <include name="tools/target/*-${project.version}.jar*" />
                         <include name="app/target/*-${project.version}.jar*" />
+                        <include name="preflight-app/target/*-${project.version}.jar*" />
                         <include name="debugger-app/target/*-${project.version}.jar*" />
                       </fileset>
                     </copy>

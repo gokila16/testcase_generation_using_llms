@@ -24,8 +24,8 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.fontbox.FontBoxFont;
 import org.apache.fontbox.cff.CFFFont;
 import org.apache.fontbox.cff.Type2CharString;
@@ -46,7 +46,6 @@ import org.apache.pdfbox.io.RandomAccessRead;
 import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.ResourceCache;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.common.PDStream;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts.FontName;
@@ -68,7 +67,7 @@ import static org.apache.pdfbox.pdmodel.font.UniUtil.getUniNameOfCodePoint;
  */
 public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
 {
-    private static final Logger LOG = LogManager.getLogger(PDTrueTypeFont.class);
+    private static final Log LOG = LogFactory.getLog(PDTrueTypeFont.class);
 
     private static final int START_RANGE_F000 = 0xF000;
     private static final int START_RANGE_F100 = 0xF100;
@@ -79,7 +78,10 @@ public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
     {
         MacOSRomanEncoding.INSTANCE.getCodeToNameMap().forEach((key, value) ->
         {
-            INVERTED_MACOS_ROMAN.putIfAbsent(value, key);
+            if (!INVERTED_MACOS_ROMAN.containsKey(value))
+            {
+                INVERTED_MACOS_ROMAN.put(value, key);
+            }
         });
     }
 
@@ -91,21 +93,19 @@ public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
     private CmapSubtable cmapWinSymbol = null;
     private CmapSubtable cmapMacRoman = null;
     private boolean cmapInitialized = false;
-    private final Map<Integer, Integer> gidToCode = new HashMap<>(); // for embedding
+    private Map<Integer, Integer> gidToCode; // for embedding
     private BoundingBox fontBBox;
 
     /**
      * Creates a new TrueType font from a Font dictionary.
      *
      * @param fontDictionary The font dictionary according to the PDF specification.
-     * @param resourceCache ResourceCache, can be null.
      * 
      * @throws IOException if the font could not be created
      */
-    public PDTrueTypeFont(COSDictionary fontDictionary, ResourceCache resourceCache)
-            throws IOException
+    public PDTrueTypeFont(COSDictionary fontDictionary) throws IOException
     {
-        super(fontDictionary, resourceCache);
+        super(fontDictionary);
 
         TrueTypeFont ttfFont = null;
         boolean fontIsDamaged = false;
@@ -126,7 +126,7 @@ public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
                 }
                 catch (IOException e)
                 {
-                    LOG.warn(() -> "Could not read embedded TTF for font " + getBaseFont(), e);
+                    LOG.warn("Could not read embedded TTF for font " + getBaseFont(), e);
                     fontIsDamaged = true;
                     IOUtils.closeQuietly(view);
                 }
@@ -145,7 +145,7 @@ public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
 
             if (mapping.isFallback())
             {
-                LOG.warn("Using fallback font {} for {}", ttfFont, getBaseFont());
+                LOG.warn("Using fallback font " + ttfFont + " for " + getBaseFont());
             }
         }
         otf = ttfFont instanceof OpenTypeFont && ((OpenTypeFont) ttfFont).isSupportedOTF()
@@ -198,13 +198,11 @@ public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
     /**
      * Loads a TTF to be embedded into a document as a simple font.
      *
-     * <p>
-     * <b>Note:</b> Simple fonts only support 256 characters. For Unicode support, use
-     * {@link PDType0Font#load(PDDocument, InputStream)} instead.
-     * </p>
+     * <p><b>Note:</b> Simple fonts only support 256 characters. For Unicode support, use
+     * {@link PDType0Font#load(PDDocument, InputStream)} instead.</p>
      * 
      * @param doc The PDF document that will hold the embedded font.
-     * @param input A TTF file stream. It will be closed before returning.
+     * @param input A TTF file stream
      * @param encoding The PostScript encoding vector to be used for embedding.
      * @return a PDTrueTypeFont instance.
      * @throws IOException If there is an error loading the data.
@@ -212,7 +210,7 @@ public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
     public static PDTrueTypeFont load(PDDocument doc, InputStream input, Encoding encoding)
             throws IOException
     {
-        return load(doc, RandomAccessReadBuffer.createBufferFromStream(input), encoding);
+        return load(doc, new RandomAccessReadBuffer(input), encoding);
     }
 
     /**
@@ -278,7 +276,7 @@ public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
             // non-symbolic fonts don't have a built-in encoding per se, but there encoding is
             // assumed to be StandardEncoding by the PDF spec unless an explicit Encoding is present
             // which will override this anyway
-            if (Boolean.FALSE.equals(getSymbolicFlag()))
+            if (getSymbolicFlag() != null &&!getSymbolicFlag())
             {
                 return StandardEncoding.INSTANCE;
             }
@@ -456,15 +454,19 @@ public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
      */
     protected Map<Integer, Integer> getGIDToCode() throws IOException
     {
-        if (!gidToCode.isEmpty())
+        if (gidToCode != null)
         {
             return gidToCode;
         }
 
+        gidToCode = new HashMap<>();
         for (int code = 0; code <= 255; code++)
         {
             int gid = codeToGID(code);
-            gidToCode.putIfAbsent(gid, code);
+            if (!gidToCode.containsKey(gid))
+            {
+                gidToCode.put(gid, code);
+            }
         }
         return gidToCode;
     }

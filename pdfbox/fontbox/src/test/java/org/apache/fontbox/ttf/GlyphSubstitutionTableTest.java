@@ -22,13 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -53,48 +50,47 @@ class GlyphSubstitutionTableTest
     void testGetGsubData() throws IOException
     {
         // given
-        try (InputStream is = GSUBTableDebugger.class.getResourceAsStream("/ttf/Lohit-Bengali.ttf");
-             RandomAccessReadBuffer rarb = new RandomAccessReadBuffer(is);
-             RandomAccessReadDataStream rarbds = new RandomAccessReadDataStream(rarb))
+        RandomAccessReadBuffer randomAccessReadBuffer = new RandomAccessReadBuffer(
+                GSUBTableDebugger.class.getResourceAsStream("/ttf/Lohit-Bengali.ttf"));
+        RandomAccessReadDataStream randomAccessReadBufferDataStream = new RandomAccessReadDataStream(
+                randomAccessReadBuffer);
+        randomAccessReadBufferDataStream.seek(DATA_POSITION_FOR_GSUB_TABLE);
+
+        GlyphSubstitutionTable testClass = new GlyphSubstitutionTable();
+
+        // when
+        testClass.read(null, randomAccessReadBufferDataStream);
+
+        // then
+        GsubData gsubData = testClass.getGsubData();
+        assertNotNull(gsubData);
+        assertNotEquals(GsubData.NO_DATA_FOUND, gsubData);
+        assertEquals(Language.BENGALI, gsubData.getLanguage());
+        assertEquals("bng2", gsubData.getActiveScriptName());
+
+        assertEquals(new HashSet<>(EXPECTED_FEATURE_NAMES), gsubData.getSupportedFeatures());
+
+        String templatePathToFile = "/gsub/lohit_bengali/bng2/%s.txt";
+
+        for (String featureName : EXPECTED_FEATURE_NAMES)
         {
-            rarbds.seek(DATA_POSITION_FOR_GSUB_TABLE);
-            
-            GlyphSubstitutionTable testClass = new GlyphSubstitutionTable();
-            
-            // when
-            testClass.read(null, rarbds);
-            
-            // then
-            GsubData gsubData = testClass.getGsubData();
-            assertNotNull(gsubData);
-            assertNotEquals(GsubData.NO_DATA_FOUND, gsubData);
-            assertEquals(Language.BENGALI, gsubData.getLanguage());
-            assertEquals("bng2", gsubData.getActiveScriptName());
-            
-            assertEquals(new HashSet<>(EXPECTED_FEATURE_NAMES), gsubData.getSupportedFeatures());
-            
-            String templatePathToFile = "/gsub/lohit_bengali/bng2/%s.txt";
-            
-            for (String featureName : EXPECTED_FEATURE_NAMES)
-            {
-                System.out.println("******* Testing feature: " + featureName);
-                Map<List<Integer>, List<Integer>> expectedGsubTableRawData = getExpectedGsubTableRawData(
-                        String.format(templatePathToFile, featureName));
-                ScriptFeature scriptFeature = new MapBackedScriptFeature(featureName,
-                        expectedGsubTableRawData);
-                assertEquals(scriptFeature, gsubData.getFeature(featureName));
-            }
+            System.out.println("******* Testing feature: " + featureName);
+            Map<List<Integer>, Integer> expectedGsubTableRawData = getExpectedGsubTableRawData(
+                    String.format(templatePathToFile, featureName));
+            ScriptFeature scriptFeature = new MapBackedScriptFeature(featureName,
+                    expectedGsubTableRawData);
+            assertEquals(scriptFeature, gsubData.getFeature(featureName));
         }
+
     }
 
-    private Map<List<Integer>, List<Integer>> getExpectedGsubTableRawData(String pathToResource)
+    private Map<List<Integer>, Integer> getExpectedGsubTableRawData(String pathToResource)
             throws IOException
     {
-        Map<List<Integer>, List<Integer>> gsubData = new HashMap<>();
+        Map<List<Integer>, Integer> gsubData = new HashMap<>();
 
         try (BufferedReader br = new BufferedReader(
-             new InputStreamReader(
-                     TestTTFParser.class.getResourceAsStream(pathToResource), StandardCharsets.US_ASCII)))
+             new InputStreamReader(TestTTFParser.class.getResourceAsStream(pathToResource))))
         {
             while (true)
             {
@@ -105,7 +101,7 @@ class GlyphSubstitutionTableTest
                     break;
                 }
 
-                if (line.isBlank())
+                if (line.trim().isEmpty())
                 {
                     continue;
                 }
@@ -128,7 +124,7 @@ class GlyphSubstitutionTableTest
                 }
 
                 Integer newGlyphId = Integer.valueOf(lineSplittedByKeyValue[1]);
-                gsubData.put(oldGlyphIds, Collections.singletonList(newGlyphId));
+                gsubData.put(oldGlyphIds, newGlyphId);
             }
         }
         return gsubData;

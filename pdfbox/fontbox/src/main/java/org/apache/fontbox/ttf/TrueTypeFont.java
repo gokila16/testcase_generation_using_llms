@@ -21,15 +21,15 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
-
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.fontbox.FontBoxFont;
 import org.apache.fontbox.ttf.model.GsubData;
 import org.apache.fontbox.util.BoundingBox;
@@ -42,7 +42,7 @@ import org.apache.fontbox.util.BoundingBox;
 public class TrueTypeFont implements FontBoxFont, Closeable
 {
 
-    private static final Logger LOG = LogManager.getLogger(TrueTypeFont.class);
+    private static final Log LOG = LogFactory.getLog(TrueTypeFont.class);
 
     private float version;
     private int numberOfGlyphs = -1;
@@ -650,12 +650,6 @@ public class TrueTypeFont implements FontBoxFont, Closeable
         }
         if (cmap == null)
         {
-            // PDFBOX-6015
-            cmap = cmapTable.getSubtable(CmapTable.PLATFORM_UNICODE,
-                                         CmapTable.ENCODING_UNICODE_1_1);
-        }
-        if (cmap == null)
-        {
             if (isStrict)
             {
                 throw new IOException("The TrueType font does not contain a Unicode cmap");
@@ -750,7 +744,7 @@ public class TrueTypeFont implements FontBoxFont, Closeable
                     }
                 }
                 String unicode = uniStr.toString();
-                if (unicode.isEmpty())
+                if (unicode.length() == 0)
                 {
                     return -1;
                 }
@@ -811,7 +805,7 @@ public class TrueTypeFont implements FontBoxFont, Closeable
     public List<Number> getFontMatrix() throws IOException
     {
         float scale = 1000f / getUnitsPerEm();
-        return List.of(0.001f * scale, 0, 0, 0.001f * scale, 0, 0);
+        return Arrays.<Number>asList(0.001f * scale, 0, 0, 0.001f * scale, 0, 0);
     }
 
     /**

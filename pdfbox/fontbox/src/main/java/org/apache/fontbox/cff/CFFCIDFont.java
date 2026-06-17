@@ -21,6 +21,7 @@ import java.awt.geom.GeneralPath;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.fontbox.type1.Type1CharStringReader;
@@ -179,8 +180,8 @@ public class CFFCIDFont extends CFFFont
         {
             return 1000;
         }
-        Object privDictValue = this.privateDictionaries.get(fdArrayIndex).get("defaultWidthX");
-        return privDictValue instanceof Number ? ((Number) privDictValue).intValue() : 1000;
+        Map<String, Object> privDict = this.privateDictionaries.get(fdArrayIndex);
+        return privDict.containsKey("defaultWidthX") ? ((Number)privDict.get("defaultWidthX")).intValue() : 1000;
     }
 
     /**
@@ -195,8 +196,8 @@ public class CFFCIDFont extends CFFFont
         {
             return 0;
         }
-        Object privDictValue = this.privateDictionaries.get(fdArrayIndex).get("nominalWidthX");
-        return privDictValue instanceof Number ? ((Number) privDictValue).intValue() : 0;
+        Map<String, Object> privDict = this.privateDictionaries.get(fdArrayIndex);
+        return privDict.containsKey("nominalWidthX") ? ((Number)privDict.get("nominalWidthX")).intValue() : 0;
     }
 
     /**
@@ -235,7 +236,7 @@ public class CFFCIDFont extends CFFFont
                 bytes = charStrings[0]; // .notdef
             }
             List<Object> type2seq = getParser().parse(bytes, globalSubrIndex,
-                    getLocalSubrIndex(gid));
+                    getLocalSubrIndex(gid), String.format(Locale.US, "%04x", cid));
             type2 = new CIDKeyedType2CharString(reader, getName(), cid, gid, type2seq,
                                                 getDefaultWidthX(gid), getNominalWidthX(gid));
             charStringCache.put(cid, type2);

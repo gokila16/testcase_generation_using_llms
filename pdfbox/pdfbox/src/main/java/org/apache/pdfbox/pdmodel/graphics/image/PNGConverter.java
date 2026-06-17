@@ -29,8 +29,8 @@ import java.util.List;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.MemoryCacheImageInputStream;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSInteger;
@@ -54,14 +54,14 @@ import org.apache.pdfbox.pdmodel.graphics.color.PDIndexed;
  * If this is for any reason not possible, the factory will return null. You
  * must then encode the image by loading it and using the LosslessFactory.
  * <p>
- * <a href="https://www.w3.org/TR/2003/REC-PNG-20031110">The W3C PNG spec</a> was used to implement
- * this class.
+ * The W3C PNG spec was used to implement this class:
+ * https://www.w3.org/TR/2003/REC-PNG-20031110
  *
  * @author Emmeran Seehuber
  */
 final class PNGConverter
 {
-    private static final Logger LOG = LogManager.getLogger(PNGConverter.class);
+    private static final Log LOG = LogFactory.getLog(PNGConverter.class);
 
     // Chunk Type definitions. The bytes in the comments are the bytes in the spec.
     private static final int CHUNK_IHDR = 0x49484452; // IHDR: 73 72 68 82
@@ -144,27 +144,27 @@ final class PNGConverter
 
         if (bitDepth != 1 && bitDepth != 2 && bitDepth != 4 && bitDepth != 8 && bitDepth != 16)
         {
-            LOG.error("Invalid bit depth %d.", bitDepth);
+            LOG.error(String.format("Invalid bit depth %d.", bitDepth));
             return null;
         }
         if (width <= 0 || height <= 0)
         {
-            LOG.error("Invalid image size %d x %d", width, height);
+            LOG.error(String.format("Invalid image size %d x %d", width, height));
             return null;
         }
         if (compressionMethod != 0)
         {
-            LOG.error("Unknown PNG compression method %d.", compressionMethod);
+            LOG.error(String.format("Unknown PNG compression method %d.", compressionMethod));
             return null;
         }
         if (filterMethod != 0)
         {
-            LOG.error("Unknown PNG filtering method %d.", compressionMethod);
+            LOG.error(String.format("Unknown PNG filtering method %d.", compressionMethod));
             return null;
         }
         if (interlaceMethod != 0)
         {
-            LOG.debug("Can't handle interlace method %d.", interlaceMethod);
+            LOG.debug(String.format("Can't handle interlace method %d.", interlaceMethod));
             return null;
         }
 
@@ -200,7 +200,7 @@ final class PNGConverter
                     "Can't handle truecolor with alpha, would need to separate alpha from image data");
             return null;
         default:
-            LOG.error("Unknown PNG color type {}", colorType);
+            LOG.error("Unknown PNG color type " + colorType);
             return null;
         }
     }
@@ -224,8 +224,8 @@ final class PNGConverter
         }
         if (state.bitsPerComponent > 8)
         {
-            LOG.debug("Can only convert indexed images with bit depth <= 8, not %d.",
-                    state.bitsPerComponent);
+            LOG.debug(String.format("Can only convert indexed images with bit depth <= 8, not %d.",
+                    state.bitsPerComponent));
             return null;
         }
 
@@ -238,8 +238,8 @@ final class PNGConverter
         int highVal = (plte.length / 3) - 1;
         if (highVal > 255)
         {
-            LOG.error("Too much colors in PLTE, only 256 allowed, found %d colors.",
-                    highVal + 1);
+            LOG.error(String.format("Too much colors in PLTE, only 256 allowed, found %d colors.",
+                    highVal + 1));
             return null;
         }
 
@@ -348,7 +348,7 @@ final class PNGConverter
         {
             if (state.gAMA.length != 4)
             {
-                LOG.error("Invalid gAMA chunk length {}", state.gAMA.length);
+                LOG.error("Invalid gAMA chunk length " + state.gAMA.length);
                 return null;
             }
             float gamma = readPNGFloat(state.gAMA.bytes, state.gAMA.start);
@@ -356,7 +356,7 @@ final class PNGConverter
             // The gamma is stored as 1 / gamma.
             if (Math.abs(gamma - (1 / 2.2f)) > 0.00001)
             {
-                LOG.debug("We can't handle gamma of %f yet.", gamma);
+                LOG.debug(String.format("We can't handle gamma of %f yet.", gamma));
                 return null;
             }
         }
@@ -365,7 +365,8 @@ final class PNGConverter
         {
             if (state.sRGB.length != 1)
             {
-                LOG.error("sRGB chunk has an invalid length of %d", state.sRGB.length);
+                LOG.error(
+                        String.format("sRGB chunk has an invalid length of %d", state.sRGB.length));
                 return null;
             }
 
@@ -379,7 +380,7 @@ final class PNGConverter
         {
             if (state.cHRM.length != 32)
             {
-                LOG.error("Invalid cHRM chunk length {}", state.cHRM.length);
+                LOG.error("Invalid cHRM chunk length " + state.cHRM.length);
                 return null;
             }
             LOG.debug("We can not handle cHRM chunks yet.");
@@ -435,7 +436,8 @@ final class PNGConverter
             byte compressionMethod = state.iCCP.bytes[state.iCCP.start + iccProfileDataStart];
             if (compressionMethod != 0)
             {
-                LOG.error("iCCP chunk: invalid compression method %d", compressionMethod);
+                LOG.error(String.format("iCCP chunk: invalid compression method %d",
+                        compressionMethod));
                 return null;
             }
             // Skip over the compression method
@@ -551,8 +553,7 @@ final class PNGConverter
 
     /**
      * Map the renderIntent int to a PDF render intent. See also
-     * <a href="https://www.w3.org/TR/2003/REC-PNG-20031110/#11sRGB">sRGB Standard RGB colour
-     * space</a>.
+     * https://www.w3.org/TR/2003/REC-PNG-20031110/#11sRGB
      *
      * @param renderIntent the PNG render intent
      * @return the matching PDF Render Intent or null
@@ -672,7 +673,8 @@ final class PNGConverter
         int ourCRC = crc(chunk.bytes, chunk.start - 4, chunk.length + 4);
         if (ourCRC != chunk.crc)
         {
-            LOG.error("Invalid CRC %08X on chunk %08X, expected %08X.", ourCRC, chunk.chunkType, chunk.crc);
+            LOG.error(String.format("Invalid CRC %08X on chunk %08X, expected %08X.", ourCRC,
+                    chunk.chunkType, chunk.crc));
             return false;
         }
         return true;
@@ -764,7 +766,7 @@ final class PNGConverter
     {
         if (imageData.length < 20)
         {
-            LOG.error("ByteArray way to small: {}", imageData.length);
+            LOG.error("ByteArray way to small: " + imageData.length);
             return null;
         }
 
@@ -774,7 +776,7 @@ final class PNGConverter
 
         if (firstChunkType != CHUNK_IHDR)
         {
-            LOG.error("First Chunktype was %08X, not IHDR", firstChunkType);
+            LOG.error(String.format("First Chunktype was %08X, not IHDR", firstChunkType));
             return null;
         }
 
@@ -786,9 +788,8 @@ final class PNGConverter
 
             if (ptr + chunkLength + 4 > imageData.length)
             {
-                LOG.error(
-                        "Not enough bytes. At offset {} are {} bytes expected. Overall length is {}",
-                        ptr, chunkLength, imageData.length);
+                LOG.error("Not enough bytes. At offset " + ptr + " are " + chunkLength
+                        + " bytes expected. Overall length is " + imageData.length);
                 return null;
             }
 
@@ -875,7 +876,7 @@ final class PNGConverter
                 // We don't need the last image change time either
                 break;
             default:
-                LOG.debug("Unknown chunk type %08X, skipping.", chunkType);
+                LOG.debug(String.format("Unknown chunk type %08X, skipping.", chunkType));
                 break;
             }
             ptr += chunkLength;

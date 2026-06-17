@@ -85,7 +85,7 @@ public class PDActionEmbeddedGoTo extends PDAction
         {
             PDPageDestination pageDest = (PDPageDestination) d;
             COSArray destArray = pageDest.getCOSObject();
-            if (!destArray.isEmpty())
+            if (destArray.size() >= 1)
             {
                 COSBase page = destArray.getObject(0);
                 if (!(page instanceof COSInteger))
@@ -124,14 +124,13 @@ public class PDActionEmbeddedGoTo extends PDAction
      * This will specify whether to open the destination document in a new window, in the same
      * window, or behave in accordance with the current user preference.
      *
-     * @return A flag specifying how to open the destination document, never null.
+     * @return A flag specifying how to open the destination document.
      */
     public OpenMode getOpenInNewWindow()
     {
-        COSBase dictionaryObject = getCOSObject().getDictionaryObject(COSName.NEW_WINDOW);
-        if (dictionaryObject instanceof COSBoolean)
+        if (getCOSObject().getDictionaryObject(COSName.NEW_WINDOW) instanceof COSBoolean)
         {
-            COSBoolean b = (COSBoolean) dictionaryObject;
+            COSBoolean b = (COSBoolean) getCOSObject().getDictionaryObject(COSName.NEW_WINDOW);
             return b.getValue() ? OpenMode.NEW_WINDOW : OpenMode.SAME_WINDOW;
         }
         return OpenMode.USER_PREFERENCE;

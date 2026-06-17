@@ -17,17 +17,17 @@
 package org.apache.fontbox.pfb;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * Parser for a pfb-file.
@@ -37,7 +37,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class PfbParser 
 {
-    private static final Logger LOG = LogManager.getLogger(PfbParser.class);
+    private static final Log LOG = LogFactory.getLog(PfbParser.class);
     
     /**
      * the pfb header length.
@@ -65,6 +65,11 @@ public class PfbParser
      * the EOF marker.
      */
     private static final int EOF_MARKER = 0x03;
+    
+    /**
+     * buffersize.
+     */
+    private static final int BUFFER_SIZE = 0xffff;
 
     /**
      * the parsed pfb-data.
@@ -98,7 +103,7 @@ public class PfbParser
      */
     public PfbParser(final InputStream in) throws IOException 
     {
-        byte[] pfb = in.readAllBytes();
+        byte[] pfb = readFully(in);
         parsePfb(pfb);
     }
 
@@ -127,7 +132,7 @@ public class PfbParser
         List<Integer> typeList = new ArrayList<>(3);
         List<byte[]> barrList = new ArrayList<>(3);
         ByteArrayInputStream in = new ByteArrayInputStream(pfb);
-        long total = 0;
+        int total = 0;
         do
         {
             int r = in.read();
@@ -153,15 +158,9 @@ public class PfbParser
             size += in.read() << 8;
             size += in.read() << 16;
             size += in.read() << 24;
-            LOG.debug("record type: {}, segment size: {}", recordType, size);
-            if (size < 0)
+            if (LOG.isDebugEnabled())
             {
-                throw new IOException("record size " + size + " is negative");
-            }
-            if (size > pfb.length)
-            {
-                // PDFBOX-6044: avoid potential OOM
-                throw new IOException("record size " + size + " would be larger than the input");
+                LOG.debug("record type: " + recordType + ", segment size: " + size);
             }
             byte[] ar = new byte[size];
             int got = in.read(ar);
@@ -178,13 +177,8 @@ public class PfbParser
         // We now have ASCII and binary segments. Lets arrange these so that the ASCII segments
         // come first, then the binary segments, then the last ASCII segment if it is
         // 0000... cleartomark
-
-        if (total > pfb.length)
-        {
-            // PDFBOX-6044: avoid potential OOM
-            throw new IOException("total record size " + total + " would be larger than the input");
-        }
-        pfbdata = new byte[(int) total];
+        
+        pfbdata = new byte[total];
         byte[] cleartomarkSegment = null;
         int dstPos = 0;
         
@@ -196,8 +190,7 @@ public class PfbParser
                 continue;
             }
             byte[] ar = barrList.get(i);
-            if (i == typeList.size() - 1 && ar.length < 600 &&
-                    new String(ar, StandardCharsets.US_ASCII).contains("cleartomark"))
+            if (i == typeList.size() - 1 && ar.length < 600 && new String(ar).contains("cleartomark"))
             {
                 cleartomarkSegment = ar;
                 continue;
@@ -225,6 +218,25 @@ public class PfbParser
             System.arraycopy(cleartomarkSegment, 0, pfbdata, dstPos, cleartomarkSegment.length);
             lengths[2] = cleartomarkSegment.length;
         }
+    }
+
+    /**
+     * Read the pfb input.
+     * @param in    The input.
+     * @return Returns the pfb-array.
+     * @throws IOException if an IO-error occurs.
+     */
+    private byte[] readFully(final InputStream in) throws IOException 
+    {
+        // copy into an array
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        byte[] tmpbuf = new byte[BUFFER_SIZE];
+        int amountRead;
+        while ((amountRead = in.read(tmpbuf)) != -1) 
+        {
+            out.write(tmpbuf, 0, amountRead);
+        }
+        return out.toByteArray();
     }
 
     /**

@@ -49,7 +49,7 @@ public abstract class PDChoice extends PDVariableText
      *
      * @param acroForm The acroform.
      */
-    protected PDChoice(PDAcroForm acroForm)
+    public PDChoice(PDAcroForm acroForm)
     {
         super(acroForm);
         getCOSObject().setItem(COSName.FT, COSName.CH);
@@ -209,18 +209,6 @@ public abstract class PDChoice extends PDVariableText
     public List<String> getOptionsExportValues()
     {
         return getOptions();
-    }
-
-    /**
-     * This will check if the field has dedicated display and export values.
-     * 
-     * @return true if export and display values are different
-     */
-    public boolean hasSeparateExportAndDisplayValues()
-    {
-        List<String> exportValues = getOptionsExportValues();
-        List<String> displayValues = getOptionsDisplayValues();
-        return !exportValues.equals(displayValues);
     }
     
     /**

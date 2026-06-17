@@ -46,8 +46,8 @@ import javax.imageio.ImageReader;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.stream.ImageInputStream;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSName;
@@ -73,7 +73,7 @@ import org.w3c.dom.NodeList;
  */
 class TestImageIOUtils
 {
-    private static final Logger LOG = LogManager.getLogger(TestImageIOUtils.class);
+    private static final Log LOG = LogFactory.getLog(TestImageIOUtils.class);
     
     /**
      * Check whether the resource images can be saved.
@@ -127,7 +127,7 @@ class TestImageIOUtils
     private void doTestFile(File file, String outDir) throws IOException
     {
         PDDocument document = null;
-        LOG.info("Preparing to convert {}", file.getName());
+        LOG.info("Preparing to convert " + file.getName());
         try
         {
             float dpi = 36; // low DPI so that rendering is FAST
@@ -238,7 +238,8 @@ class TestImageIOUtils
         checkBufferedImageSize(filename, image, newImage);
     }
 
-    private void checkBufferedImageSize(String filename, BufferedImage image, BufferedImage newImage)
+    private void checkBufferedImageSize(String filename,
+            BufferedImage image, BufferedImage newImage) throws IOException
     {
         assertEquals(image.getHeight(), newImage.getHeight(), "File '" + filename + "' has different height after read");
         assertEquals(image.getWidth(), newImage.getWidth(), "File '" + filename + "' has different width after read");
@@ -267,7 +268,7 @@ class TestImageIOUtils
         PDFRenderer renderer = new PDFRenderer(document);
         BufferedImage image = renderer.renderImageWithDPI(0, dpi, imageType);
         String fileName = outputPrefix + 1;
-        LOG.info("Writing: {}.{}", fileName, imageFormat);
+        LOG.info("Writing: " + fileName + "." + imageFormat);
         System.out.println("  " + fileName + "." + imageFormat); // for Maven (keep me!)
         try (OutputStream os = new FileOutputStream(fileName + "." + imageFormat))
         {
@@ -291,10 +292,10 @@ class TestImageIOUtils
     /**
      * Test to validate image rendering of file set.
      *
-     * @throws IOException when there is an exception
+     * @throws Exception when there is an exception
      */
     @Test
-    void testRenderImage() throws IOException
+    void testRenderImage() throws Exception
     {
         String inDir = "src/test/resources/input/ImageIOUtil";
         String outDir = "target/test-output/ImageIOUtil/";
@@ -375,7 +376,7 @@ class TestImageIOUtils
         // BMP format explained here:
         // http://www.javaworld.com/article/2077561/learn-java/java-tip-60--saving-bitmap-files-in-java.html
         // we skip 38 bytes and then read two 4 byte-integers and reverse the bytes
-        try (DataInputStream dis = new DataInputStream(new FileInputStream(filename)))
+        try (DataInputStream dis = new DataInputStream(new FileInputStream(new File(filename))))
         {
             int skipped = dis.skipBytes(38);
             assertEquals(38, skipped, "Can't skip 38 bytes in image file " + filename);
