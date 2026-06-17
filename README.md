@@ -1,9 +1,10 @@
-# Test Case Generation using LLMs — v7 (SAGE)
+# Test Case Generation using LLMs — Wicket, v7 (SAGE)
 
-Automated generation of JUnit unit tests for [Apache PDFBox](https://pdfbox.apache.org/)
-using a Large Language Model. This is the **v7 / SAGE** pipeline: a multi-stage
-**plan → generate → static-check → compile/run → repair** loop driven by
-Anthropic Claude.
+Automated generation of JUnit unit tests for [Apache Wicket](https://wicket.apache.org/)
+**10.9.1** using a Large Language Model. This is the **v7 / SAGE** pipeline: a
+multi-stage **plan → generate → static-check → compile/run → repair** loop driven
+by Anthropic Claude. The system under test is the `wicket-core` module
+(`org.apache.wicket.*`).
 
 For each public method in the target codebase, the pipeline:
 
@@ -12,20 +13,33 @@ For each public method in the target codebase, the pipeline:
 2. **Generates** a JUnit test from that plan.
 3. **Statically checks** the test against an allowlist of real method/import
    signatures (`class_inventory.json`) to catch hallucinated APIs *before* compiling.
-4. **Compiles and runs** the test against the bundled PDFBox module.
+4. **Compiles and runs** the test in the `wicket-core-tests` module (which has the
+   WicketTester harness on its classpath).
 5. **Repairs** failures by feeding the compiler/test error back to the model,
    retrying up to a configurable number of times.
 6. Records the outcome (passed / failed / compile-failed / allowlist-failed / error)
    for every method.
 
+### Wicket specifics
+Wicket components can't be exercised as free-standing objects — they need a running
+`Application` + request cycle. The pipeline injects a **WicketTester** scaffold per
+method (via `dependency_chains.json`): pages use `tester.startPage(...)`, components
+use `new C("id")` + `tester.startComponentInPage(...)`, and an abstract
+class-under-test is substituted with a concrete subclass that has a `(String id)`
+constructor (e.g. `FormComponent` → `TextField`). Generated tests compile/run in
+`wicket-core-tests` because `wicket-core` itself does not depend on `wicket-tester`.
+
 ## Repository layout
 
 ```
 .
-├── pdfbox/                 Apache PDFBox source (the system under test; bundled)
+├── wicket/                 Apache Wicket 10.9.1 source — trimmed reactor (the
+│                           system under test; bundled). Modules: wicket-util,
+│                           wicket-request, wicket-core, wicket-tester,
+│                           wicket-core-tests.
 ├── inputs/                 Precomputed inputs consumed by the pipeline:
-│   ├── extracted_metadata_final.json   method metadata
-│   ├── dependency_chains.json          per-method dependency chains
+│   ├── extracted_metadata_final.json   method metadata (1423 methods)
+│   ├── dependency_chains.json          per-method dependency chains + WicketTester recipes
 │   ├── call_graph.json                 caller snippets
 │   └── class_inventory.json            allowlist of real classes/methods
 ├── test_generator/         The pipeline
@@ -46,14 +60,15 @@ For each public method in the target codebase, the pipeline:
 
 ## Branches
 
-- **`SAGE-v7`** — this pipeline.
-- **`prompt-and-repair`** — the simpler v1 pipeline (gpt-5-mini).
-- **`main`** — shared base: the PDFBox source and the common method metadata.
+- **`wicketv7`** — this pipeline (Wicket, v7 / SAGE).
+- **`wicketv1`** — the simpler v1 pipeline for Wicket.
+- **`avrov7` / `avrov1`** — the same two pipelines targeting Apache Avro.
+- **`SAGE-v7` / `prompt-and-repair`** — the original PDFBox pipelines.
 
 ## Prerequisites
 
 - **Python** 3.10+
-- **JDK** capable of building PDFBox (Java 11+; developed with a Java 25 build)
+- **JDK** capable of building Wicket 10 (Java 17+; verified with a Java 25 build)
 - **Apache Maven** 3.9.x
 - An **Anthropic API key**
 
@@ -69,12 +84,11 @@ pip install -r requirements.txt
 cp .env.example .env          # on Windows: copy .env.example .env
 #   then edit .env and set ANTHROPIC_API_KEY (and MAVEN_EXECUTABLE / JAVA_HOME if needed)
 
-# 3. Install the bundled PDFBox modules into your local Maven repository (one time).
-#    PDFBox here is 4.0.0-SNAPSHOT, so its sibling modules (io, fontbox, xmpbox, ...)
-#    are NOT on Maven Central and must be built locally first, or test compilation
-#    will fail to resolve them.
-cd pdfbox
-mvn install -DskipTests
+# 3. Install the bundled Wicket modules into your local Maven repository (one time)
+#    so wicket-core-tests can resolve wicket-core / wicket-tester. Skip javadoc:
+#    JDK 25's doclint rejects old {@link} tags in a package.html.
+cd wicket
+mvn install -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -pl wicket-tester -am
 cd ..
 ```
 
@@ -104,8 +118,9 @@ All output is written under `generated_files/v7/` (git-ignored):
 - `results/results.json` — per-method outcome
 - `results/final_report.txt` — summary report
 
-Generated test files are written into the PDFBox module under
-`pdfbox/pdfbox/generated_tests/` while compiling/running.
+Generated test files are archived under `generated_files/v7/` and copied into
+`wicket/wicket-core-tests/src/test/java/` only while compiling/running (the temp
+copy is removed afterward).
 
 ## Configuration
 
