@@ -61,7 +61,7 @@ class TestLayerUtility
 
     /**
      * Tests layer import.
-     * @throws IOException if an error occurs
+     * @throws Exception if an error occurs
      */
     @Test
     void testLayerImport() throws IOException
@@ -124,7 +124,7 @@ class TestLayerUtility
                 page.setResources( resources );
             }
 
-            final String[] text = {
+            final String[] text = new String[] {
                     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer fermentum lacus in eros",
                     "condimentum eget tristique risus viverra. Sed ac sem et lectus ultrices placerat. Nam",
                     "fringilla tincidunt nulla id euismod. Vivamus eget mauris dui. Mauris luctus ullamcorper",

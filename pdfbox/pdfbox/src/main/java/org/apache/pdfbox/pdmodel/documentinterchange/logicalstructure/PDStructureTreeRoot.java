@@ -21,8 +21,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
@@ -46,7 +46,7 @@ public class PDStructureTreeRoot extends PDStructureNode
     /**
      * Log instance.
      */
-    private static final Logger LOG = LogManager.getLogger(PDStructureTreeRoot.class);
+    private static final Log LOG = LogFactory.getLog(PDStructureTreeRoot.class);
 
     private static final String TYPE = "StructTreeRoot";
 

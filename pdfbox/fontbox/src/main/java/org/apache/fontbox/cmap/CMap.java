@@ -23,8 +23,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 /**
  * This class represents a CMap file.
  *
@@ -32,7 +33,7 @@ import org.apache.logging.log4j.LogManager;
  */
 public class CMap
 {
-    private static final Logger LOG = LogManager.getLogger(CMap.class);
+    private static final Log LOG = LogFactory.getLog(CMap.class);
 
     private int wmode = 0;
     private String cmapName = null;
@@ -192,7 +193,7 @@ public class CMap
             {
                 sb.append(String.format("0x%02X (%04o) ", bytes[i], bytes[i]));
             }
-            LOG.warn("Invalid character code sequence {} in CMap {}", sb, cmapName);
+            LOG.warn("Invalid character code sequence " + sb + "in CMap " + cmapName);
         }
         // PDFBOX-4811 reposition to where we were after initial read
         if (in.markSupported())
@@ -201,8 +202,8 @@ public class CMap
         }
         else
         {
-            LOG.warn("mark() and reset() not supported, {} bytes have been skipped",
-                    maxCodeLength - 1);
+            LOG.warn("mark() and reset() not supported, " + (maxCodeLength - 1) +
+                     " bytes have been skipped");
         }
         return toInt(bytes, minCodeLength); // Adobe Reader behavior
     }
@@ -242,12 +243,15 @@ public class CMap
             return 0;
         }
         Integer cid = null;
-        Map<Integer, Integer> codeToCidMap = codeToCid.get(code.length);
-        if (codeToCidMap != null)
+        if (codeToCid.containsKey(code.length))
         {
-            cid = codeToCidMap.get(toInt(code));
+            cid = codeToCid.get(code.length).get(toInt(code));
         }
-        return cid != null ? cid : toCIDFromRanges(code);
+        if (cid == null)
+        {
+            cid = toCIDFromRanges(code);
+        }
+        return cid;
     }
 
     /**
@@ -291,10 +295,9 @@ public class CMap
             return 0;
         }
         Integer cid = null;
-        Map<Integer, Integer> codeToCidMap = codeToCid.get(length);
-        if (codeToCidMap != null)
+        if (codeToCid.containsKey(length))
         {
-            cid = codeToCidMap.get(code);
+            cid = codeToCid.get(length).get(code);
         }
         return cid != null ? cid : toCIDFromRanges(code, length);
     }
@@ -351,11 +354,11 @@ public class CMap
         {
             case 1:
                 charToUnicodeOneByte.put(CMapStrings.getIndexValue(codes), unicode);
-                unicodeToByteCodes.put(unicode, CMapStrings.getByteValue(codes));
+                unicodeToByteCodes.put(unicode, CMapStrings.getByteValue(codes)); // clone needed, bytes is modified later
                 break;
             case 2:
                 charToUnicodeTwoBytes.put(CMapStrings.getIndexValue(codes), unicode);
-                unicodeToByteCodes.put(unicode, CMapStrings.getByteValue(codes));
+                unicodeToByteCodes.put(unicode, CMapStrings.getByteValue(codes)); // clone needed, bytes is modified later
                 break;
             case 3:
             case 4:
@@ -363,7 +366,7 @@ public class CMap
                 unicodeToByteCodes.put(unicode, codes.clone());
                 break;
             default:
-                LOG.warn("Mappings with more than 4 bytes (here: {}) aren't supported yet", codes.length);
+                LOG.warn("Mappings with more than 4 bytes aren't supported yet");
                 break;
         }
         // fixme: ugly little hack

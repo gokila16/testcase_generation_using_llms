@@ -52,8 +52,8 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.contentstream.operator.Operator;
 import org.apache.pdfbox.contentstream.operator.OperatorName;
 import org.apache.pdfbox.cos.COSArray;
@@ -68,6 +68,7 @@ import org.apache.pdfbox.cos.COSStream;
 import org.apache.pdfbox.cos.COSString;
 import org.apache.pdfbox.debugger.hexviewer.HexView;
 import org.apache.pdfbox.debugger.streampane.tooltip.ToolTipController;
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdfparser.PDFStreamParser;
 import org.apache.pdfbox.pdmodel.PDResources;
 import org.apache.pdfbox.util.XMLUtil;
@@ -80,7 +81,7 @@ import org.w3c.dom.Document;
  */
 public class StreamPane implements ActionListener
 {
-    private static final Logger LOG = LogManager.getLogger(StreamPane.class);
+    private static final Log LOG = LogFactory.getLog(StreamPane.class);
 
     private static final StyleContext CONTEXT = StyleContext.getDefaultStyleContext();
     private static final Style OPERATOR_STYLE = CONTEXT.addStyle("operator", null);
@@ -143,16 +144,6 @@ public class StreamPane implements ActionListener
             niceView = null;
         }
 
-        tabbedPane = new JTabbedPane();
-    }
-
-    /**
-     * Initialization, to be called immediately after construction.
-     *
-     * @throws IOException if there is an I/O error during internal data transfer.
-     */
-    public void init() throws IOException
-    {
         if (stream.isImage())
         {
             panel.add(createHeaderPanel(stream.getFilterList(), Stream.IMAGE, this));
@@ -164,6 +155,7 @@ public class StreamPane implements ActionListener
             requestStreamText(Stream.DECODED);
         }
 
+        tabbedPane = new JTabbedPane();
         if (stream.isImage())
         {
             tabbedPane.add("Image view", rawView.getStreamPanel());
@@ -272,7 +264,7 @@ public class StreamPane implements ActionListener
                 JOptionPane.showMessageDialog(panel, command + " text not available (filter missing?)");
                 return;
             }
-            hexView.changeData(is.readAllBytes());
+            hexView.changeData(IOUtils.toByteArray(is));
         }
     }
 
@@ -341,7 +333,7 @@ public class StreamPane implements ActionListener
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             try
             {
-                in.transferTo(baos);
+                IOUtils.copy(in, baos);
                 return baos.toString(encoding);
             }
             catch (IOException e)
@@ -392,13 +384,12 @@ public class StreamPane implements ActionListener
                     transformerFactory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
                     Transformer transformer = transformerFactory.newTransformer();
                     transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-                    transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+                    transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "1");
                     StringWriter sw = new StringWriter();
                     StreamResult result = new StreamResult(sw);
                     DOMSource source = new DOMSource(doc);
                     transformer.transform(source, result);
-                    // replaceAll because of JDK-8262285. Alternatively pass an XSLT to newTransformer()
-                    docu.insertString(0, sw.toString().replaceAll("(\\r\\n|\\r|\\n) +(\\r\\n|\\r|\\n)","\n"), null);
+                    docu.insertString(0, sw.toString(), null);
                 }
                 catch (IOException | TransformerFactoryConfigurationError | IllegalArgumentException |
                        TransformerException | BadLocationException ex)
@@ -416,7 +407,7 @@ public class StreamPane implements ActionListener
             PDFStreamParser parser;
             try
             {
-                parser = new PDFStreamParser(inputStream.readAllBytes());
+                parser = new PDFStreamParser(IOUtils.toByteArray(inputStream));
                 parser.parse().forEach(obj -> writeToken(obj, docu));
             }
             catch (IOException e)

@@ -21,8 +21,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Base64;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * Utility functions for hex encoding.
@@ -31,7 +31,7 @@ import org.apache.logging.log4j.LogManager;
  */
 public final class Hex
 {
-    private static final Logger LOG = LogManager.getLogger(Hex.class);
+    private static final Log LOG = LogFactory.getLog(Hex.class);
 
     /**
      * for hex conversion.
@@ -52,7 +52,7 @@ public final class Hex
      */
     public static String getString(byte b)
     {
-        char[] chars = {HEX_CHARS[getHighNibble(b)], HEX_CHARS[getLowNibble(b)]};
+        char[] chars = new char[]{HEX_CHARS[getHighNibble(b)], HEX_CHARS[getLowNibble(b)]};
         return new String(chars);
     }
 
@@ -86,7 +86,7 @@ public final class Hex
     /**
      * Returns the bytes corresponding to the ASCII hex encoding of the given bytes.
      * 
-     * @param bytes the bytes to be converted
+     * @param bytes the bytey to be converted
      * @return the ASCII hex encoding of the given bytes
      */
     public static byte[] getBytes(byte[] bytes)
@@ -228,46 +228,19 @@ public final class Hex
             }
             else
             {
-                int value = 16 * getHexValue(s.charAt(i)) + getHexValue(s.charAt(i + 1));
-                if (value >= 0)
+                String hexByte = s.substring(i, i + 2);
+                try
                 {
-                    baos.write(value);
+                    baos.write(Integer.parseInt(hexByte, 16)); // Byte.parseByte won't work with "9C"
                 }
-                else
+                catch (NumberFormatException ex)
                 {
-                    String hexByte = s.substring(i, i + 2);
-                    LOG.error("Can't parse {}, aborting decode", hexByte);
+                    LOG.error("Can't parse " + hexByte + ", aborting decode", ex);
+                    break;
                 }
                 i += 2;
             }
         }
         return baos.toByteArray();
     }
-
-    /**
-     * Converts a given character to its corresponding hexadecimal value. Valid characters are '0'-'9', 'A'-'F', or
-     * 'a'-'f'. Returns -256 for invalid characters.
-     * <p>
-     * The value of -256 is chosen so that to hex digits can be combined before checking for an invalid hex string
-     *
-     * @param c the character to be converted to a hexadecimal value
-     * @return the hexadecimal value of the character, or -256 if the character is invalid
-     */
-    public static int getHexValue(char c)
-    {
-        if (c >= '0' && c <= '9')
-        {
-            return c - '0';
-        }
-        else if (c >= 'A' && c <= 'F')
-        {
-            return c - 'A' + 10;
-        }
-        else if (c >= 'a' && c <= 'f')
-        {
-            return c - 'a' + 10;
-        }
-        return -256;
-    }
-
 }

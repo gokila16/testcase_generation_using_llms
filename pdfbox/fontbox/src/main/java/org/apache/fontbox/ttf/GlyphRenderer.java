@@ -16,8 +16,9 @@
  */
 package org.apache.fontbox.ttf;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import java.awt.geom.GeneralPath;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +39,7 @@ import java.util.Locale;
  */
 class GlyphRenderer
 {
-    private static final Logger LOG = LogManager.getLogger(GlyphRenderer.class);
+    private static final Log LOG = LogFactory.getLog(GlyphRenderer.class);
 
     private final GlyphDescription glyphDescription;
 
@@ -100,7 +101,7 @@ class GlyphRenderer
             {
                 Point firstPoint = points[start];
                 Point lastPoint = points[p];
-                List<Point> contour = new ArrayList<>((p - start) + 3);
+                List<Point> contour = new ArrayList<>();
                 for (int q = start; q <= p; ++q)
                 {
                     contour.add(points[q]);
@@ -150,21 +151,29 @@ class GlyphRenderer
     private void moveTo(GeneralPath path, Point point)
     {
         path.moveTo(point.x, point.y);
-        LOG.trace("moveTo: {}", () -> String.format(Locale.US, "%d,%d", point.x, point.y));
+        if (LOG.isTraceEnabled())
+        {
+            LOG.trace("moveTo: " + String.format(Locale.US, "%d,%d", point.x, point.y));
+        }
     }
 
     private void lineTo(GeneralPath path, Point point)
     {
         path.lineTo(point.x, point.y);
-        LOG.trace("lineTo: {}", () -> String.format(Locale.US, "%d,%d", point.x, point.y));
+        if (LOG.isTraceEnabled())
+        {
+            LOG.trace("lineTo: " + String.format(Locale.US, "%d,%d", point.x, point.y));
+        }
     }
 
     private void quadTo(GeneralPath path, Point ctrlPoint, Point point)
     {
         path.quadTo(ctrlPoint.x, ctrlPoint.y, point.x, point.y);
-        LOG.trace("quadTo: {}",
-                () -> String.format(Locale.US, "%d,%d %d,%d", ctrlPoint.x, ctrlPoint.y, point.x,
-                        point.y));
+        if (LOG.isTraceEnabled())
+        {
+            LOG.trace("quadTo: " + String.format(Locale.US, "%d,%d %d,%d", ctrlPoint.x, ctrlPoint.y,
+                    point.x, point.y));
+        }
     }
 
     private int midValue(int a, int b)

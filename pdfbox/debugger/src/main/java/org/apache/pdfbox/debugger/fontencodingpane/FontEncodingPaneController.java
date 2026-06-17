@@ -16,10 +16,12 @@
 
 package org.apache.pdfbox.debugger.fontencodingpane;
 
+import java.awt.geom.GeneralPath;
+import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import javax.swing.JPanel;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDResources;
@@ -27,6 +29,37 @@ import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDSimpleFont;
 import org.apache.pdfbox.pdmodel.font.PDType0Font;
 import org.apache.pdfbox.pdmodel.font.PDType3Font;
+
+abstract class FontPane
+{
+    abstract JPanel getPanel();
+
+    /**
+     * Calculate vertical bounds common to all rendered glyphs.
+     *
+     * @param tableData
+     * @param glyphIndex the table index that has glyphs.
+     * @return an array with two elements: min lower bound (but max 0), and max upper bound (but min
+     * 0).
+     */
+    double[] getYBounds(Object[][] tableData, int glyphIndex)
+    {
+        double minY = 0;
+        double maxY = 0;
+        for (Object[] aTableData : tableData)
+        {
+            GeneralPath path = (GeneralPath) aTableData[glyphIndex];
+            Rectangle2D bounds2D = path.getBounds2D();
+            if (bounds2D.isEmpty())
+            {
+                continue;
+            }
+            minY = Math.min(minY, bounds2D.getMinY());
+            maxY = Math.max(maxY, bounds2D.getMaxY());
+        }
+        return new double[]{minY, maxY};
+    }
+}
 
 /**
  * @author Khyrul Bashar
@@ -36,7 +69,7 @@ import org.apache.pdfbox.pdmodel.font.PDType3Font;
  */
 public class FontEncodingPaneController
 {
-    private static final Logger LOG = LogManager.getLogger(FontEncodingPaneController.class);
+    private static final Log LOG = LogFactory.getLog(FontEncodingPaneController.class);
 
     private FontPane fontPane;
 

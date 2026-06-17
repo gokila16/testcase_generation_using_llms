@@ -16,8 +16,10 @@
  */
 package org.apache.pdfbox.examples.util;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.List;
 
@@ -64,7 +66,8 @@ public class PrintTextLocations extends PDFTextStripper
                 stripper.setStartPage( 1 );
                 stripper.setEndPage( document.getNumberOfPages() );
 
-                stripper.writeText(document, Writer.nullWriter());
+                Writer dummy = new OutputStreamWriter(new ByteArrayOutputStream());
+                stripper.writeText(document, dummy);
             }
         }
     }

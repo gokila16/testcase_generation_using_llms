@@ -32,7 +32,7 @@ class MatrixTest
 {
     
     @Test
-    void testConstructionAndCopy()
+    void testConstructionAndCopy() throws Exception
     {
         Matrix m1 = new Matrix();
         assertMatrixIsPristine(m1);
@@ -99,9 +99,9 @@ class MatrixTest
             }
         }
 
-        float[] m1MultipliedByM1 = { 5,  8,  11,  8, 14, 20, 11, 20,  29 };
-        float[] m1MultipliedByM2 = { 29, 32, 35, 56, 62, 68, 83, 92, 101 };
-        float[] m2MultipliedByM1 = { 29, 56, 83, 32, 62, 92, 35, 68, 101 };
+        float[] m1MultipliedByM1 = new float[] { 5,  8,  11,  8, 14, 20, 11, 20,  29 };
+        float[] m1MultipliedByM2 = new float[] { 29, 32, 35, 56, 62, 68, 83, 92, 101 };
+        float[] m2MultipliedByM1 = new float[] { 29, 56, 83, 32, 62, 92, 35, 68, 101 };
 
         Matrix var1 = const1.clone();
         Matrix var2 = const2.clone();
@@ -141,7 +141,7 @@ class MatrixTest
     }
 
     @Test
-    void testOldMultiplication()
+    void testOldMultiplication() throws Exception
     {
         // This matrix will not change - we use it to drive the various multiplications.
         final Matrix testMatrix = new Matrix();
@@ -330,7 +330,7 @@ class MatrixTest
 
     //Uncomment annotation to run the test
     // @Test
-    public void testMultiplicationPerformance() {
+    void testMultiplicationPerformance() {
         long start = System.currentTimeMillis();
         Matrix c;
         Matrix d;

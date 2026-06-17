@@ -79,15 +79,15 @@ public class CMapParser
     /**
      * This will parse the stream and create a cmap object.
      *
-     * @param randomAccessRead the source of the CMap to be parsed.
+     * @param randomAcccessRead the source of the CMap to be parsed.
      * @return The parsed source as a java object, never null.
      * @throws IOException If there is an error parsing the data.
      */
-    public CMap parse(RandomAccessRead randomAccessRead) throws IOException
+    public CMap parse(RandomAccessRead randomAcccessRead) throws IOException
     {
         CMap result = new CMap();
         Object previousToken = null;
-        Object token = parseNextToken(randomAccessRead);
+        Object token = parseNextToken(randomAcccessRead);
         while (token != null)
         {
             if (token instanceof Operator)
@@ -107,32 +107,32 @@ public class CMapParser
                 {
                     if (op.op.equals("begincodespacerange"))
                     {
-                        parseBegincodespacerange((Number) previousToken, randomAccessRead, result);
+                        parseBegincodespacerange((Number) previousToken, randomAcccessRead, result);
                     }
                     else if (op.op.equals("beginbfchar"))
                     {
-                        parseBeginbfchar((Number) previousToken, randomAccessRead, result);
+                        parseBeginbfchar((Number) previousToken, randomAcccessRead, result);
                     }
                     else if (op.op.equals("beginbfrange"))
                     {
-                        parseBeginbfrange((Number) previousToken, randomAccessRead, result);
+                        parseBeginbfrange((Number) previousToken, randomAcccessRead, result);
                     }
                     else if (op.op.equals("begincidchar"))
                     {
-                        parseBegincidchar((Number) previousToken, randomAccessRead, result);
+                        parseBegincidchar((Number) previousToken, randomAcccessRead, result);
                     }
                     else if (op.op.equals("begincidrange") && previousToken instanceof Integer)
                     {
-                        parseBegincidrange((Integer) previousToken, randomAccessRead, result);
+                        parseBegincidrange((Integer) previousToken, randomAcccessRead, result);
                     }
                 }
             }
             else if (token instanceof LiteralName)
             {
-                parseLiteralName((LiteralName) token, randomAccessRead, result);
+                parseLiteralName((LiteralName) token, randomAcccessRead, result);
             }
             previousToken = token;
-            token = parseNextToken(randomAccessRead);
+            token = parseNextToken(randomAcccessRead);
         }
         return result;
     }
@@ -146,14 +146,14 @@ public class CMapParser
         }
     }
 
-    private void parseLiteralName(LiteralName literal, RandomAccessRead randomAccessRead,
+    private void parseLiteralName(LiteralName literal, RandomAccessRead randomAcccessRead,
             CMap result) throws IOException
     {
         switch (literal.name)
         {
             case "WMode":
             {
-                Object next = parseNextToken(randomAccessRead);
+                Object next = parseNextToken(randomAcccessRead);
                 if (next instanceof Integer)
                 {
                     result.setWMode((Integer) next);
@@ -162,7 +162,7 @@ public class CMapParser
             }
             case "CMapName":
             {
-                Object next = parseNextToken(randomAccessRead);
+                Object next = parseNextToken(randomAcccessRead);
                 if (next instanceof LiteralName)
                 {
                     result.setName(((LiteralName) next).name);
@@ -171,7 +171,7 @@ public class CMapParser
             }
             case "CMapVersion":
             {
-                Object next = parseNextToken(randomAccessRead);
+                Object next = parseNextToken(randomAcccessRead);
                 if (next instanceof Number)
                 {
                     result.setVersion(next.toString());
@@ -184,7 +184,7 @@ public class CMapParser
             }
             case "CMapType":
             {
-                Object next = parseNextToken(randomAccessRead);
+                Object next = parseNextToken(randomAcccessRead);
                 if (next instanceof Integer)
                 {
                     result.setType((Integer) next);
@@ -193,7 +193,7 @@ public class CMapParser
             }
             case "Registry":
             {
-                Object next = parseNextToken(randomAccessRead);
+                Object next = parseNextToken(randomAcccessRead);
                 if (next instanceof String)
                 {
                     result.setRegistry((String) next);
@@ -202,7 +202,7 @@ public class CMapParser
             }
             case "Ordering":
             {
-                Object next = parseNextToken(randomAccessRead);
+                Object next = parseNextToken(randomAcccessRead);
                 if (next instanceof String)
                 {
                     result.setOrdering((String) next);
@@ -211,7 +211,7 @@ public class CMapParser
             }
             case "Supplement":
             {
-                Object next = parseNextToken(randomAccessRead);
+                Object next = parseNextToken(randomAcccessRead);
                 if (next instanceof Integer)
                 {
                     result.setSupplement((Integer) next);
@@ -242,12 +242,12 @@ public class CMapParser
         }
     }
 
-    private void parseBegincodespacerange(Number cosCount, RandomAccessRead randomAccessRead,
+    private void parseBegincodespacerange(Number cosCount, RandomAccessRead randomAcccessRead,
             CMap result) throws IOException
     {
         for (int j = 0; j < cosCount.intValue(); j++)
         {
-            Object nextToken = parseNextToken(randomAccessRead);
+            Object nextToken = parseNextToken(randomAcccessRead);
             if (nextToken instanceof Operator)
             {
                 checkExpectedOperator((Operator) nextToken, "endcodespacerange", "codespacerange");
@@ -258,7 +258,7 @@ public class CMapParser
                 throw new IOException("start range missing");
             }
             byte[] startRange = (byte[]) nextToken;
-            byte[] endRange = parseByteArray(randomAccessRead);
+            byte[] endRange = parseByteArray(randomAcccessRead);
             try
             {
                 result.addCodespaceRange(new CodespaceRange(startRange, endRange));
@@ -270,12 +270,12 @@ public class CMapParser
         }
     }
 
-    private void parseBeginbfchar(Number cosCount, RandomAccessRead randomAccessRead,
+    private void parseBeginbfchar(Number cosCount, RandomAccessRead randomAcccessRead,
             CMap result) throws IOException
     {
         for (int j = 0; j < cosCount.intValue(); j++)
         {
-            Object nextToken = parseNextToken(randomAccessRead);
+            Object nextToken = parseNextToken(randomAcccessRead);
             if (nextToken instanceof Operator)
             {
                 checkExpectedOperator((Operator) nextToken, "endbfchar", "bfchar");
@@ -286,7 +286,7 @@ public class CMapParser
                 throw new IOException("input code missing");
             }
             byte[] inputCode = (byte[]) nextToken;
-            nextToken = parseNextToken(randomAccessRead);
+            nextToken = parseNextToken(randomAcccessRead);
             if (nextToken instanceof byte[])
             {
                 byte[] bytes = (byte[]) nextToken;
@@ -305,12 +305,12 @@ public class CMapParser
         }
     }
 
-    private void parseBegincidrange(int numberOfLines, RandomAccessRead randomAccessRead,
+    private void parseBegincidrange(int numberOfLines, RandomAccessRead randomAcccessRead,
             CMap result) throws IOException
     {
         for (int n = 0; n < numberOfLines; n++)
         {
-            Object nextToken = parseNextToken(randomAccessRead);
+            Object nextToken = parseNextToken(randomAcccessRead);
             if (nextToken instanceof Operator)
             {
                 checkExpectedOperator((Operator) nextToken, "endcidrange", "cidrange");
@@ -321,8 +321,8 @@ public class CMapParser
                 throw new IOException("start code missing");
             }
             byte[] startCode = (byte[]) nextToken;
-            byte[] endCode = parseByteArray(randomAccessRead);
-            int mappedCode = parseInteger(randomAccessRead);
+            byte[] endCode = parseByteArray(randomAcccessRead);
+            int mappedCode = parseInteger(randomAcccessRead);
             if (startCode.length == endCode.length)
             {
                 // some CMaps are using CID ranges to map single values
@@ -343,12 +343,12 @@ public class CMapParser
         }
     }
 
-    private void parseBegincidchar(Number cosCount, RandomAccessRead randomAccessRead,
+    private void parseBegincidchar(Number cosCount, RandomAccessRead randomAcccessRead,
             CMap result) throws IOException
     {
         for (int j = 0; j < cosCount.intValue(); j++)
         {
-            Object nextToken = parseNextToken(randomAccessRead);
+            Object nextToken = parseNextToken(randomAcccessRead);
             if (nextToken instanceof Operator)
             {
                 checkExpectedOperator((Operator) nextToken, "endcidchar", "cidchar");
@@ -359,17 +359,17 @@ public class CMapParser
                 throw new IOException("input code missing");
             }
             byte[] inputCode = (byte[]) nextToken;
-            int mappedCID = parseInteger(randomAccessRead);
+            int mappedCID = parseInteger(randomAcccessRead);
             result.addCIDMapping(inputCode, mappedCID);
         }
     }
 
-    private void parseBeginbfrange(Number cosCount, RandomAccessRead randomAccessRead,
+    private void parseBeginbfrange(Number cosCount, RandomAccessRead randomAcccessRead,
             CMap result) throws IOException
     {
         for (int j = 0; j < cosCount.intValue(); j++)
         {
-            Object nextToken = parseNextToken(randomAccessRead);
+            Object nextToken = parseNextToken(randomAcccessRead);
             if (nextToken instanceof Operator)
             {
                 checkExpectedOperator((Operator) nextToken, "endbfrange", "bfrange");
@@ -380,7 +380,7 @@ public class CMapParser
                 throw new IOException("start code missing");
             }
             byte[] startCode = (byte[]) nextToken;
-            nextToken = parseNextToken(randomAccessRead);
+            nextToken = parseNextToken(randomAcccessRead);
             if (nextToken instanceof Operator)
             {
                 checkExpectedOperator((Operator) nextToken, "endbfrange", "bfrange");
@@ -399,7 +399,7 @@ public class CMapParser
                 // PDFBOX-4550: likely corrupt stream
                 break;
             }
-            nextToken = parseNextToken(randomAccessRead);
+            nextToken = parseNextToken(randomAcccessRead);
             if (nextToken instanceof List<?>)
             {
                 List<byte[]> array = (List<byte[]>) nextToken;
@@ -480,25 +480,25 @@ public class CMapParser
         {
             throw new IOException("Error: Could not find referenced cmap stream " + name);
         }
-        return RandomAccessReadBuffer.createBufferFromStream(is);
+        return new RandomAccessReadBuffer(is);
     }
 
-    private Object parseNextToken(RandomAccessRead randomAccessRead) throws IOException
+    private Object parseNextToken(RandomAccessRead randomAcccessRead) throws IOException
     {
-        int nextByte = randomAccessRead.read();
+        int nextByte = randomAcccessRead.read();
         // skip whitespace
         while (nextByte == 0x09 || nextByte == 0x20 || nextByte == 0x0D || nextByte == 0x0A)
         {
-            nextByte = randomAccessRead.read();
+            nextByte = randomAcccessRead.read();
         }
         switch (nextByte)
         {
         case '%':
-            return readLine(randomAccessRead, nextByte);
+            return readLine(randomAcccessRead, nextByte);
         case '(':
-            return readString(randomAccessRead);
+            return readString(randomAcccessRead);
         case '>':
-            if (randomAccessRead.read() == '>')
+            if (randomAcccessRead.read() == '>')
             {
                 return MARK_END_OF_DICTIONARY;
             }
@@ -509,11 +509,11 @@ public class CMapParser
         case ']':
             return MARK_END_OF_ARRAY;
         case '[':
-            return readArray(randomAccessRead);
+            return readArray(randomAcccessRead);
         case '<':
-            return readDictionary(randomAccessRead);
+            return readDictionary(randomAcccessRead);
         case '/':
-            return readLiteralName(randomAccessRead);
+            return readLiteralName(randomAcccessRead);
         case -1:
         {
             // EOF returning null
@@ -529,16 +529,16 @@ public class CMapParser
         case '7':
         case '8':
         case '9':
-            return readNumber(randomAccessRead, nextByte);
+            return readNumber(randomAcccessRead, nextByte);
         default:
-            return readOperator(randomAccessRead, nextByte);
+            return readOperator(randomAcccessRead, nextByte);
         }
         return null;
     }
 
-    private Integer parseInteger(RandomAccessRead randomAccessRead) throws IOException
+    private Integer parseInteger(RandomAccessRead randomAcccessRead) throws IOException
     {
-        Object nextToken = parseNextToken(randomAccessRead);
+        Object nextToken = parseNextToken(randomAcccessRead);
         if (nextToken == null)
         {
             throw new IOException("expected integer value is missing");
@@ -550,9 +550,9 @@ public class CMapParser
         throw new IOException("invalid type for next token");
     }
 
-    private byte[] parseByteArray(RandomAccessRead randomAccessRead) throws IOException
+    private byte[] parseByteArray(RandomAccessRead randomAcccessRead) throws IOException
     {
-        Object nextToken = parseNextToken(randomAccessRead);
+        Object nextToken = parseNextToken(randomAcccessRead);
         if (nextToken == null)
         {
             throw new IOException("expected byte[] value is missing");
@@ -564,65 +564,65 @@ public class CMapParser
         throw new IOException("invalid type for next token");
     }
 
-    private List<Object> readArray(RandomAccessRead randomAccessRead) throws IOException
+    private List<Object> readArray(RandomAccessRead randomAcccessRead) throws IOException
     {
         List<Object> list = new ArrayList<>();
-        Object nextToken = parseNextToken(randomAccessRead);
+        Object nextToken = parseNextToken(randomAcccessRead);
         while (nextToken != null && !MARK_END_OF_ARRAY.equals(nextToken))
         {
             list.add(nextToken);
-            nextToken = parseNextToken(randomAccessRead);
+            nextToken = parseNextToken(randomAcccessRead);
         }
         return list;
     }
 
-    private String readString(RandomAccessRead randomAccessRead) throws IOException
+    private String readString(RandomAccessRead randomAcccessRead) throws IOException
     {
         StringBuilder buffer = new StringBuilder();
-        int stringByte = randomAccessRead.read();
+        int stringByte = randomAcccessRead.read();
         while (stringByte != -1 && stringByte != ')')
         {
             buffer.append((char) stringByte);
-            stringByte = randomAccessRead.read();
+            stringByte = randomAcccessRead.read();
         }
         return buffer.toString();
     }
 
-    private String readLine(RandomAccessRead randomAccessRead, int firstByte) throws IOException
+    private String readLine(RandomAccessRead randomAcccessRead, int firstByte) throws IOException
     {
         // header operations, for now return the entire line
         // may need to smarter in the future
         int nextByte = firstByte;
         StringBuilder buffer = new StringBuilder();
         buffer.append((char) nextByte);
-        readUntilEndOfLine(randomAccessRead, buffer);
+        readUntilEndOfLine(randomAcccessRead, buffer);
         return buffer.toString();
     }
 
-    private LiteralName readLiteralName(RandomAccessRead randomAccessRead) throws IOException
+    private LiteralName readLiteralName(RandomAccessRead randomAcccessRead) throws IOException
     {
         StringBuilder buffer = new StringBuilder();
-        int stringByte = randomAccessRead.read();
+        int stringByte = randomAcccessRead.read();
 
         while (!isWhitespaceOrEOF(stringByte) && !isDelimiter(stringByte))
         {
             buffer.append((char) stringByte);
-            stringByte = randomAccessRead.read();
+            stringByte = randomAcccessRead.read();
         }
         if (isDelimiter(stringByte))
         {
-            randomAccessRead.rewind(1);
+            randomAcccessRead.rewind(1);
         }
         return new LiteralName(buffer.toString());
     }
 
-    private Operator readOperator(RandomAccessRead randomAccessRead, int firstByte)
+    private Operator readOperator(RandomAccessRead randomAcccessRead, int firstByte)
             throws IOException
     {
         int nextByte = firstByte;
         StringBuilder buffer = new StringBuilder();
         buffer.append((char) nextByte);
-        nextByte = randomAccessRead.read();
+        nextByte = randomAcccessRead.read();
 
         // newline separator may be missing in malformed CMap files
         // see PDFBOX-2035
@@ -630,31 +630,31 @@ public class CMapParser
                 && !Character.isDigit(nextByte))
         {
             buffer.append((char) nextByte);
-            nextByte = randomAccessRead.read();
+            nextByte = randomAcccessRead.read();
         }
         if (isDelimiter(nextByte) || Character.isDigit(nextByte))
         {
-            randomAccessRead.rewind(1);
+            randomAcccessRead.rewind(1);
         }
         return new Operator(buffer.toString());
     }
     
-    private Number readNumber(RandomAccessRead randomAccessRead, int firstByte) throws IOException
+    private Number readNumber(RandomAccessRead randomAcccessRead, int firstByte) throws IOException
     {
         int nextByte = firstByte;
         StringBuilder buffer = new StringBuilder();
         buffer.append((char) nextByte);
-        nextByte = randomAccessRead.read();
+        nextByte = randomAcccessRead.read();
 
         while (!isWhitespaceOrEOF(nextByte)
                 && (Character.isDigit((char) nextByte) || nextByte == '.'))
         {
             buffer.append((char) nextByte);
-            nextByte = randomAccessRead.read();
+            nextByte = randomAcccessRead.read();
         }
         if (nextByte != -1)
         {
-            randomAccessRead.rewind(1);
+            randomAcccessRead.rewind(1);
         }
         String value = buffer.toString();
         try
@@ -674,20 +674,20 @@ public class CMapParser
         }
     }
 
-    private Object readDictionary(RandomAccessRead randomAccessRead) throws IOException
+    private Object readDictionary(RandomAccessRead randomAcccessRead) throws IOException
     {
-        int theNextByte = randomAccessRead.read();
+        int theNextByte = randomAcccessRead.read();
         if (theNextByte == '<')
         {
             Map<String, Object> result = new HashMap<>();
             // we are reading a dictionary
-            Object key = parseNextToken(randomAccessRead);
+            Object key = parseNextToken(randomAcccessRead);
             while (key instanceof LiteralName &&
                     !MARK_END_OF_DICTIONARY.equals(((LiteralName) key).name))
             {
-                Object value = parseNextToken(randomAccessRead);
+                Object value = parseNextToken(randomAcccessRead);
                 result.put(((LiteralName) key).name, value);
-                key = parseNextToken(randomAccessRead);
+                key = parseNextToken(randomAcccessRead);
             }
             return result;
         }
@@ -703,7 +703,7 @@ public class CMapParser
                 if (isWhitespaceOrEOF(theNextByte))
                 {
                     // skipping whitespaces
-                    theNextByte = randomAccessRead.read();
+                    theNextByte = randomAcccessRead.read();
                     continue;
                 }
                 int intValue = 0;
@@ -741,7 +741,7 @@ public class CMapParser
                     multiplyer = 16;
                 }
                 tokenParserByteBuffer[bufferIndex] += intValue;
-                theNextByte = randomAccessRead.read();
+                theNextByte = randomAcccessRead.read();
             }
             byte[] finalResult = new byte[bufferIndex + 1];
             System.arraycopy(tokenParserByteBuffer, 0, finalResult, 0, bufferIndex + 1);
@@ -749,14 +749,14 @@ public class CMapParser
         }
     }
 
-    private void readUntilEndOfLine(RandomAccessRead randomAccessRead, StringBuilder buf)
+    private void readUntilEndOfLine(RandomAccessRead randomAcccessRead, StringBuilder buf)
             throws IOException
     {
-        int nextByte = randomAccessRead.read();
+        int nextByte = randomAcccessRead.read();
         while (nextByte != -1 && nextByte != 0x0D && nextByte != 0x0A)
         {
             buf.append((char) nextByte);
-            nextByte = randomAccessRead.read();
+            nextByte = randomAcccessRead.read();
         }
     }
 
@@ -797,10 +797,6 @@ public class CMapParser
 
     private static boolean increment(byte[] data, int position, boolean useStrictMode)
     {
-        if (position < 0)
-        {
-            return false;
-        }
         if (position > 0 && (data[position] & 0xFF) == 255)
         {
             // PDFBOX-4661: avoid overflow of the last byte, all following values are undefined

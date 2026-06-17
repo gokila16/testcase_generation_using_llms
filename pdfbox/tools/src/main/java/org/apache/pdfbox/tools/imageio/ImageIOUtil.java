@@ -41,8 +41,8 @@ import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.stream.ImageOutputStream;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -55,7 +55,7 @@ public final class ImageIOUtil
     /**
      * Log instance
      */
-    private static final Logger LOG = LogManager.getLogger(ImageIOUtil.class);
+    private static final Log LOG = LogFactory.getLog(ImageIOUtil.class);
 
     private ImageIOUtil()
     {
@@ -236,8 +236,8 @@ public final class ImageIOUtil
             }
             if (writer == null)
             {
-                LOG.error("No ImageWriter found for '{}' format", formatName);
-                LOG.error("Supported formats: {}", Arrays.toString(ImageIO.getWriterFormatNames()));
+                LOG.error("No ImageWriter found for '" + formatName + "' format");
+                LOG.error("Supported formats: " + Arrays.toString(ImageIO.getWriterFormatNames()));
                 return false;
             }
             
@@ -311,10 +311,6 @@ public final class ImageIOUtil
 
             // write
             imageOutput = ImageIO.createImageOutputStream(output);
-            if (imageOutput == null)
-            {
-                return false;
-            }
             writer.setOutput(imageOutput);
             writer.write(null, new IIOImage(image, null, metadata), param);
         }
@@ -354,7 +350,7 @@ public final class ImageIOUtil
     {
         byte[] data = profile.getData();
 
-        ByteArrayOutputStream deflated = new ByteArrayOutputStream(Math.max(32, data.length / 2));
+        ByteArrayOutputStream deflated = new ByteArrayOutputStream(Math.max(32, 2 * data.length));
         try (DeflaterOutputStream deflater = new DeflaterOutputStream(deflated))
         {
             deflater.write(data);
@@ -400,11 +396,10 @@ public final class ImageIOUtil
         IIOMetadataNode child;
 
         child = getOrCreateChildNode(dimension, "HorizontalPixelSize");
-        String stringRes = Double.toString(res);
-        child.setAttribute("value", stringRes);
+        child.setAttribute("value", Double.toString(res));
 
         child = getOrCreateChildNode(dimension, "VerticalPixelSize");
-        child.setAttribute("value", stringRes);
+        child.setAttribute("value", Double.toString(res));
 
         metadata.mergeTree(MetaUtil.STANDARD_METADATA_FORMAT, root);
     }

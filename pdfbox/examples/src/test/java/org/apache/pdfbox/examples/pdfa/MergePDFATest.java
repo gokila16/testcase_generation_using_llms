@@ -24,11 +24,20 @@ import java.util.List;
 import javax.xml.transform.TransformerException;
 import org.apache.pdfbox.examples.pdmodel.CreatePDFA;
 import org.apache.pdfbox.examples.util.PDFMergerExample;
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.io.RandomAccessRead;
 import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
+import org.apache.pdfbox.preflight.ValidationResult;
+import org.apache.pdfbox.preflight.parser.PreflightParser;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.verapdf.core.VeraPDFException;
+import org.verapdf.gf.foundry.VeraGreenfieldFoundryProvider;
+import org.verapdf.pdfa.Foundries;
+import org.verapdf.pdfa.PDFAParser;
+import org.verapdf.pdfa.PDFAValidator;
+import org.verapdf.pdfa.flavours.PDFAFlavour;
 
 /**
  *
@@ -61,11 +70,27 @@ class MergePDFATest
         InputStream is = new PDFMergerExample().merge(sources);
         try (FileOutputStream os = new FileOutputStream(pdfaMergedFilename))
         {
-            is.transferTo(os);
+            IOUtils.copy(is, os);
         }
         sources.get(0).close();
         sources.get(1).close();
 
-        CreatePDFATest.checkWithVeraPDF(new File(pdfaMergedFilename));
+        // Verify that it is PDF/A-1b
+        ValidationResult result = PreflightParser.validate(new File(pdfaMergedFilename));
+        for (ValidationResult.ValidationError ve : result.getErrorsList())
+        {
+            System.err.println(ve.getErrorCode() + ": " + ve.getDetails());
+        }
+        assertTrue(result.isValid(), "PDF file created with CreatePDFA is not valid PDF/A-1b");
+
+        // https://docs.verapdf.org/develop/
+        VeraGreenfieldFoundryProvider.initialise();
+        PDFAFlavour flavour = PDFAFlavour.fromString("1b");
+        try (PDFAParser parser = Foundries.defaultInstance().createParser(new File(pdfaMergedFilename), flavour))
+        {
+            PDFAValidator validator = Foundries.defaultInstance().createValidator(flavour, false);
+            org.verapdf.pdfa.results.ValidationResult veraResult = validator.validate(parser);
+            assertTrue(veraResult.isCompliant());
+        }
     }
 }

@@ -50,7 +50,7 @@ public abstract class PDFunction implements COSObjectable
      * @param function The function stream.
      * 
      */
-    protected PDFunction( COSBase function )
+    public PDFunction( COSBase function )
     {
         if (function instanceof COSStream)
         {
@@ -294,7 +294,7 @@ public abstract class PDFunction implements COSObjectable
     {
         COSArray rangesArray = getRangeValues();
         float[] result;
-        if (rangesArray != null && !rangesArray.isEmpty())
+        if (rangesArray != null && rangesArray.size() > 0)
         {
             float[] rangeValues = rangesArray.toFloatArray();
             int numberOfRanges = rangeValues.length/2;

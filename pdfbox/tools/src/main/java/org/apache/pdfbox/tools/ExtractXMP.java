@@ -19,7 +19,6 @@ package org.apache.pdfbox.tools;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Files;
 
 import java.util.concurrent.Callable;
 
@@ -64,7 +63,7 @@ public class ExtractXMP implements Callable<Integer>
     /**
      * Constructor.
      */
-    public ExtractXMP()
+    private ExtractXMP()
     {
         SYSOUT = System.out;
         SYSERR = System.err;
@@ -118,14 +117,9 @@ public class ExtractXMP implements Callable<Integer>
                 SYSERR.println("No XMP metadata available");
                 return 1;
             }
-            if (toConsole)
+            try (PrintStream ps = toConsole ? SYSOUT : new PrintStream(outfile))
             {
-                SYSOUT.write(meta.toByteArray());
-                SYSOUT.flush();
-            }
-            else
-            {
-                Files.write(outfile.toPath(), meta.toByteArray());
+                ps.write(meta.toByteArray());
             }
         }
         catch (IOException ioe)

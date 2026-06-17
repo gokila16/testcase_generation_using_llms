@@ -16,11 +16,8 @@
  */
 package org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline;
 
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.Set;
-import org.apache.pdfbox.cos.COSDictionary;
 
 /**
  * Iterator over the linked list of {@link PDOutlineItem} siblings.
@@ -32,7 +29,6 @@ class PDOutlineItemIterator implements Iterator<PDOutlineItem>
 {
     private PDOutlineItem currentItem;
     private final PDOutlineItem startingItem;
-    private final Set<COSDictionary> visited = new HashSet<>();
 
     PDOutlineItemIterator(PDOutlineItem startingItem)
     {
@@ -51,7 +47,7 @@ class PDOutlineItemIterator implements Iterator<PDOutlineItem>
             return true;
         }
         PDOutlineItem sibling = currentItem.getNextSibling();
-        return sibling != null && !visited.contains(sibling.getCOSObject());
+        return sibling != null && !startingItem.equals(sibling);
     }
 
     @Override
@@ -69,7 +65,6 @@ class PDOutlineItemIterator implements Iterator<PDOutlineItem>
         {
             currentItem = currentItem.getNextSibling();
         }
-        visited.add(currentItem.getCOSObject());
         return currentItem;
     }
 

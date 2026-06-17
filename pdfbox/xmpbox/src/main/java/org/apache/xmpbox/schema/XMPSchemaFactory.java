@@ -102,7 +102,7 @@ public class XMPSchemaFactory
             argsClass = new Class[] { XMPMetadata.class, String.class, String.class };
             schemaArgs = new Object[] { metadata, namespace, prefix };
         }
-        else if (prefix != null && !prefix.isEmpty())
+        else if (prefix != null && !"".equals(prefix))
         {
             argsClass = new Class[] { XMPMetadata.class, String.class };
             schemaArgs = new Object[] { metadata, prefix };

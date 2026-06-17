@@ -28,11 +28,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
@@ -64,7 +63,7 @@ import org.apache.pdfbox.util.Matrix;
  */
 public final class PDAcroForm implements COSObjectable
 {
-    private static final Logger LOG = LogManager.getLogger(PDAcroForm.class);
+    private static final Log LOG = LogFactory.getLog(PDAcroForm.class);
 
     private static final int FLAG_SIGNATURES_EXIST = 1;
     private static final int FLAG_APPEND_ONLY = 1 << 1;
@@ -152,32 +151,24 @@ public final class PDAcroForm implements COSObjectable
     public FDFDocument exportFDF() throws IOException
     {
         FDFDocument fdf = new FDFDocument();
-        try
+        FDFCatalog catalog = fdf.getCatalog();
+        FDFDictionary fdfDict = new FDFDictionary();
+        catalog.setFDF(fdfDict);
+
+        List<PDField> fields = getFields();
+        List<FDFField> fdfFields = new ArrayList<>(fields.size());
+        for (PDField field : fields)
         {
-            FDFCatalog catalog = fdf.getCatalog();
-            FDFDictionary fdfDict = new FDFDictionary();
-            catalog.setFDF(fdfDict);
-
-            List<PDField> fields = getFields();
-            List<FDFField> fdfFields = new ArrayList<>(fields.size());
-            for (PDField field : fields)
-            {
-                fdfFields.add(field.exportFDF());
-            }
-
-            fdfDict.setID(document.getDocument().getDocumentID());
-
-            if (!fdfFields.isEmpty())
-            {
-                fdfDict.setFields(fdfFields);
-            }
-            return fdf;
+            fdfFields.add(field.exportFDF());
         }
-        catch (Exception e)
+
+        fdfDict.setID(document.getDocument().getDocumentID());
+
+        if (!fdfFields.isEmpty())
         {
-            fdf.close();
-            throw e;
+            fdfDict.setFields(fdfFields);
         }
+        return fdf;
     }
 
     /**
@@ -269,7 +260,6 @@ public final class PDAcroForm implements COSObjectable
         // preserve all non widget annotations
         for (PDPage page : pages)
         {
-            // get the widgets that are to be flattened for this page
             Set<COSDictionary> widgetsForPageMap = pagesWidgetsMap.get(page.getCOSObject());
 
             // indicates if the original content stream
@@ -479,7 +469,7 @@ public final class PDAcroForm implements COSObjectable
      * This will get a field by name, possibly using the cache if setCache is true.
      *
      * @param fullyQualifiedName The name of the field to get.
-     * @return The first field with that name of null if one was not found.
+     * @return The field with that name of null if one was not found.
      */
     public PDField getField(String fullyQualifiedName)
     {
@@ -492,7 +482,7 @@ public final class PDAcroForm implements COSObjectable
         // get the field from the field tree
         for (PDField field : getFieldTree())
         {
-            if (Objects.equals(field.getFullyQualifiedName(), fullyQualifiedName))
+            if (field.getFullyQualifiedName().equals(fullyQualifiedName))
             {
                 return field;
             }
@@ -770,8 +760,7 @@ public final class PDAcroForm implements COSObjectable
     }
 
     /**
-     * Build a map of page => set of widgets to be flattened
-     *
+     * Build a map of pages => widgets
      * @param fields a list of fields to be flattened
      * @param pages the page tree
      * @return
@@ -795,7 +784,7 @@ public final class PDAcroForm implements COSObjectable
                 }
                 else
                 {
-                    LOG.warn("missing /P entry (page reference) in a widget for field: {}", field);
+                    LOG.warn("missing /P entry (page reference) in a widget for field: " + field);
                     hasMissingPageRef = true;
                 }
             }

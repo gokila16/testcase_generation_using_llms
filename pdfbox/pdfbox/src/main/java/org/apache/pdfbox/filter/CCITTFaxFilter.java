@@ -23,6 +23,7 @@ import java.io.PushbackInputStream;
 
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.io.IOUtils;
 
 /**
  * Decodes image data that has been encoded using either Group 3 or Group 4
@@ -59,82 +60,37 @@ final class CCITTFaxFilter extends Filter
         // decompress data
         int k = decodeParms.getInt(COSName.K, 0);
         boolean encodedByteAlign = decodeParms.getBoolean(COSName.ENCODED_BYTE_ALIGN, false);
-        if (cols <= 0 || rows <= 0)
-        {
-            throw new IOException("Invalid CCITT image dimensions: cols=" + cols + ", rows=" + rows);
-        }
-
-        long arraySizeLong = ((long) cols + 7) / 8 * rows;
-
-        long maxBytes = 256 * 1024 * 1024L;
-        String sysProp = System.getProperty(Filter.SYSPROP_CCITTFAX_MAXBYTES);
-
-        if (sysProp != null)
-        {
-            try
-            {
-                long parsed = Long.parseLong(sysProp);
-                if (parsed > 0)
-                {
-                    maxBytes = parsed;
-                }
-                // else ignore zero/negative values
-            }
-            catch (NumberFormatException e)
-            {
-                // ignore invalid value, keep default
-            }
-        }
-
-        if (arraySizeLong > maxBytes)
-        {
-            throw new IOException(
-                "CCITT decode buffer too large (" + arraySizeLong + " bytes) for cols=" + cols +
-                ", rows=" + rows + "; max allowed=" + maxBytes +
-                "; increase " + Filter.SYSPROP_CCITTFAX_MAXBYTES + " to override"
-            );
-        }
-
-        int arraySize = (int) arraySizeLong;
+        int arraySize = (cols + 7) / 8 * rows;
+        // TODO possible options??
         byte[] decompressed = new byte[arraySize];
         CCITTFaxDecoderStream s;
         int type;
         long tiffOptions = 0;
         if (k == 0)
         {
-            if (decodeParms.containsKey(COSName.END_OF_LINE))
+            type = TIFFExtension.COMPRESSION_CCITT_T4; // Group 3 1D
+            byte[] streamData = new byte[20];
+            int bytesRead = encoded.read(streamData);
+            if (bytesRead == -1)
             {
-                // PDFBOX-6080: respect the parameter if it exists
-                boolean hasEndOfLine = decodeParms.getBoolean(COSName.END_OF_LINE, false);
-                type = hasEndOfLine ? TIFFExtension.COMPRESSION_CCITT_T4 : TIFFExtension.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE;
+                throw new IOException("EOF while reading CCITT header");
             }
-            else
+            PushbackInputStream pushbackInputStream = new PushbackInputStream(encoded, streamData.length);
+            pushbackInputStream.unread(streamData, 0, bytesRead);
+            encoded = pushbackInputStream;
+            if (streamData[0] != 0 || (streamData[1] >> 4 != 1 && streamData[1] != 1))
             {
-                // In twelvemonkeys, this part is found in CCITTFaxDecoderStream.findCompressionType()
-                // needed for 015315-p8-ccitt.pdf, PDFBOX-2123-1bit.pdf, PDFBOX-2778.pdf
-                type = TIFFExtension.COMPRESSION_CCITT_T4; // Group 3 1D
-                byte[] streamData = new byte[20];
-                int bytesRead = encoded.read(streamData);
-                if (bytesRead == -1)
+                // leading EOL (0b000000000001) not found, search further and try RLE if not
+                // found
+                type = TIFFExtension.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE;
+                short b = (short) (((streamData[0] << 8) + (streamData[1] & 0xff)) >> 4);
+                for (int i = 12; i < bytesRead * 8; i++)
                 {
-                    throw new IOException("EOF while reading CCITT header");
-                }
-                PushbackInputStream pushbackInputStream = new PushbackInputStream(encoded, streamData.length);
-                pushbackInputStream.unread(streamData, 0, bytesRead);
-                encoded = pushbackInputStream;
-                if (streamData[0] != 0 || (streamData[1] >> 4 != 1 && streamData[1] != 1))
-                {
-                    // leading EOL (0b000000000001) not found, search further and try RLE if not found
-                    type = TIFFExtension.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE;
-                    short b = (short) (((streamData[0] << 8) + (streamData[1] & 0xff)) >> 4);
-                    for (int i = 12; i < bytesRead * 8; i++)
+                    b = (short) ((b << 1) + ((streamData[(i / 8)] >> (7 - (i % 8))) & 0x01));
+                    if ((b & 0xFFF) == 1)
                     {
-                        b = (short) ((b << 1) + ((streamData[(i / 8)] >> (7 - (i % 8))) & 0x01));
-                        if ((b & 0xFFF) == 1)
-                        {
-                            type = TIFFExtension.COMPRESSION_CCITT_T4;
-                            break;
-                        }
+                        type = TIFFExtension.COMPRESSION_CCITT_T4;
+                        break;
                     }
                 }
             }
@@ -199,6 +155,6 @@ final class CCITTFaxFilter extends Filter
         int rows = parameters.getInt(COSName.ROWS);
         CCITTFaxEncoderStream ccittFaxEncoderStream = 
                 new CCITTFaxEncoderStream(encoded, cols, rows, TIFFExtension.FILL_LEFT_TO_RIGHT);
-        input.transferTo(ccittFaxEncoderStream);
+        IOUtils.copy(input, ccittFaxEncoderStream);
     }
 }

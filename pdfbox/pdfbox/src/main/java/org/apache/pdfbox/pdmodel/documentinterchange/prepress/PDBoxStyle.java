@@ -25,9 +25,6 @@ import org.apache.pdfbox.pdmodel.graphics.PDLineDashPattern;
 import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
 import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceRGB;
 
-import java.util.Arrays;
-import java.util.List;
-
 /**
  * The Box Style specifies visual characteristics for displaying box areas.
  *
@@ -87,11 +84,10 @@ public class PDBoxStyle implements COSObjectable
         COSArray colorValues = dictionary.getCOSArray(COSName.C);
         if( colorValues == null )
         {
-            colorValues = new COSArray(List.of(
-                COSInteger.ZERO,
-                COSInteger.ZERO,
-                COSInteger.ZERO
-            ));
+            colorValues = new COSArray();
+            colorValues.add( COSInteger.ZERO );
+            colorValues.add( COSInteger.ZERO );
+            colorValues.add( COSInteger.ZERO );
             dictionary.setItem(COSName.C, colorValues);
         }
         return new PDColor(colorValues.toFloatArray(), PDDeviceRGB.INSTANCE);
@@ -169,10 +165,12 @@ public class PDBoxStyle implements COSObjectable
         COSArray d = dictionary.getCOSArray(COSName.D);
         if( d == null )
         {
-            d = new COSArray(List.of(COSInteger.THREE));
+            d = new COSArray();
+            d.add( COSInteger.THREE );
             dictionary.setItem(COSName.D, d);
         }
-        COSArray lineArray = new COSArray(Arrays.asList(d));
+        COSArray lineArray = new COSArray();
+        lineArray.add( d );
         //dash phase is not specified and assumed to be zero.
         return new PDLineDashPattern(lineArray, 0);
     }

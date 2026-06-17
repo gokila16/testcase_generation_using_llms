@@ -32,20 +32,20 @@ class TestParser
 
     /**
      * Test the very basics.
+     * @throws Exception if an error occurs
      */
-    @SuppressWarnings("squid:S2699") // Assertion done in Type4Tester
     @Test
-    void testParserBasics()
+    void testParserBasics() throws Exception
     {
         Type4Tester.create("3 4 add 2 sub").pop(5).isEmpty();
     }
 
     /**
      * Test nested blocks.
+     * @throws Exception if an error occurs
      */
-    @SuppressWarnings("squid:S2699") // Assertion done in Type4Tester
     @Test
-    void testNested()
+    void testNested() throws Exception
     {
         Type4Tester.create("true { 2 1 add } { 2 1 sub } ifelse")
             .pop(3).isEmpty();
@@ -55,9 +55,10 @@ class TestParser
 
     /**
      * Tests parsing of real values.
+     * @throws Exception if an error occurs
      */
     @Test
-    void testParseFloat()
+    void testParseFloat() throws Exception
     {
         assertEquals(0, InstructionSequenceBuilder.parseReal("0"), 0.00001f);
         assertEquals(1, InstructionSequenceBuilder.parseReal("1"), 0.00001f);
@@ -71,10 +72,10 @@ class TestParser
 
     /**
      * Tests problematic functions from PDFBOX-804.
+     * @throws Exception if an error occurs
      */
-    @SuppressWarnings("squid:S2699") // Assertion done in Type4Tester
     @Test
-    void testJira804()
+    void testJira804() throws Exception
     {
         //This is an example of a tint to CMYK function
         //Problems here were:

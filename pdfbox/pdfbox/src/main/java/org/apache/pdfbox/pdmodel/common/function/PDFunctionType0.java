@@ -22,8 +22,8 @@ import java.io.InputStream;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.MemoryCacheImageInputStream;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSInteger;
@@ -43,7 +43,7 @@ public class PDFunctionType0 extends PDFunction
     /**
      * Log instance.
      */
-    private static final Logger LOG = LogManager.getLogger(PDFunctionType0.class);
+    private static final Log LOG = LogFactory.getLog(PDFunctionType0.class);
 
     /**
      * An array of 2 x m numbers specifying the linear mapping of input values 
@@ -441,10 +441,9 @@ public class PDFunctionType0 extends PDFunction
         {
             PDRange domain = getDomainForInput(i);
             PDRange encodeValues = getEncodeForParameter(i);
-            float min = domain.getMin();
-            float max = domain.getMax();
-            input[i] = clipToRange(input[i], min, max);
-            input[i] = interpolate(input[i], min, max, encodeValues.getMin(), encodeValues.getMax());
+            input[i] = clipToRange(input[i], domain.getMin(), domain.getMax());
+            input[i] = interpolate(input[i], domain.getMin(), domain.getMax(), 
+                    encodeValues.getMin(), encodeValues.getMax());
             input[i] = clipToRange(input[i], 0, sizeValues[i] - 1);
             inputPrev[i] = (int) Math.floor(input[i]);
             inputNext[i] = (int) Math.ceil(input[i]);

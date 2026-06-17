@@ -16,8 +16,8 @@
  */
 package org.apache.pdfbox.pdmodel.documentinterchange.logicalstructure;
 
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.pdfbox.cos.COSArray;
@@ -163,11 +163,16 @@ public class PDStructureElement extends PDStructureNode
         COSBase a = this.getCOSObject().getDictionaryObject(COSName.A);
         if (a instanceof COSArray)
         {
-            COSArray array = (COSArray) a;
+            COSArray aa = (COSArray) a;
+            Iterator<COSBase> it = aa.iterator();
             PDAttributeObject ao = null;
-            for (int i = 0; i < array.size(); ++i)
+            while (it.hasNext())
             {
-                COSBase item = array.getObject(i);
+                COSBase item = it.next();
+                if (item instanceof COSObject)
+                {
+                    item = ((COSObject) item).getObject();
+                }
                 if (item instanceof COSDictionary)
                 {
                     ao = PDAttributeObject.create((COSDictionary) item);
@@ -176,8 +181,6 @@ public class PDStructureElement extends PDStructureNode
                 }
                 else if (item instanceof COSInteger)
                 {
-                    // Read "14.7.5.3 Attribute Revision Numbers"
-                    // This is additional to the /R entry
                     attributes.setRevisionNumber(ao, ((COSNumber) item).intValue());
                 }
             }
@@ -311,7 +314,9 @@ public class PDStructureElement extends PDStructureNode
         }
         else
         {
-            COSArray array = new COSArray(Arrays.asList(a, COSInteger.get(this.getRevisionNumber())));
+            COSArray array = new COSArray();
+            array.add(a);
+            array.add(COSInteger.get(this.getRevisionNumber()));
             this.getCOSObject().setItem(key, array);
         }
     }
@@ -333,10 +338,15 @@ public class PDStructureElement extends PDStructureNode
         if (c instanceof COSArray)
         {
             COSArray array = (COSArray) c;
+            Iterator<COSBase> it = array.iterator();
             String className = null;
-            for (int i = 0; i < array.size(); ++i)
+            while (it.hasNext())
             {
-                COSBase item = array.getObject(i);
+                COSBase item = it.next();
+                if (item instanceof COSObject)
+                {
+                    item = ((COSObject) item).getObject();
+                }
                 if (item instanceof COSName)
                 {
                     className = ((COSName) item).getName();
@@ -344,8 +354,6 @@ public class PDStructureElement extends PDStructureNode
                 }
                 else if (item instanceof COSInteger)
                 {
-                    // Read "14.7.5.3 Attribute Revision Numbers"
-                    // This is additional to the /R entry
                     classNames.setRevisionNumber(className, ((COSNumber) item).intValue());
                 }
             }
@@ -596,10 +604,14 @@ public class PDStructureElement extends PDStructureNode
     public String getStandardStructureType()
     {
         String type = this.getStructureType();
-        Object mappedValue = getRoleMap().get(type);
-        if (mappedValue instanceof String)
+        Map<String,Object> roleMap = getRoleMap();
+        if (roleMap.containsKey(type))
         {
-            type = (String) mappedValue;
+            Object mappedValue = getRoleMap().get(type);
+            if (mappedValue instanceof String)
+            {
+                type = (String)mappedValue;
+            }
         }
         return type;
     }

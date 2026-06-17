@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -82,20 +81,28 @@ class XMPMetaDataTest
         assertTrue(vals.contains(tmp2));
     }
 
+    /*
+     * @Test public void displayResult() throws TransformException { System.out.println
+     * ("info used:\n XPacketBegin:"+metadata.getXpacketBegin()+ "\n XPacketID:"+metadata.getXpacketId());
+     * SaveMetadataHelper.serialize(metadata, true, System.out);
+     * 
+     * }
+     */
+
     @Test
     void testTransformerExceptionMessage()
     {
         assertThrows(org.apache.xmpbox.xml.XmpSerializationException.class, () -> {
-            throw new XmpSerializationException("TEST");
-        });  
+	        throw new XmpSerializationException("TEST");
+	    });  
     }
 
     @Test
     void testTransformerExceptionWithCause()
     {
         assertThrows(org.apache.xmpbox.xml.XmpSerializationException.class, () -> {
-            throw new XmpSerializationException("TEST", new Throwable());
-        });
+	        throw new XmpSerializationException("TEST", new Throwable());
+	    });
     }
 
     @Test
@@ -167,7 +174,7 @@ class XMPMetaDataTest
                 + "<?xpacket end=\"w\"?>";
         DomXmpParser xmpParser = new DomXmpParser();
         xmpParser.setStrictParsing(false);
-        XMPMetadata xmp = xmpParser.parse(xmpmeta.getBytes(StandardCharsets.UTF_8));
+        XMPMetadata xmp = xmpParser.parse(xmpmeta.getBytes());
         XMPBasicSchema basicSchema = xmp.getXMPBasicSchema();
         Calendar createDate1 = basicSchema.getCreateDate();
         basicSchema.setCreateDate(new GregorianCalendar());

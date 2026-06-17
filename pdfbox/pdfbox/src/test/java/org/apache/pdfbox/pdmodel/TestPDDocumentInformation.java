@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -39,7 +38,7 @@ class TestPDDocumentInformation
 {
 
     @Test
-    void testMetadataExtraction() throws IOException
+    void testMetadataExtraction() throws Exception
     {
         // This document has been selected for this test as it contains custom metadata.
         try (PDDocument doc = Loader.loadPDF(new File("src/test/resources/input/hello3.pdf")))
@@ -74,10 +73,10 @@ class TestPDDocumentInformation
     /**
      * PDFBOX-3068: test that indirect /Title element of /Info entry can be found.
      * 
-     * @throws IOException 
+     * @throws Exception 
      */
     @Test
-    void testPDFBox3068() throws IOException
+    void testPDFBox3068() throws Exception
     {
         try (PDDocument doc = Loader.loadPDF(RandomAccessReadBuffer.createBufferFromStream(
                         TestPDDocumentInformation.class.getResourceAsStream("PDFBOX-3068.pdf"))))

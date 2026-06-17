@@ -24,9 +24,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
-
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.fontbox.cff.CharStringCommand.Type1KeyWord;
 import org.apache.fontbox.encoding.StandardEncoding;
 import org.apache.fontbox.type1.Type1CharStringReader;
@@ -39,7 +38,7 @@ import org.apache.fontbox.type1.Type1CharStringReader;
  */
 public class Type1CharString
 {
-    private static final Logger LOG = LogManager.getLogger(Type1CharString.class);
+    private static final Log LOG = LogFactory.getLog(Type1CharString.class);
 
     private final Type1CharStringReader font;
     private final String fontName;
@@ -165,7 +164,7 @@ public class Type1CharString
         if (type1KeyWord == null)
         {
             // indicates an invalid charstring
-            LOG.warn("Unknown charstring command in glyph {} of font {}", glyphName, fontName);
+            LOG.warn("Unknown charstring command in glyph " + glyphName + " of font " + fontName);
             numbers.clear();
             return;
         }
@@ -279,13 +278,13 @@ public class Type1CharString
         case SETCURRENTPOINT:
             if (numbers.size() >= 2)
             {
-                setCurrentPoint(numbers.get(0), numbers.get(1));
+                setcurrentpoint(numbers.get(0), numbers.get(1));
             }
             break;
         case CALLOTHERSUBR:
             if (!numbers.isEmpty())
             {
-                callOtherSubr(numbers.get(0).intValue());
+                callothersubr(numbers.get(0).intValue());
             }
             break;
         case DIV:
@@ -315,8 +314,8 @@ public class Type1CharString
         case RET:
         case CALLSUBR:
             // indicates an invalid charstring
-            LOG.warn("Unexpected charstring command: {} in glyph {} of font {}", type1KeyWord,
-                    glyphName, fontName);
+            LOG.warn("Unexpected charstring command: " + type1KeyWord + " in glyph " + glyphName + " of font "
+                    + fontName);
             break;
         default:
             // indicates a PDFBox bug
@@ -329,7 +328,7 @@ public class Type1CharString
      * Sets the current absolute point without performing a moveto.
      * Used only with results from callothersubr
      */
-    private void setCurrentPoint(Number x, Number y)
+    private void setcurrentpoint(Number x, Number y)
     {
         current.setLocation(x.floatValue(), y.floatValue());
     }
@@ -338,7 +337,7 @@ public class Type1CharString
      * Flex (via OtherSubrs)
      * @param num OtherSubrs entry number
      */
-    private void callOtherSubr(int num)
+    private void callothersubr(int num)
     {
         if (num == 0)
         {
@@ -347,8 +346,8 @@ public class Type1CharString
 
             if (flexPoints.size() < 7)
             {
-                LOG.warn("flex without moveTo in font {}, glyph {}, command {}", fontName,
-                        glyphName, commandCount);
+                LOG.warn("flex without moveTo in font " + fontName + ", glyph " + glyphName +
+                         ", command " + commandCount);
                 return;
             }
 
@@ -383,7 +382,7 @@ public class Type1CharString
         }
         else
         {
-            LOG.warn("Invalid callothersubr parameter: {}", num);
+            LOG.warn("Invalid callothersubr parameter: " + num);
         }
     }
 
@@ -407,7 +406,7 @@ public class Type1CharString
         float y = (float)current.getY() + dy.floatValue();
         if (path.getCurrentPoint() == null)
         {
-            LOG.warn("rlineTo without initial moveTo in font {}, glyph {}", fontName, glyphName);
+            LOG.warn("rlineTo without initial moveTo in font " + fontName + ", glyph " + glyphName);
             path.moveTo(x, y);
         }
         else
@@ -431,7 +430,7 @@ public class Type1CharString
         float y3 = y2 + dy3.floatValue();
         if (path.getCurrentPoint() == null)
         {
-            LOG.warn("rrcurveTo without initial moveTo in font {}, glyph {}", fontName, glyphName);
+            LOG.warn("rrcurveTo without initial moveTo in font " + fontName + ", glyph " + glyphName);
             path.moveTo(x3, y3);
         }
         else
@@ -448,7 +447,7 @@ public class Type1CharString
     {
         if (path.getCurrentPoint() == null)
         {
-            LOG.warn("closepath without initial moveTo in font {}, glyph {}", fontName, glyphName);
+            LOG.warn("closepath without initial moveTo in font " + fontName + ", glyph " + glyphName);
         }
         else
         {
@@ -474,7 +473,7 @@ public class Type1CharString
         }
         catch (IOException e)
         {
-            LOG.warn(() -> "invalid seac character in glyph " + glyphName + " of font " + fontName, e);
+            LOG.warn("invalid seac character in glyph " + glyphName + " of font " + fontName, e);
         }
         // accent character
         String accentName = StandardEncoding.INSTANCE.getName(achar.intValue());
@@ -486,7 +485,7 @@ public class Type1CharString
             {
                 // PDFBOX-5339: avoid ArrayIndexOutOfBoundsException 
                 // reproducable with poc file crash-4698e0dc7833a3f959d06707e01d03cda52a83f4
-                LOG.warn("Path for {} and for accent {} are same, ignored", baseName, accentName);
+                LOG.warn("Path for " + baseName + " and for accent " + accentName + " are same, ignored");
                 return;
             }
             AffineTransform at = AffineTransform.getTranslateInstance(
@@ -496,7 +495,7 @@ public class Type1CharString
         }
         catch (IOException e)
         {
-            LOG.warn(() -> "invalid seac character in glyph " + glyphName + " of font " + fontName, e);
+            LOG.warn("invalid seac character in glyph " + glyphName + " of font " + fontName, e);
         }
     }
 

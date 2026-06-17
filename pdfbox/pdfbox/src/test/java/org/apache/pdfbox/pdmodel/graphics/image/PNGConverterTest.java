@@ -27,7 +27,6 @@ import java.awt.image.WritableRaster;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -35,6 +34,7 @@ import java.util.Hashtable;
 import javax.imageio.ImageIO;
 
 import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -58,13 +58,13 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 @Execution(ExecutionMode.CONCURRENT)
 class PNGConverterTest
 {
-    private static final File PARENTDIR = new File("target/test-output/graphics/graphics");
+    private static final File parentDir = new File("target/test-output/graphics/graphics");
 
     @BeforeAll
     static void setup()
     {
         //noinspection ResultOfMethodCallIgnored
-        PARENTDIR.mkdirs();
+        parentDir.mkdirs();
     }
 
     /**
@@ -166,10 +166,9 @@ class PNGConverterTest
 
     private void checkImageConvertFail(String name) throws IOException
     {
-        try (PDDocument doc = new PDDocument();
-            InputStream in = PNGConverterTest.class.getResourceAsStream(name))
+        try (PDDocument doc = new PDDocument())
         {
-            byte[] imageBytes = in.readAllBytes();
+            byte[] imageBytes = IOUtils.toByteArray(PNGConverterTest.class.getResourceAsStream(name));
             PDImageXObject pdImageXObject = PNGConverter.convertPNGImage(doc, imageBytes);
             assertNull(pdImageXObject);
         }
@@ -177,10 +176,9 @@ class PNGConverterTest
 
     private void checkImageConvert(String name) throws IOException
     {
-        try (PDDocument doc = new PDDocument();
-             InputStream in = PNGConverterTest.class.getResourceAsStream(name))
+        try (PDDocument doc = new PDDocument())
         {
-            byte[] imageBytes = in.readAllBytes();
+            byte[] imageBytes = IOUtils.toByteArray(PNGConverterTest.class.getResourceAsStream(name));
             PDImageXObject pdImageXObject = PNGConverter.convertPNGImage(doc, imageBytes);
             assertNotNull(pdImageXObject);
             
@@ -202,7 +200,7 @@ class PNGConverterTest
                 contentStream.drawImage(pdImageXObject, 0, 0, pdImageXObject.getWidth(),
                         pdImageXObject.getHeight());
             }
-            doc.save(new File(PARENTDIR, name + ".pdf"));
+            doc.save(new File(parentDir, name + ".pdf"));
             BufferedImage image = pdImageXObject.getImage();
 
             assertNotNull(pdImageXObject.getRawRaster());
@@ -369,10 +367,9 @@ class PNGConverterTest
     {
         checkImageConvert("929316.png");
 
-        try (PDDocument doc = new PDDocument();
-             InputStream in = PNGConverterTest.class.getResourceAsStream("929316.png"))
+        try (PDDocument doc = new PDDocument())
         {
-            byte[] imageBytes = in.readAllBytes();
+            byte[] imageBytes = IOUtils.toByteArray(PNGConverterTest.class.getResourceAsStream("929316.png"));
             PDImageXObject pdImageXObject = PNGConverter.convertPNGImage(doc, imageBytes);
             assertEquals(COSName.PERCEPTUAL, pdImageXObject.getCOSObject().getItem(COSName.INTENT));
 

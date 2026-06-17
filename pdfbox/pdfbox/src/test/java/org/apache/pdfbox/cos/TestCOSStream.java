@@ -22,14 +22,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.apache.pdfbox.filter.Filter;
 import org.apache.pdfbox.filter.FilterFactory;
+import org.apache.pdfbox.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -143,7 +142,7 @@ class TestCOSStream
     }
 
     /**
-     * Tests tests that encoding is done correctly even if the stream is closed twice.
+     * Tests tests that encoding is done correctly even if the the stream is closed twice.
      * Closeable.close() allows streams to be closed multiple times. The second and subsequent
      * close() calls should have no effect.
      *
@@ -201,21 +200,15 @@ class TestCOSStream
 
     private void validateEncoded(COSStream stream, byte[] expected) throws IOException
     {
-        try (stream)
-        {
-            InputStream in = stream.createRawInputStream();
-            byte[] decoded = in.readAllBytes();
-            assertTrue(Arrays.equals(expected, decoded), "Encoded data doesn't match input");
-        }
+        byte[] decoded = IOUtils.toByteArray(stream.createRawInputStream());
+        stream.close();
+        assertTrue(Arrays.equals(expected, decoded), "Encoded data doesn't match input");
     }
 
     private void validateDecoded(COSStream stream, byte[] expected) throws IOException
     {
-        try (stream)
-        {
-            InputStream in = stream.createInputStream();
-            byte[] encoded = in.readAllBytes();
-            assertTrue(Arrays.equals(expected, encoded), "Decoded data doesn't match input");
-        }
+        byte[] encoded = IOUtils.toByteArray(stream.createInputStream());
+        stream.close();
+        assertTrue(Arrays.equals(expected, encoded), "Decoded data doesn't match input");
     }
 }

@@ -18,14 +18,12 @@ package org.apache.pdfbox.pdmodel.graphics.state;
 
 import java.io.IOException;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
-import org.apache.pdfbox.pdmodel.PDResources;
-import org.apache.pdfbox.pdmodel.ResourceCache;
 import org.apache.pdfbox.pdmodel.common.COSObjectable;
 import org.apache.pdfbox.pdmodel.common.function.PDFunction;
 import org.apache.pdfbox.pdmodel.graphics.PDXObject;
@@ -48,19 +46,6 @@ public final class PDSoftMask implements COSObjectable
      */
     public static PDSoftMask create(COSBase dictionary)
     {
-        return create(dictionary, null);
-    }
-
-    /**
-     * Creates a new soft mask.
-     *
-     * @param dictionary SMask
-     * @param resourceCache Resource cache, may be null.
-     * 
-     * @return the newly created instance of PDSoftMask
-     */
-    public static PDSoftMask create(COSBase dictionary, ResourceCache resourceCache)
-    {
         if (dictionary instanceof COSName)
         {
             if (COSName.NONE.equals(dictionary))
@@ -69,25 +54,24 @@ public final class PDSoftMask implements COSObjectable
             }
             else
             {
-                LOG.warn("Invalid SMask {}", dictionary);
+                LOG.warn("Invalid SMask " + dictionary);
                 return null;
             }
         }
         else if (dictionary instanceof COSDictionary)
         {
-            return new PDSoftMask((COSDictionary) dictionary, resourceCache);
+            return new PDSoftMask((COSDictionary) dictionary);
         }
         else
         {
-            LOG.warn("Invalid SMask {}", dictionary);
+            LOG.warn("Invalid SMask " + dictionary);
             return null;
         }
     }
 
-    private static final Logger LOG = LogManager.getLogger(PDSoftMask.class);
+    private static final Log LOG = LogFactory.getLog(PDSoftMask.class);
 
     private final COSDictionary dictionary;
-    private final ResourceCache resourceCache;
     private COSName subType = null;
     private PDTransparencyGroup group = null;
     private COSArray backdropColor = null;
@@ -105,19 +89,7 @@ public final class PDSoftMask implements COSObjectable
      */
     public PDSoftMask(COSDictionary dictionary)
     {
-        this(dictionary, null);
-    }
-
-    /**
-     * Creates a new soft mask.
-     *
-     * @param dictionary The soft mask dictionary.
-     * @param resourceCache Resource cache, may be null.
-     */
-    public PDSoftMask(COSDictionary dictionary, ResourceCache resourceCache)
-    {
         this.dictionary = dictionary;
-        this.resourceCache = resourceCache;
     }
 
     @Override
@@ -153,8 +125,7 @@ public final class PDSoftMask implements COSObjectable
             COSBase cosGroup = getCOSObject().getDictionaryObject(COSName.G);
             if (cosGroup != null)
             {
-                PDResources resources = new PDResources(new COSDictionary(), resourceCache);
-                PDXObject x = PDXObject.createXObject(cosGroup, resources);
+                PDXObject x = PDXObject.createXObject(cosGroup, null);
                 if (x instanceof PDTransparencyGroup)
                 {
                     group = (PDTransparencyGroup) x;
@@ -173,7 +144,7 @@ public final class PDSoftMask implements COSObjectable
     {
         if (backdropColor == null)
         {
-            backdropColor = getCOSObject().getCOSArray(COSName.BC);
+            backdropColor = (COSArray) getCOSObject().getDictionaryObject(COSName.BC);
         }
         return backdropColor;
     }

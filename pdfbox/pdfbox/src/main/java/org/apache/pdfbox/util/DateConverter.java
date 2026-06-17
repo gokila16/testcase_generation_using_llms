@@ -25,8 +25,8 @@ import java.util.Locale;
 import java.util.SimpleTimeZone;
 import java.util.TimeZone;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.apache.pdfbox.cos.COSString;
 
@@ -64,7 +64,7 @@ import org.apache.pdfbox.cos.COSString;
  */
 public final class DateConverter
 {
-    private static final Logger LOG = LogManager.getLogger(DateConverter.class);
+    private static final Log LOG = LogFactory.getLog(DateConverter.class);
 
     private DateConverter()
     {
@@ -438,9 +438,9 @@ public final class DateConverter
         sign = (!hadGMT) ? sign : skipOptionals(text, where, "+- ");
         
         tzHours = parseTimeField(text, where, 2, -999);
-        skipOptionals(text, where, "': ");
+        skipOptionals(text, where, "\': ");
         tzMin = parseTimeField(text, where, 2, 0);
-        skipOptionals(text, where, "' ");
+        skipOptionals(text, where, "\' "); 
         
         if (tzHours != -999) 
         {
@@ -558,7 +558,7 @@ public final class DateConverter
         }
         catch (IllegalArgumentException ill) 
         {
-            LOG.debug("Couldn't parse arguments text:{} initialWhere:{}", text, initialWhere, ill);
+            LOG.debug("Couldn't parse arguments text:" + text + " initialWhere:" + initialWhere, ill);
             return  null;
         }
         initialWhere.setIndex(where.getIndex());
@@ -718,7 +718,7 @@ public final class DateConverter
      */
     public static Calendar toCalendar(String text)
     {
-        if (text == null || text.isBlank())
+        if (text == null || text.trim().isEmpty())
         {
             return null;
         }

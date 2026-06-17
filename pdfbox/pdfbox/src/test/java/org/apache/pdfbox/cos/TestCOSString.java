@@ -59,14 +59,15 @@ class TestCOSString extends TestCOSBase
     {
         String inputString = "Test with a text and a few numbers 1, 2 and 3";
         String pdfHex = "<" + createHex(inputString) + ">";
-        COSString cosStr = new COSString(inputString, true);
+        COSString cosStr = new COSString(inputString);
+        cosStr.setForceHexForm(true);
         writePDFTests(pdfHex, cosStr);
 
         COSString escStr = new COSString(ESC_CHAR_STRING);
         writePDFTests("(" + ESC_CHAR_STRING_PDF_FORMAT + ")", escStr);
-        COSString escStrHex = new COSString(ESC_CHAR_STRING, true);
+        escStr.setForceHexForm(true);
         // Escape characters not escaped in hex version
-        writePDFTests("<" + createHex(ESC_CHAR_STRING) + ">", escStrHex);
+        writePDFTests("<" + createHex(ESC_CHAR_STRING) + ">", escStr);
     }
 
     /**
@@ -232,7 +233,7 @@ class TestCOSString extends TestCOSBase
         // Test the writePDF method to ensure that the Strings are correct when written into PDF.
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         COSWriter.writeString(stringAscii, out);
-        assertEquals("(" + textAscii + ")", out.toString("ASCII"));
+        assertEquals("(" + textAscii + ")", new String(out.toByteArray(), "ASCII"));
         
         out.reset();
         COSWriter.writeString(string8Bit, out);
@@ -241,7 +242,7 @@ class TestCOSString extends TestCOSBase
         {
            hex.append( Integer.toHexString(c).toUpperCase() );
         }
-        assertEquals("<"+ hex +">", out.toString("ASCII"));
+        assertEquals("<"+hex.toString()+">", new String(out.toByteArray(), "ASCII"));
         
         out.reset();
         COSWriter.writeString(stringHighBits, out);
@@ -251,7 +252,7 @@ class TestCOSString extends TestCOSBase
         {
            hex.append( Integer.toHexString(c).toUpperCase() );
         }
-        assertEquals("<"+ hex +">", out.toString("ASCII"));
+        assertEquals("<"+hex.toString()+">", new String(out.toByteArray(), "ASCII")); 
     }
 
     @Override
@@ -264,8 +265,8 @@ class TestCOSString extends TestCOSBase
         testSubj.accept(visitor);
         assertEquals("(" + ESC_CHAR_STRING_PDF_FORMAT + ")", outStream.toString());
         outStream.reset();
-        COSString testSubjHex = new COSString(ESC_CHAR_STRING, true);
-        testSubjHex.accept(visitor);
+        testSubj.setForceHexForm(true);
+        testSubj.accept(visitor);
         assertEquals("<" + createHex(ESC_CHAR_STRING) + ">", outStream.toString());
     }
 
@@ -286,7 +287,8 @@ class TestCOSString extends TestCOSBase
             COSString y1 = new COSString("Test");
             assertEquals(x1, y1);
             assertEquals(y1, x1);
-            COSString x2 = new COSString("Test", true);
+            COSString x2 = new COSString("Test");
+            x2.setForceHexForm(true);
             // also if x != y then y != x
             assertNotEquals(x1, x2);
             assertNotEquals(x2, x1);
@@ -314,8 +316,8 @@ class TestCOSString extends TestCOSBase
         assertNotEquals(str1.hashCode(), str2.hashCode());
         COSString str3 = new COSString("Test1");
         assertEquals(str1.hashCode(), str3.hashCode());
-        COSString str3Hex = new COSString("Test1", true);
-        assertNotEquals(str1.hashCode(), str3Hex.hashCode());
+        str3.setForceHexForm(true);
+        assertNotEquals(str1.hashCode(), str3.hashCode());
     }
 
     /**

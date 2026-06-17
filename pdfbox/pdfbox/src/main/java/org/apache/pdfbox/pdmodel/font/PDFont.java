@@ -25,8 +25,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.fontbox.afm.FontMetrics;
 import org.apache.fontbox.cmap.CMap;
 import org.apache.pdfbox.cos.COSArray;
@@ -34,10 +34,8 @@ import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSNumber;
-import org.apache.pdfbox.cos.COSObject;
 import org.apache.pdfbox.cos.COSStream;
 import org.apache.pdfbox.io.RandomAccessRead;
-import org.apache.pdfbox.pdmodel.ResourceCache;
 import org.apache.pdfbox.pdmodel.common.COSObjectable;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts.FontName;
 import org.apache.pdfbox.pdmodel.font.encoding.GlyphList;
@@ -51,7 +49,7 @@ import org.apache.pdfbox.util.Vector;
  */
 public abstract class PDFont implements COSObjectable, PDFontLike
 {
-    private static final Logger LOG = LogManager.getLogger(PDFont.class);
+    private static final Log LOG = LogFactory.getLog(PDFont.class);
     protected static final Matrix DEFAULT_FONT_MATRIX = new Matrix(0.001f, 0, 0, 0.001f, 0, 0);
 
     protected final COSDictionary dict;
@@ -103,46 +101,34 @@ public abstract class PDFont implements COSObjectable, PDFontLike
      * Constructor.
      *
      * @param fontDictionary Font dictionary.
-     * @param resourceCache ResourceCache, can be null.
      */
-    protected PDFont(COSDictionary fontDictionary, ResourceCache resourceCache)
+    protected PDFont(COSDictionary fontDictionary)
     {
         dict = fontDictionary;
         codeToWidthMap = new HashMap<>();
 
         // standard 14 fonts use an AFM
         afmStandard14 = Standard14Fonts.getAFM(getName()); // may be null (it usually is)
-        fontDescriptor = loadFontDescriptor(resourceCache);
+        fontDescriptor = loadFontDescriptor();
         toUnicodeCMap = loadUnicodeCmap();
     }
 
-    private PDFontDescriptor loadFontDescriptor(ResourceCache resourceCache)
+    private PDFontDescriptor loadFontDescriptor()
     {
-        COSObject fdIndirectObject = dict.getCOSObject(COSName.FONT_DESC);
-        if (fdIndirectObject != null && resourceCache != null)
-        {
-            PDFontDescriptor pdFontdescriptor = resourceCache.getFontDescriptor(fdIndirectObject);
-            if (pdFontdescriptor != null)
-            {
-                return pdFontdescriptor;
-            }
-        }
         COSDictionary fd = dict.getCOSDictionary(COSName.FONT_DESC);
         if (fd != null)
         {
-            PDFontDescriptor pdFontdescriptor = new PDFontDescriptor(fd);
-            if (resourceCache != null && fdIndirectObject != null)
-            {
-                resourceCache.put(fdIndirectObject, pdFontdescriptor);
-            }
-            return pdFontdescriptor;
+            return new PDFontDescriptor(fd);
         }
         else if (afmStandard14 != null)
         {
             // build font descriptor from the AFM
             return PDType1FontEmbedder.buildFontDescriptor(afmStandard14);
         }
-        return null;
+        else
+        {
+            return null;
+        }
     }
 
     private CMap loadUnicodeCmap()
@@ -159,7 +145,7 @@ public abstract class PDFont implements COSObjectable, PDFontLike
             if (cmap != null && !cmap.hasUnicodeMappings())
             {
                 String name = getName();
-                LOG.warn("Invalid ToUnicode CMap in font {}", name);
+                LOG.warn("Invalid ToUnicode CMap in font " + name);
                 String cmapName = cmap.getName() != null ? cmap.getName() : "";
                 String ordering = cmap.getOrdering() != null ? cmap.getOrdering() : "";
                 COSName encoding = dict.getCOSName(COSName.ENCODING);
@@ -180,7 +166,7 @@ public abstract class PDFont implements COSObjectable, PDFontLike
         }
         catch (IOException ex)
         {
-            LOG.error(() -> "Could not read ToUnicode CMap in font " + getName(), ex);
+            LOG.error("Could not read ToUnicode CMap in font " + getName(), ex);
         }
         return cmap;
     }
@@ -350,7 +336,7 @@ public abstract class PDFont implements COSObjectable, PDFontLike
 
             // multi-byte encoding with 1 to 4 bytes
             byte[] bytes = encode(codePoint);
-            out.writeBytes(bytes);
+            out.write(bytes);
 
             offset += Character.charCount(codePoint);
         }
@@ -485,7 +471,7 @@ public abstract class PDFont implements COSObjectable, PDFontLike
                 // code->Unicode maps. See sample_fonts_solidconvertor.pdf for an example.
                 // PDFBOX-3123: do this only if the /ToUnicode entry is a name
                 // PDFBOX-4322: identity streams are OK too
-                return String.valueOf((char) code);
+                return new String(new char[] { (char) code });
             }
             else
             {
@@ -610,10 +596,14 @@ public abstract class PDFont implements COSObjectable, PDFontLike
             }
             catch (Exception e)
             {
-                LOG.error("Can't determine the width of the space character for font {}, assuming 250", getName(),e);
+                LOG.error("Can't determine the width of the space character for font " +
+                        getName() + ", assuming 250", e);
                 fontWidthOfSpace = 250f;
             }
-            LOG.debug("Space width for font {} is {}", getName(), fontWidthOfSpace);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Space width for font " + getName() + " is " + fontWidthOfSpace);
+            }
         }
         return fontWidthOfSpace;
     }

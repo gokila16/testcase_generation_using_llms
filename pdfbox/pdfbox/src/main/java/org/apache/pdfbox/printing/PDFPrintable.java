@@ -29,15 +29,14 @@ import java.awt.print.Printable;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterIOException;
 import java.io.IOException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageTree;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.rendering.RenderDestination;
-import org.apache.pdfbox.util.Matrix;
 
 /**
  * Prints pages from a PDF document using any page size or scaling mode.
@@ -46,7 +45,7 @@ import org.apache.pdfbox.util.Matrix;
  */
 public final class PDFPrintable implements Printable
 {
-    private static final Logger LOG = LogManager.getLogger(PDFPrintable.class);
+    private static final Log LOG = LogFactory.getLog(PDFPrintable.class);
     public static final float RASTERIZE_OFF = 0f;
     public static final float RASTERIZE_DPI_AUTO = -1f;
 
@@ -205,23 +204,17 @@ public final class PDFPrintable implements Printable
         {
             return NO_SUCH_PAGE;
         }
-
-        // work on a private copy so the caller's Graphics2D state (transform, clip, color,
-        // background, stroke) is never mutated. Disposing the copy in the finally block
-        // releases its resources without affecting the original.
-        Graphics2D printerGraphics = (Graphics2D) graphics.create();
-        Graphics2D graphics2D = printerGraphics;
-
         try
         {
+            Graphics2D graphics2D = (Graphics2D)graphics;
+
             // capture the DPI that will be used for rasterizing the image
             // if rasterizing is specified
             float rasterDpi = dpi;
             if (rasterDpi == RASTERIZE_DPI_AUTO)
             {
-                AffineTransform transform = graphics2D.getTransform();
-                rasterDpi = new Matrix(transform).getScalingFactorX() * 72.0f;
-                LOG.debug("auto raster dpi: {}, g2d: {}, g2d transform: {}", rasterDpi, graphics2D, transform);
+                rasterDpi = (float) graphics2D.getTransform().getScaleX() * 72.0f;
+                LOG.debug("auto raster dpi: " + rasterDpi);
             }
 
             PDPage page = pageTree.get(pageIndex);
@@ -267,23 +260,26 @@ public final class PDFPrintable implements Printable
                 else
                 {
                     // PDFBOX-3117 and https://lists.apache.org/thread/12s9tc93ofgmjfq1dpqfps9p725l0wwr
-                    LOG.warn("Centering disabled because of negative translation value ({},{})", dx, dy);
+                    LOG.warn("Centering disabled because of negative translation value (" +
+                            dx + "," + dy + ")");
                 }
             }
 
-            AffineTransform printerBorderTransform = printerGraphics.getTransform();
-            double borderScale = scale;
-
             // rasterize to bitmap (optional)
+            Graphics2D printerGraphics = null;
             BufferedImage image = null;
-            if (rasterDpi > 0)
+            if (dpi > 0 || dpi == RASTERIZE_DPI_AUTO)
             {
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("dpi set to " + rasterDpi);
+                }
                 float dpiScale = rasterDpi / 72;
-                LOG.debug("rasterDpi: {}, dpiScale: {}", rasterDpi, dpiScale);
-                image = new BufferedImage(Math.max(1, (int) (imageableWidth * dpiScale / scale)),
-                                          Math.max(1, (int) (imageableHeight * dpiScale / scale)),
+                image = new BufferedImage((int)(imageableWidth * dpiScale / scale),
+                                          (int)(imageableHeight * dpiScale / scale),
                                           BufferedImage.TYPE_INT_ARGB);
 
+                printerGraphics = graphics2D;
                 graphics2D = image.createGraphics();
 
                 // rescale
@@ -292,29 +288,30 @@ public final class PDFPrintable implements Printable
             }
 
             // draw to graphics using PDFRender
+            AffineTransform transform = graphics2D.getTransform();
             graphics2D.setBackground(Color.WHITE);
             renderer.setSubsamplingAllowed(subsamplingAllowed);
             renderer.setRenderingHints(renderingHints);
             renderer.renderPageToGraphics(pageIndex, graphics2D, (float) scale, (float) scale, RenderDestination.PRINT);
 
+            // draw crop box
+            if (showPageBorder)
+            {
+                graphics2D.setTransform(transform);
+                graphics2D.setClip(0, 0, (int)imageableWidth, (int)imageableHeight);
+                graphics2D.scale(scale, scale);
+                graphics2D.setColor(Color.GRAY);
+                graphics2D.setStroke(new BasicStroke(0.5f));
+                graphics.drawRect(0, 0, (int)cropBox.getWidth(), (int)cropBox.getHeight());
+            }
+
             // draw rasterized bitmap (optional)
-            if (image != null)
+            if (printerGraphics != null)
             {
                 printerGraphics.setBackground(Color.WHITE);
                 printerGraphics.clearRect(0, 0, image.getWidth(), image.getHeight());
                 printerGraphics.drawImage(image, 0, 0, null);
-            }
-
-            // draw crop box on the printer graphics (always, whether rasterizing or not).
-            // Drawing after the blit avoids losing the thin stroke during raster scale-down.
-            if (showPageBorder)
-            {
-                printerGraphics.setTransform(printerBorderTransform);
-                printerGraphics.setClip(0, 0, (int) imageableWidth, (int) imageableHeight);
-                printerGraphics.scale(borderScale, borderScale);
-                printerGraphics.setColor(Color.GRAY);
-                printerGraphics.setStroke(new BasicStroke(0.5f));
-                printerGraphics.drawRect(0, 0, (int) cropBox.getWidth(), (int) cropBox.getHeight());
+                graphics2D.dispose();
             }
 
             return PAGE_EXISTS;
@@ -322,14 +319,6 @@ public final class PDFPrintable implements Printable
         catch (IOException e)
         {
             throw new PrinterIOException(e);
-        }
-        finally
-        {
-            if (graphics2D != printerGraphics)
-            {
-                graphics2D.dispose();
-            }
-            printerGraphics.dispose();
         }
     }
 

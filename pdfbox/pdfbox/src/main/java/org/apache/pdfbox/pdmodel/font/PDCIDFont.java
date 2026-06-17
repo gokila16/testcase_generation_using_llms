@@ -18,12 +18,10 @@ package org.apache.pdfbox.pdmodel.font;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
@@ -31,6 +29,7 @@ import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSNumber;
 import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.common.COSObjectable;
 import org.apache.pdfbox.util.Vector;
 
@@ -44,22 +43,17 @@ import org.apache.pdfbox.util.Vector;
  */
 public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFont
 {
-    private static final Logger LOG = LogManager.getLogger(PDCIDFont.class);
+    private static final Log LOG = LogFactory.getLog(PDCIDFont.class);
 
     protected final PDType0Font parent;
 
-    private final Map<Integer, Float> widths = new HashMap<>();
+    private Map<Integer, Float> widths;
     private float defaultWidth;
     private float averageWidth;
 
-    // vertical displacement, individual values
-    private final Map<Integer, Float> verticalDisplacementY = new HashMap<>();
-    // position vectors, individual values
-    private final Map<Integer, Vector> positionVectors = new HashMap<>();
-    // cid-ranges for verticalDisplacements and positionVectors
-    private final List<VerticalDisplacementRange> displacementRanges = new ArrayList<>();
-
-    private final float[] dw2 = { 880, -1000 };
+    private final Map<Integer, Float> verticalDisplacementY = new HashMap<>(); // w1y
+    private final Map<Integer, Vector> positionVectors = new HashMap<>();     // v
+    private final float[] dw2 = new float[] { 880, -1000 };
 
     protected final COSDictionary dict;
     private PDFontDescriptor fontDescriptor;
@@ -80,6 +74,7 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
     private void readWidths()
     {
         // see 9.7.4.3, "Glyph Metrics in CIDFonts"
+        widths = new HashMap<>();
         COSArray wArray = dict.getCOSArray(COSName.W);
         if (wArray != null)
         {
@@ -90,7 +85,7 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
                 COSBase firstCodeBase = wArray.getObject(counter++);
                 if (!(firstCodeBase instanceof COSNumber))
                 {
-                    LOG.warn("Expected a number array member, got {}", firstCodeBase);
+                    LOG.warn("Expected a number array member, got " + firstCodeBase);
                     continue;
                 }
                 COSNumber firstCode = (COSNumber) firstCodeBase;
@@ -110,7 +105,7 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
                         }
                         else
                         {
-                            LOG.warn("Expected a number array member, got {}", widthBase);
+                            LOG.warn("Expected a number array member, got " + widthBase);
                         }
                     }
                 }
@@ -125,8 +120,7 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
                     COSBase rangeWidthBase = wArray.getObject(counter++);
                     if (!(secondCodeBase instanceof COSNumber) || !(rangeWidthBase instanceof COSNumber))
                     {
-                        LOG.warn("Expected two numbers, got {} and {}", secondCodeBase,
-                                rangeWidthBase);
+                        LOG.warn("Expected two numbers, got " + secondCodeBase + " and " + rangeWidthBase);
                         continue;
                     }
                     COSNumber secondCode = (COSNumber) secondCodeBase;
@@ -186,8 +180,11 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
                     COSNumber w1y = (COSNumber) w2Array.getObject(++i);
                     COSNumber v1x = (COSNumber) w2Array.getObject(++i);
                     COSNumber v1y = (COSNumber) w2Array.getObject(++i);
-                    displacementRanges.add(new VerticalDisplacementRange(first, last,
-                            new Vector(v1x.floatValue(), v1y.floatValue()), w1y.floatValue()));
+                    for (int cid = first; cid <= last; cid++)
+                    {
+                        verticalDisplacementY.put(cid, w1y.floatValue());
+                        positionVectors.put(cid, new Vector(v1x.floatValue(), v1y.floatValue()));
+                    }
                 }
             }
         }
@@ -294,17 +291,7 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
         Vector v = positionVectors.get(cid);
         if (v == null)
         {
-            VerticalDisplacementRange vdRange = displacementRanges.stream() //
-                    .filter(vdr -> vdr.rangeMatches(cid)) //
-                    .findFirst().orElse(null);
-            if (vdRange != null)
-            {
-                v = vdRange.getPositionVector();
-            }
-            else
-            {
-                v = getDefaultPositionVector(cid);
-            }
+            v = getDefaultPositionVector(cid);
         }
         return v;
     }
@@ -321,17 +308,7 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
         Float w1y = verticalDisplacementY.get(cid);
         if (w1y == null)
         {
-            VerticalDisplacementRange vdRange = displacementRanges.stream() //
-                    .filter(vdr -> vdr.rangeMatches(cid)) //
-                    .findFirst().orElse(null);
-            if (vdRange != null)
-            {
-                w1y = vdRange.getVerticalDisplacement();
-            }
-            else
-            {
-                w1y = dw2[1];
-            }
+            w1y = dw2[1];
         }
         return w1y;
     }
@@ -353,7 +330,7 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
         {
             float totalWidths = 0.0f;
             int characterCount = 0;
-            if (!widths.isEmpty())
+            if (widths != null)
             {
                 for (Float width : widths.values())
                 {
@@ -424,11 +401,9 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
         COSStream stream = dict.getCOSStream(COSName.CID_TO_GID_MAP);
         if (stream != null)
         {
-            byte[] mapAsBytes;
-            try (InputStream is = stream.createInputStream())
-            {
-                mapAsBytes = is.readAllBytes();
-            }
+            InputStream is = stream.createInputStream();
+            byte[] mapAsBytes = IOUtils.toByteArray(is);
+            IOUtils.closeQuietly(is);
             int numberOfInts = mapAsBytes.length / 2;
             cid2gid = new int[numberOfInts];
             int offset = 0;
@@ -440,36 +415,5 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
             }
         }
         return cid2gid;
-    }
-
-    private static class VerticalDisplacementRange
-    {
-        final int rangeStart;
-        final int rangeEnd;
-        final Vector positionVector;
-        final float verticalDisplacment;
-
-        public VerticalDisplacementRange(int start, int end, Vector vector, float displacement)
-        {
-            rangeStart = start;
-            rangeEnd = end;
-            positionVector = vector;
-            verticalDisplacment = displacement;
-        }
-
-        public boolean rangeMatches(int value)
-        {
-            return value >= rangeStart && value <= rangeEnd;
-        }
-
-        public Vector getPositionVector()
-        {
-            return positionVector;
-        }
-
-        public float getVerticalDisplacement()
-        {
-            return verticalDisplacment;
-        }
     }
 }

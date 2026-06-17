@@ -72,7 +72,7 @@ public class AcroFormDefaultsProcessor extends AbstractProcessor
         final String adobeDefaultAppearanceString = "/Helv 0 Tf 0 g ";
 
         // DA entry is required
-        if (acroForm.getDefaultAppearance().isEmpty())
+        if (acroForm.getDefaultAppearance().length() == 0)
         {
             acroForm.setDefaultAppearance(adobeDefaultAppearanceString);
             acroForm.getCOSObject().setNeedToBeUpdated(true);

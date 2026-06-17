@@ -30,12 +30,12 @@ import java.io.InputStream;
 import java.util.Arrays;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.MemoryCacheImageInputStream;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSArray;
-import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSNumber;
 import org.apache.pdfbox.filter.DecodeOptions;
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.graphics.color.PDColorSpace;
 import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceGray;
 import org.apache.pdfbox.pdmodel.graphics.color.PDIndexed;
@@ -46,7 +46,7 @@ import org.apache.pdfbox.pdmodel.graphics.color.PDIndexed;
  */
 final class SampledImageReader
 {
-    private static final Logger LOG = LogManager.getLogger(SampledImageReader.class);
+    private static final Log LOG = LogFactory.getLog(SampledImageReader.class);
     
     private SampledImageReader()
     {
@@ -92,7 +92,7 @@ final class SampledImageReader
             for (int y = 0; y < height; y++)
             {
                 int x = 0;
-                int readLen = iis.readNBytes(buff, 0, buff.length);
+                int readLen = (int) IOUtils.populateBuffer(iis, buff);
                 for (int r = 0; r < rowLen && r < readLen; r++)
                 {
                     int byteValue = buff[r];
@@ -285,14 +285,10 @@ final class SampledImageReader
                 final boolean isIndexed = colorSpace instanceof PDIndexed;
 
                 // calculate row padding
-                int padding = inputWidth * numComponents * bitsPerComponent % 8;
-                if (padding > 0)
+                int padding = 0;
+                if (inputWidth * numComponents * bitsPerComponent % 8 > 0)
                 {
-                    padding = 8 - padding;
-                }
-                else
-                {
-                    padding = 0;
+                    padding = 8 - (inputWidth * numComponents * bitsPerComponent % 8);
                 }
 
                 // read stream
@@ -424,7 +420,7 @@ final class SampledImageReader
             final byte[] buff = new byte[stride];
             for (int y = 0; y < starty + scanHeight; y++)
             {
-                int read = iis.readNBytes(buff, 0, buff.length);
+                int read = (int) IOUtils.populateBuffer(iis, buff);
                 if (y >= starty && y % currentSubsampling == 0)
                 {
                     int x = startx;
@@ -501,11 +497,10 @@ final class SampledImageReader
             if (startx == 0 && starty == 0 && scanWidth == width && scanHeight == height && currentSubsampling == 1)
             {
                 // we just need to copy all sample data, then convert to RGB image.
-                int inputResult = input.readNBytes(bank, 0, bank.length);
-                if (LOG.isDebugEnabled() && inputResult != (long) width * height * numComponents)
+                long inputResult = IOUtils.populateBuffer(input, bank);
+                if (Long.compare(inputResult, (long) width * height * numComponents) != 0)
                 {
-                    LOG.debug("Tried reading {} bytes but only {} bytes read",
-                            (long) width * height * numComponents, inputResult);
+                    LOG.debug("Tried reading " + (long) width * height * numComponents + " bytes but only " + inputResult + " bytes read");
                 }
                 return pdImage.getColorSpace().toRGBImage(raster);
             }
@@ -519,12 +514,11 @@ final class SampledImageReader
             int i = 0;
             for (int y = 0; y < starty + scanHeight; ++y)
             {
-                int inputResult = input.readNBytes(tempBytes, 0, tempBytes.length);
+                long inputResult = IOUtils.populateBuffer(input, tempBytes);
 
                 if (Long.compare(inputResult, tempBytes.length) != 0)
                 {
-                    LOG.debug("Tried reading {} bytes but only {} bytes read", tempBytes.length,
-                            inputResult);
+                    LOG.debug("Tried reading " + tempBytes.length + " bytes but only " + inputResult + " bytes read");
                 }
 
                 if (y < starty || y % currentSubsampling > 0)
@@ -614,20 +608,16 @@ final class SampledImageReader
                     }
                     else
                     {
-                        LOG.warn("colorKey mask size is {}, should be {}, ignored", colorKey.size(),
-                                numComponents * 2);
+                        LOG.warn("colorKey mask size is " + colorKey.size() + ", should be "
+                                + (numComponents * 2) + ", ignored");
                     }
                 }
 
                 // calculate row padding
-                int padding = inputWidth * numComponents * bitsPerComponent % 8;
-                if (padding > 0)
+                int padding = 0;
+                if (inputWidth * numComponents * bitsPerComponent % 8 > 0)
                 {
-                    padding = 8 - padding;
-                }
-                else
-                {
-                    padding = 0;
+                    padding = 8 - (inputWidth * numComponents * bitsPerComponent % 8);
                 }
 
                 // read stream
@@ -750,40 +740,44 @@ final class SampledImageReader
     private static float[] getDecodeArray(PDImage pdImage) throws IOException
     {
         final COSArray cosDecode = pdImage.getDecode();
+        float[] decode = null;
 
         if (cosDecode != null)
         {
             int numberOfComponents = pdImage.getColorSpace().getNumberOfComponents();
-            if (cosDecode.size() >= numberOfComponents * 2)
+            if (cosDecode.size() != numberOfComponents * 2)
             {
-                boolean error = false;
-                float[] decode = new float[numberOfComponents * 2];
-                for (int i = 0; i < decode.length; ++i)
+                if (pdImage.isStencil() && cosDecode.size() >= 2
+                        && cosDecode.get(0) instanceof COSNumber
+                        && cosDecode.get(1) instanceof COSNumber)
                 {
-                    COSBase base = cosDecode.get(i);
-                    if (base instanceof COSNumber)
+                    float decode0 = ((COSNumber) cosDecode.get(0)).floatValue();
+                    float decode1 = ((COSNumber) cosDecode.get(1)).floatValue();
+                    if (decode0 >= 0 && decode0 <= 1 && decode1 >= 0 && decode1 <= 1)
                     {
-                        decode[i] = ((COSNumber) base).floatValue();
+                        LOG.warn("decode array " + cosDecode
+                                + " not compatible with color space, using the first two entries");
+                        return new float[]
+                        {
+                            decode0, decode1
+                        };
                     }
-                    else
-                    {
-                        error = true;
-                        break;
-                    }
                 }
-                if (pdImage.isStencil() && (decode[0] < 0 || decode[0] > 1 || decode[1] < 0 || decode[1] > 1))
-                {
-                    error = true;
-                }
-                if (!error)
-                {
-                    return decode;
-                }
+                LOG.error("decode array " + cosDecode
+                        + " not compatible with color space, using default");
             }
-            LOG.error("decode array {} not compatible with color space, using default", cosDecode);
+            else
+            {
+                decode = cosDecode.toFloatArray();
+            }
         }
 
         // use color space default
-        return pdImage.getColorSpace().getDefaultDecode(pdImage.getBitsPerComponent());
+        if (decode == null)
+        {
+            return pdImage.getColorSpace().getDefaultDecode(pdImage.getBitsPerComponent());
+        }
+
+        return decode;
     }
 }

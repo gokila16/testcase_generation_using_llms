@@ -28,13 +28,12 @@ import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.common.COSObjectable;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * The page tree, which defines the ordering of pages in the document in an efficient manner.
@@ -43,7 +42,7 @@ import org.apache.logging.log4j.LogManager;
  */
 public class PDPageTree implements COSObjectable, Iterable<PDPage>
 {
-    private static final Logger LOG = LogManager.getLogger(PDPageTree.class);
+    private static final Log LOG = LogFactory.getLog(PDPageTree.class);
     private final COSDictionary root;
     private final PDDocument document; // optional
 
@@ -108,17 +107,6 @@ public class PDPageTree implements COSObjectable, Iterable<PDPage>
      */
     public static COSBase getInheritableAttribute(COSDictionary node, COSName key)
     {
-        return getInheritableAttribute(node, key, new HashSet<>());
-    }
-
-    private static COSBase getInheritableAttribute(COSDictionary node, COSName key, Set<COSDictionary> visited)
-    {
-        if (visited.contains(node))
-        {
-            return null;
-        }
-        visited.add(node);
-
         COSBase value = node.getDictionaryObject(key);
         if (value != null)
         {
@@ -127,7 +115,7 @@ public class PDPageTree implements COSObjectable, Iterable<PDPage>
         COSDictionary parent = node.getCOSDictionary(COSName.PARENT, COSName.P);
         if (parent != null && COSName.PAGES.equals(parent.getCOSName(COSName.TYPE)))
         {
-            return getInheritableAttribute(parent, key, visited);
+            return getInheritableAttribute(parent, key);
         }
 
         return null;
@@ -149,17 +137,16 @@ public class PDPageTree implements COSObjectable, Iterable<PDPage>
      */
     private List<COSDictionary> getKids(COSDictionary node)
     {
+        List<COSDictionary> result = new ArrayList<>();
+
         COSArray kids = node.getCOSArray(COSName.KIDS);
         if (kids == null)
         {
             // probably a malformed PDF
-            return Collections.emptyList();
+            return result;
         }
 
-        int size = kids.size();
-        List<COSDictionary> result = new ArrayList<>(size);
-
-        for (int i = 0; i < size; i++)
+        for (int i = 0, size = kids.size(); i < size; i++)
         {
             COSBase base = kids.getObject(i);
             if (base instanceof COSDictionary)
@@ -178,7 +165,7 @@ public class PDPageTree implements COSObjectable, Iterable<PDPage>
                 }
                 else
                 {
-                    LOG.warn("COSDictionary expected, but got {}", base.getClass().getSimpleName());
+                    LOG.warn("COSDictionary expected, but got " + base.getClass().getSimpleName());
                 }
             }
         }
@@ -228,8 +215,8 @@ public class PDPageTree implements COSObjectable, Iterable<PDPage>
                 }
                 else
                 {
-                    LOG.error("Page skipped due to an invalid or missing type {}",
-                            () -> (node == null ? "(null)" : node.getCOSName(COSName.TYPE)));
+                    LOG.error("Page skipped due to an invalid or missing type "
+                            + (node == null ? "(null)" : node.getCOSName(COSName.TYPE)));
                 }
             }
         }

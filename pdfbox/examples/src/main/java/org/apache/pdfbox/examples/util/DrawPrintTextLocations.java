@@ -24,8 +24,10 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.List;
 import javax.imageio.ImageIO;
@@ -233,7 +235,8 @@ public class DrawPrintTextLocations extends PDFTextStripper
         setStartPage(page + 1);
         setEndPage(page + 1);
 
-        writeText(document, Writer.nullWriter());
+        Writer dummy = new OutputStreamWriter(new ByteArrayOutputStream());
+        writeText(document, dummy);
         
         // beads in green
         g2d.setStroke(new BasicStroke(0.4f));

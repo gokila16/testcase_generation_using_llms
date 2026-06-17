@@ -100,7 +100,7 @@ public class PDPageLabels implements COSObjectable
     private void findLabels(PDNumberTreeNode node) throws IOException 
     {
         List<PDNumberTreeNode> kids = node.getKids();
-        if (kids != null) 
+        if (node.getKids() != null) 
         {
             for (PDNumberTreeNode kid : kids) 
             {
@@ -208,7 +208,7 @@ public class PDPageLabels implements COSObjectable
     public Map<String, Integer> getPageIndicesByLabels()
     {
         int numberOfPages = doc.getNumberOfPages();
-        final Map<String, Integer> labelMap = new HashMap<>();
+        final Map<String, Integer> labelMap = new HashMap<>(numberOfPages);
         computeLabels((pageIndex, label) -> labelMap.put(label, pageIndex), numberOfPages);
         return labelMap;
     }
@@ -367,7 +367,7 @@ public class PDPageLabels implements COSObjectable
         /**
          * Lookup table used by the {@link #makeRomanLabel(int)} method.
          */
-        private static final String[][] ROMANS = {
+        private static final String[][] ROMANS = new String[][] {
             { "", "i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix" },
             { "", "x", "xx", "xxx", "xl", "l", "lx", "lxx", "lxxx", "xc" },
             { "", "c", "cc", "ccc", "cd", "d", "dc", "dcc", "dccc", "cm" }

@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.io.IOUtils;
 
 /**
  * Decompresses data encoded using the zlib/deflate compression method,
@@ -41,12 +42,13 @@ final class FlateFilter extends Filter
         try (FlateFilterDecoderStream decoderStream = new FlateFilterDecoderStream(encoded))
         {
             OutputStream wrapPredictor = Predictor.wrapPredictor(decoded, decodeParams);
-            decoderStream.transferTo(wrapPredictor);
+            IOUtils.copy(decoderStream, wrapPredictor);
             wrapPredictor.flush();
         }
         return new DecodeResult(parameters);
     }
 
+    
     @Override
     protected void encode(InputStream input, OutputStream encoded, COSDictionary parameters)
             throws IOException
@@ -55,7 +57,7 @@ final class FlateFilter extends Filter
         Deflater deflater = new Deflater(compressionLevel);
         try (DeflaterOutputStream out = new DeflaterOutputStream(encoded,deflater))
         {
-            input.transferTo(out);
+            IOUtils.copy(input, out);
         }
         encoded.flush();
         deflater.end();

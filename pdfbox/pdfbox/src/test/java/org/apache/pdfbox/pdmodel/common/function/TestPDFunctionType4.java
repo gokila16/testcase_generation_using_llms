@@ -54,10 +54,10 @@ class TestPDFunctionType4
 
     /**
      * Checks the {@link PDFunctionType4}.
-     * @throws IOException if an error occurs
+     * @throws Exception if an error occurs
      */
     @Test
-    void testFunctionSimple() throws IOException
+    void testFunctionSimple() throws Exception
     {
         String functionText = "{ add }";
         //Simply adds the two arguments and returns the result
@@ -66,7 +66,7 @@ class TestPDFunctionType4
                 new float[] {-1.0f, 1.0f, -1.0f, 1.0f},
                 new float[] {-1.0f, 1.0f});
 
-        float[] input = {0.8f, 0.1f};
+        float[] input = new float[] {0.8f, 0.1f};
         float[] output = function.eval(input);
 
         assertEquals(1, output.length);
@@ -87,10 +87,10 @@ class TestPDFunctionType4
 
     /**
      * Checks the handling of the argument order for a {@link PDFunctionType4}.
-     * @throws IOException if an error occurs
+     * @throws Exception if an error occurs
      */
     @Test
-    void testFunctionArgumentOrder() throws IOException
+    void testFunctionArgumentOrder() throws Exception
     {
         String functionText = "{ pop }";
         // pops an argument (2nd) and returns the next argument (1st)
@@ -99,7 +99,7 @@ class TestPDFunctionType4
                 new float[] {-1.0f, 1.0f, -1.0f, 1.0f},
                 new float[] {-1.0f, 1.0f});
 
-        float[] input = {-0.7f, 0.0f };
+        float[] input = new float[] {-0.7f, 0.0f };
         float[] output = function.eval(input);
 
         assertEquals(1, output.length);

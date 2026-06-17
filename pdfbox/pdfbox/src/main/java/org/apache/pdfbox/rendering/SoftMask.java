@@ -30,8 +30,8 @@ import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.io.IOException;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.apache.pdfbox.pdmodel.common.function.PDFunction;
 import org.apache.pdfbox.pdmodel.common.function.PDFunctionTypeIdentity;
@@ -48,7 +48,7 @@ import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
 class SoftMask implements Paint
 {
 
-    private static final Logger LOG = LogManager.getLogger(SoftMask.class);
+    private static final Log LOG = LogFactory.getLog(SoftMask.class);
 
     private static final ColorModel ARGB_COLOR_MODEL =
             new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB).getColorModel();
@@ -131,8 +131,8 @@ class SoftMask implements Paint
         @Override
         public Raster getRaster(int x1, int y1, int w, int h)
         {
-            Raster contextRaster = context.getRaster(x1, y1, w, h);
-            ColorModel contextRasterColorModel = context.getColorModel();
+            Raster raster = context.getRaster(x1, y1, w, h);
+            ColorModel rasterCM = context.getColorModel();
             float[] input = null;
             Float[] map = null;
 
@@ -143,7 +143,7 @@ class SoftMask implements Paint
             }
 
             // buffer
-            WritableRaster outputRaster = getColorModel().createCompatibleWritableRaster(w, h);
+            WritableRaster output = getColorModel().createCompatibleWritableRaster(w, h);
 
             // the soft mask has its own bbox
             x1 = x1 - (int)bboxDevice.getX();
@@ -152,23 +152,22 @@ class SoftMask implements Paint
             int[] gray = new int[4];
             Object pixelInput = null;
             int[] pixelOutput = new int[4];
-            WritableRaster maskRaster = mask.getRaster();
             for (int y = 0; y < h; y++)
             {
                 for (int x = 0; x < w; x++)
                 {
-                    pixelInput = contextRaster.getDataElements(x, y, pixelInput);
+                    pixelInput = raster.getDataElements(x, y, pixelInput);
 
-                    pixelOutput[0] = contextRasterColorModel.getRed(pixelInput);
-                    pixelOutput[1] = contextRasterColorModel.getGreen(pixelInput);
-                    pixelOutput[2] = contextRasterColorModel.getBlue(pixelInput);
-                    pixelOutput[3] = contextRasterColorModel.getAlpha(pixelInput);
+                    pixelOutput[0] = rasterCM.getRed(pixelInput);
+                    pixelOutput[1] = rasterCM.getGreen(pixelInput);
+                    pixelOutput[2] = rasterCM.getBlue(pixelInput);
+                    pixelOutput[3] = rasterCM.getAlpha(pixelInput);
                     
                     // get the alpha value from the gray mask, if within mask bounds
                     gray[0] = 0;
-                    if (x1 + x >= 0 && y1 + y >= 0 && x1 + x < maskRaster.getWidth() && y1 + y < maskRaster.getHeight())
+                    if (x1 + x >= 0 && y1 + y >= 0 && x1 + x < mask.getWidth() && y1 + y < mask.getHeight())
                     {
-                        maskRaster.getPixel(x1 + x, y1 + y, gray);
+                        mask.getRaster().getPixel(x1 + x, y1 + y, gray);
                         int g = gray[0];
                         if (transferFunction != null)
                         {
@@ -205,11 +204,11 @@ class SoftMask implements Paint
                     {
                         pixelOutput[3] = Math.round(pixelOutput[3] * (bc / 255f));
                     }
-                    outputRaster.setPixel(x, y, pixelOutput);
+                    output.setPixel(x, y, pixelOutput);
                 }
             }
 
-            return outputRaster;
+            return output;
         }
 
         @Override

@@ -21,8 +21,8 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
@@ -36,7 +36,7 @@ import org.w3c.dom.Element;
  */
 public class FDFAnnotationFreeText extends FDFAnnotation
 {
-    private static final Logger LOG = LogManager.getLogger(FDFAnnotationFreeText.class);
+    private static final Log LOG = LogFactory.getLog(FDFAnnotationFreeText.class);
  
     /**
      * COS Model value for SubType entry.
@@ -104,8 +104,16 @@ public class FDFAnnotationFreeText extends FDFAnnotation
         String fringe = element.getAttribute("fringe");
         if (fringe != null && !fringe.isEmpty())
         {
-            PDRectangle rect = createRectangleFromAttributes(
-                    fringe, "Error: wrong amount of numbers in attribute 'fringe'");
+            String[] fringeValues = fringe.split(",");
+            if (fringeValues.length != 4)
+            {
+                throw new IOException("Error: wrong amount of numbers in attribute 'fringe'");
+            }
+            PDRectangle rect = new PDRectangle();
+            rect.setLowerLeftX(Float.parseFloat(fringeValues[0]));
+            rect.setLowerLeftY(Float.parseFloat(fringeValues[1]));
+            rect.setUpperRightX(Float.parseFloat(fringeValues[2]));
+            rect.setUpperRightY(Float.parseFloat(fringeValues[3]));
             setFringe(rect);
         }
     }
@@ -116,7 +124,11 @@ public class FDFAnnotationFreeText extends FDFAnnotation
         if (callout != null && !callout.isEmpty())
         {
             String[] calloutValues = callout.split(",");
-            float[] values = parseFloats(calloutValues);
+            float[] values = new float[calloutValues.length];
+            for (int i = 0; i < calloutValues.length; i++)
+            {
+                values[i] = Float.parseFloat(calloutValues[i]);
+            }
             setCallout(values);
         }
     }
@@ -131,7 +143,9 @@ public class FDFAnnotationFreeText extends FDFAnnotation
      */
     public final void setCallout(float[] callout)
     {
-        annot.setItem(COSName.CL, COSArray.of(callout));
+        COSArray newCallout = new COSArray();
+        newCallout.setFloatArray(callout);
+        annot.setItem(COSName.CL, newCallout);
     }
 
     /**

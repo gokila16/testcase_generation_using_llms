@@ -52,7 +52,7 @@ class PDDeviceCMYKTest
         {
         }
     }
-    
+
     /**
      * PDFBOX-5787: test for problems on Mac with jdk21 homebrew. If this test fails, then use
      * another jdk.

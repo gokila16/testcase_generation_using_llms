@@ -200,7 +200,9 @@ public class PDAnnotationLink extends PDAnnotation
      */
     public void setQuadPoints(float[] quadPoints)
     {
-        getCOSObject().setItem(COSName.QUADPOINTS, COSArray.of(quadPoints));
+        COSArray newQuadPoints = new COSArray();
+        newQuadPoints.setFloatArray(quadPoints);
+        getCOSObject().setItem(COSName.QUADPOINTS, newQuadPoints);
     }
 
     /**

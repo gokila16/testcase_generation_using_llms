@@ -23,14 +23,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSObject;
 import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.common.COSObjectable;
 
@@ -40,7 +41,7 @@ import org.apache.pdfbox.pdmodel.common.COSObjectable;
  */
 public class PDFCloneUtility
 {
-    private static final Logger LOG = LogManager.getLogger(PDFCloneUtility.class);
+    private static final Log LOG = LogFactory.getLog(PDFCloneUtility.class);
 
     private final PDDocument destination;
     private final Map<COSBase, COSBase> clonedVersion = new HashMap<>();
@@ -74,7 +75,6 @@ public class PDFCloneUtility
      * 
      * Expert use only, don’t use it if you don’t know exactly what you are doing.
      * 
-     * @param <TCOSBase> The type to be returned.
      * @param base the initial object as the root of the deep-clone operation
      * @return the cloned instance of the base object
      * @throws IOException if an I/O error occurs
@@ -148,7 +148,7 @@ public class PDFCloneUtility
         try (OutputStream output = newStream.createRawOutputStream();
                 InputStream input = stream.createRawInputStream())
         {
-            input.transferTo(output);
+            IOUtils.copy(input, output);
         }
         clonedVersion.put(stream, newStream);
         for (Map.Entry<COSName, COSBase> entry : stream.entrySet())
@@ -211,10 +211,9 @@ public class PDFCloneUtility
         if (sourceBase instanceof COSArray && targetBase instanceof COSArray)
         {
             COSArray array = (COSArray) sourceBase;
-            COSArray targetBaseArray = (COSArray) targetBase;
             for (int i = 0; i < array.size(); i++)
             {
-                targetBaseArray.add(cloneForNewDocument(array.get(i)));
+                ((COSArray) targetBase).add(cloneForNewDocument(array.get(i)));
             }
         }
         else if (sourceBase instanceof COSDictionary && targetBase instanceof COSDictionary)
@@ -251,8 +250,8 @@ public class PDFCloneUtility
             if (actual == parent)
             {
                 COSObject cosObj = ((COSObject) value);
-                LOG.warn("{} object has a reference to itself: {}",
-                        parent.getClass().getSimpleName(), cosObj.getKey());
+                LOG.warn(parent.getClass().getSimpleName() + " object has a reference to itself: "
+                        + cosObj.getKey());
                 return true;
             }
         }

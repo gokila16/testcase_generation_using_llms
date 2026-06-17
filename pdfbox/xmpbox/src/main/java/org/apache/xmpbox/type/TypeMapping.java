@@ -25,11 +25,9 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.xml.namespace.QName;
@@ -45,26 +43,24 @@ import org.apache.xmpbox.schema.TiffSchema;
 import org.apache.xmpbox.schema.XMPBasicJobTicketSchema;
 import org.apache.xmpbox.schema.XMPBasicSchema;
 import org.apache.xmpbox.schema.XMPMediaManagementSchema;
-import org.apache.xmpbox.schema.XMPPageTextSchema;
 import org.apache.xmpbox.schema.XMPRightsManagementSchema;
 import org.apache.xmpbox.schema.XMPSchema;
 import org.apache.xmpbox.schema.XMPSchemaFactory;
+import org.apache.xmpbox.schema.XMPageTextSchema;
+import org.apache.xmpbox.schema.XmpSchemaException;
 
 public final class TypeMapping
 {
 
-    // type -> property
     private Map<Types, PropertiesDescription> structuredMappings;
 
-    // ns -> list of property descriptions
-    private Map<String, List<PropertiesDescription>> definedStructuredNamespaces2;
-
-    // typeName -> property
-    private Map<String, PropertiesDescription> definedStructuredMappings;
+    // ns -> type
+    private Map<String, Types> structuredNamespaces;
 
     // ns -> type
-    // filled during init
-    private Map<String, List<Types>> structuredNamespaces2;
+    private Map<String, String> definedStructuredNamespaces;
+
+    private Map<String, PropertiesDescription> definedStructuredMappings;
 
     private final XMPMetadata metadata;
 
@@ -83,7 +79,7 @@ public final class TypeMapping
     {
         // structured types
         structuredMappings = new EnumMap<>(Types.class);
-        structuredNamespaces2 = new HashMap<>();
+        structuredNamespaces = new HashMap<>();
         for (Types type : Types.values())
         {
             if (type.isStructured())
@@ -93,24 +89,14 @@ public final class TypeMapping
                 StructuredType st = clz.getAnnotation(StructuredType.class);
                 String ns = st.namespace();
                 PropertiesDescription pm = initializePropMapping(clz);
-                List<Types> list = structuredNamespaces2.get(ns);
-                if (list != null)
-                {
-                    list.add(type);
-                }
-                else
-                {
-                    list = new ArrayList<>();
-                    list.add(type);
-                    structuredNamespaces2.put(ns, list);
-                }
+                structuredNamespaces.put(ns, type);
                 structuredMappings.put(type, pm);
             }
         }
 
         // define structured types
+        definedStructuredNamespaces = new HashMap<>();
         definedStructuredMappings = new HashMap<>();
-        definedStructuredNamespaces2 = new HashMap<>();
 
         // schema
         schemaMap = new HashMap<>();
@@ -125,45 +111,19 @@ public final class TypeMapping
         addNameSpace(XMPBasicJobTicketSchema.class);
         addNameSpace(ExifSchema.class);
         addNameSpace(TiffSchema.class);
-        addNameSpace(XMPPageTextSchema.class);
+        addNameSpace(XMPageTextSchema.class);
     }
 
     public void addToDefinedStructuredTypes(String typeName, String ns, PropertiesDescription pm)
     {
-        List<PropertiesDescription> list = definedStructuredNamespaces2.get(ns);
-        if (list != null)
-        {
-            list.add(pm);
-        }
-        else
-        {
-            list = new ArrayList<>();
-            list.add(pm);
-            definedStructuredNamespaces2.put(ns, list);
-        }
+        definedStructuredNamespaces.put(ns, typeName);
         definedStructuredMappings.put(typeName, pm);
     }
 
-    /**
-     * Get a property description based on namespace and field name. Both are needed because there
-     * can be several property descriptions for one namespace.
-     *
-     * @param namespace
-     * @param pdfaFieldName
-     * @return
-     */
-    public PropertiesDescription getDefinedDescriptionByNamespace(String namespace, String pdfaFieldName)
+    public PropertiesDescription getDefinedDescriptionByNamespace(String namespace)
     {
-        List<PropertiesDescription> propDescList = definedStructuredNamespaces2.get(namespace);
-        for (PropertiesDescription propDesc : propDescList)
-        {
-            // check whether one of these field names matches
-            if (propDesc.getPropertiesNames().contains(pdfaFieldName))
-            {
-                return propDesc;
-            }
-        }
-        return null;
+        String dt = definedStructuredNamespaces.get(namespace);
+        return this.definedStructuredMappings.get(dt);
     }
 
     public AbstractStructuredType instanciateStructuredType(Types type, String propertyName)
@@ -195,7 +155,7 @@ public final class TypeMapping
             Types type)
     {
         // constructor parameters
-        Object[] params = { metadata, nsuri, prefix, name, value };
+        Object[] params = new Object[] { metadata, nsuri, prefix, name, value };
         // type
         Class<? extends AbstractSimpleProperty> clz =
                 type.getImplementingClass().asSubclass(AbstractSimpleProperty.class);
@@ -208,7 +168,7 @@ public final class TypeMapping
                IllegalAccessException | InvocationTargetException | SecurityException |
                NoSuchMethodException e)
         {
-            throw new IllegalArgumentException("Failed to instantiate " + clz.getSimpleName() + " property with value '" + value + "'", e);
+            throw new IllegalArgumentException("Failed to instantiate " + clz.getSimpleName() + " property with value " + value, e);
         }
     }
 
@@ -230,17 +190,17 @@ public final class TypeMapping
      */
     public boolean isStructuredTypeNamespace(String namespace)
     {
-        return structuredNamespaces2.containsKey(namespace);
+        return structuredNamespaces.containsKey(namespace);
     }
 
     public boolean isDefinedTypeNamespace(String namespace)
     {
-        return definedStructuredNamespaces2.containsKey(namespace);
+        return definedStructuredNamespaces.containsKey(namespace);
     }
 
     public boolean isDefinedType(String name)
     {
-        return definedStructuredMappings.containsKey(name);
+        return this.definedStructuredMappings.containsKey(name);
     }
 
     private void addNameSpace(Class<? extends XMPSchema> classSchem)
@@ -259,6 +219,34 @@ public final class TypeMapping
     public PropertiesDescription getStructuredPropMapping(Types type)
     {
         return structuredMappings.get(type);
+    }
+
+    /**
+     * Return the specialized schema class representation if it's known (create and add it to metadata). In other cases,
+     * return null
+     * 
+     * @param metadata
+     *            Metadata to link the new schema
+     * @param namespace
+     *            The namespace URI
+     * @param prefix The namespace prefix
+     * @return Schema representation
+     * @throws XmpSchemaException
+     *             When Instancing specified Object Schema failed
+     */
+    public XMPSchema getAssociatedSchemaObject(XMPMetadata metadata, String namespace, String prefix)
+            throws XmpSchemaException
+    {
+        if (schemaMap.containsKey(namespace))
+        {
+            XMPSchemaFactory factory = schemaMap.get(namespace);
+            return factory.createXMPSchema(metadata, prefix);
+        }
+        else
+        {
+            XMPSchemaFactory factory = getSchemaFactory(namespace);
+            return factory != null ? factory.createXMPSchema(metadata, prefix) : null;
+        }
     }
 
     public XMPSchemaFactory getSchemaFactory(String namespace)
@@ -285,75 +273,42 @@ public final class TypeMapping
 
     /**
      * Give type of specified property in specified schema (given by its namespaceURI)
-     *
-     * @param qName the property Qualified Name
-     * @param parentTypeName the type name of the parent, or null if not known. This is intended to
-     * help when the field name is in several types, e.g. "Values" in exif.
+     * 
+     * @param name
+     *            the property Qualified Name
      * @return Property type declared for namespace specified, null if unknown
-     * @throws org.apache.xmpbox.type.BadFieldValueException if the name of a type was not found.
+     * @throws org.apache.xmpbox.type.BadFieldValueException if the name was not found.
      */
-    public PropertyType getSpecifiedPropertyType(QName qName, String parentTypeName) throws BadFieldValueException
+    public PropertyType getSpecifiedPropertyType(QName name) throws BadFieldValueException
     {
-        // PDFBOX-6133: the method was rewritten because of photoshop and exif,
-        // because these namespaces exist as a schema and as a type
-        // "factory" is checked in the non-schema part to keep the pre PDFBOX-6133 behavior
-        XMPSchemaFactory factory = getSchemaFactory(qName.getNamespaceURI());
+        XMPSchemaFactory factory = getSchemaFactory(name.getNamespaceURI());
         if (factory != null)
         {
             // found in schema
-            PropertyType propertyType = factory.getPropertyType(qName.getLocalPart());
-            if (propertyType != null)
-            {
-                return propertyType;
-            }
-        }
-        // try in structured
-        List<Types> list = structuredNamespaces2.get(qName.getNamespaceURI());
-        if (list != null)
-        {
-            if (list.size() == 1)
-            {
-                Types st = list.get(0);
-                PropertiesDescription propDesc = structuredMappings.get(st);
-                if (factory == null || propDesc.getPropertiesNames().contains(qName.getLocalPart()))
-                {
-                    return createPropertyType(st, Cardinality.Simple);
-                }
-                return null;
-            }
-            if (list.size() > 1)
-            {
-                for (Types type : list)
-                {
-                    if (type.name().equals(parentTypeName))
-                    {
-                        return createPropertyType(type, Cardinality.Simple);
-                    }
-                }
-                for (Types type : list)
-                {
-                    PropertiesDescription propDesc = structuredMappings.get(type);
-                    if (propDesc.getPropertiesNames().contains(qName.getLocalPart()))
-                    {
-                        return createPropertyType(type, Cardinality.Simple);
-                    }
-                }
-            }
-            return null;
-        }
-        // try in defined
-        if (!definedStructuredNamespaces2.containsKey(qName.getNamespaceURI()))
-        {
-            // not found
-            if (factory != null)
-            {
-                return null; // pre PDFBOX-6133 behavior
-            }
-            throw new BadFieldValueException("No descriptor found for " + qName);
+            return factory.getPropertyType(name.getLocalPart());
         }
         else
         {
-            return createPropertyType(Types.DefinedType, Cardinality.Simple);
+            // try in structured
+            Types st = structuredNamespaces.get(name.getNamespaceURI());
+            if (st != null)
+            {
+                return createPropertyType(st, Cardinality.Simple);
+            }
+            else
+            {
+                // try in defined
+                String dt = definedStructuredNamespaces.get(name.getNamespaceURI());
+                if (dt == null)
+                {
+                    // not found
+                    throw new BadFieldValueException("No descriptor found for " + name);
+                }
+                else
+                {
+                    return createPropertyType(Types.DefinedType, Cardinality.Simple);
+                }
+            }
         }
     }
 
@@ -489,12 +444,6 @@ public final class TypeMapping
             public Cardinality card()
             {
                 return card;
-            }
-
-            @Override
-            public String toString()
-            {
-                return "{type: " + type + ", card: " + card + '}';
             }
         };
     }

@@ -42,12 +42,13 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSInteger;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.filter.Filter;
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.graphics.color.PDColorSpace;
 import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceCMYK;
@@ -61,7 +62,7 @@ import org.w3c.dom.Element;
  */
 public final class JPEGFactory
 {
-    private static final Logger LOG = LogManager.getLogger(JPEGFactory.class);
+    private static final Log LOG = LogFactory.getLog(JPEGFactory.class);
 
     private JPEGFactory()
     {
@@ -80,7 +81,7 @@ public final class JPEGFactory
     public static PDImageXObject createFromStream(PDDocument document, InputStream stream)
             throws IOException
     {
-        return createFromByteArray(document, stream.readAllBytes());
+        return createFromByteArray(document, IOUtils.toByteArray(stream));
     }
 
     /**
@@ -355,10 +356,6 @@ public final class JPEGFactory
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (ImageOutputStream ios = ImageIO.createImageOutputStream(baos))
         {
-            if (ios == null)
-            {
-                throw new IOException("ImageIO.createImageOutputStream() returned null");
-            }
             imageWriter.setOutput(ios);
 
             // add compression

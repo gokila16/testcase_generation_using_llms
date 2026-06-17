@@ -33,7 +33,6 @@ import org.apache.xmpbox.schema.PhotoshopSchema;
 import org.apache.xmpbox.schema.XMPBasicJobTicketSchema;
 import org.apache.xmpbox.schema.XMPBasicSchema;
 import org.apache.xmpbox.schema.XMPMediaManagementSchema;
-import org.apache.xmpbox.schema.XMPPageTextSchema;
 import org.apache.xmpbox.schema.XMPRightsManagementSchema;
 import org.apache.xmpbox.schema.XMPSchema;
 import org.apache.xmpbox.schema.XmpSchemaException;
@@ -577,30 +576,4 @@ public class XMPMetadata
         schemas.clear();
     }
 
-    /**
-     * Create and add PageText Schema to this metadata.
-     * 
-     * This method return the created schema to enter information
-     * 
-     * @return schema added in order to work on it
-     */
-    public XMPPageTextSchema createAndAddPageTextSchema()
-    {
-        XMPPageTextSchema pageText = new XMPPageTextSchema(this);
-        pageText.setAboutAsSimple("");
-        addSchema(pageText);
-        return pageText;
-    }
-
-    /**
-     * Get the PageText schema.
-     * 
-     * This method return null if not found
-     *
-     * @return The PageTextSchema schema or null if not declared
-     */
-    public XMPPageTextSchema getPageTextSchema()
-    {
-        return (XMPPageTextSchema) getSchema(XMPPageTextSchema.class);
-    }
 }

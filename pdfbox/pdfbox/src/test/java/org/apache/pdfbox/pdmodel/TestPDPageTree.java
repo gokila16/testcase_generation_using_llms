@@ -17,7 +17,6 @@
 package org.apache.pdfbox.pdmodel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.IOException;
 
@@ -92,10 +91,9 @@ class TestPDPageTree
     }
 
     @Test
-    void testInsertBeforeBlankPage() throws IOException
+    void testInsertBeforeBlankPage() throws Exception
     {
-        try (PDDocument document = new PDDocument())
-        {
+        try (PDDocument document = new PDDocument()) {
             PDPage pageOne = new PDPage();
             PDPage pageTwo = new PDPage();
             PDPage pageThree = new PDPage();
@@ -112,10 +110,9 @@ class TestPDPageTree
     }
 
     @Test
-    void testInsertAfterBlankPage() throws IOException
+    void testInsertAfterBlankPage() throws Exception
     {
-        try (PDDocument document = new PDDocument())
-        {
+        try (PDDocument document = new PDDocument()) {
             PDPage pageOne = new PDPage();
             PDPage pageTwo = new PDPage();
             PDPage pageThree = new PDPage();
@@ -131,18 +128,5 @@ class TestPDPageTree
             assertEquals(2, (document.getPages().indexOf(pageThree)),
                     "Page three should be placed at index 2.");
         }
-    }
-
-    /**
-     * PDFBOX-6040: avoid loop in getInheritableAttribute().
-     *
-     * @throws IOException 
-     */
-    @Test
-    void testNodeLoop() throws IOException
-    {
-        doc = Loader.loadPDF(RandomAccessReadBuffer.createBufferFromStream(
-                TestPDPageTree.class.getResourceAsStream("PDFBOX-6040-nodeloop.pdf")));
-        assertNull(doc.getPage(0).getResources());
     }
 }

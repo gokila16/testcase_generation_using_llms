@@ -18,7 +18,6 @@ package org.apache.pdfbox.benchmark;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.pdfbox.Loader;
@@ -49,7 +48,7 @@ public class LoadAndSave {
     @BenchmarkMode(Mode.AverageTime)
     public void saveMediumFile(Blackhole blackhole) throws IOException {
         PDDocument pdf = Loader.loadPDF(new File(MEDIUM_SIZE_TEST_FILE));
-        pdf.save(OutputStream.nullOutputStream());
+        pdf.save(new NullOutputStream());
         pdf.close();
     }
 
@@ -58,7 +57,7 @@ public class LoadAndSave {
     @BenchmarkMode(Mode.AverageTime)
     public void saveIncrementalMediumFile(Blackhole blackhole) throws IOException {
         PDDocument pdf = Loader.loadPDF(new File(MEDIUM_SIZE_TEST_FILE));
-        pdf.saveIncremental(OutputStream.nullOutputStream());
+        pdf.saveIncremental(new NullOutputStream());
         pdf.close();
     }
 
@@ -67,7 +66,7 @@ public class LoadAndSave {
     @BenchmarkMode(Mode.AverageTime)
     public void saveNoCompressionMediumFile(Blackhole blackhole) throws IOException {
         PDDocument pdf = Loader.loadPDF(new File(MEDIUM_SIZE_TEST_FILE));
-        pdf.save(OutputStream.nullOutputStream(),CompressParameters.NO_COMPRESSION);
+        pdf.save(new NullOutputStream(),CompressParameters.NO_COMPRESSION);
         pdf.close();
     }
 
@@ -85,7 +84,7 @@ public class LoadAndSave {
     @BenchmarkMode(Mode.AverageTime)
     public void saveLargeFile(Blackhole blackhole) throws IOException {
         PDDocument pdf = Loader.loadPDF(new File(LARGE_SIZE_TEST_FILE));
-        pdf.save(OutputStream.nullOutputStream());
+        pdf.save(new NullOutputStream());
         pdf.close();
     }
 
@@ -95,7 +94,7 @@ public class LoadAndSave {
     @BenchmarkMode(Mode.AverageTime)
     public void saveIncrementalLargeFile(Blackhole blackhole) throws IOException {
         PDDocument pdf = Loader.loadPDF(new File(LARGE_SIZE_TEST_FILE));
-        pdf.saveIncremental(OutputStream.nullOutputStream());
+        pdf.saveIncremental(new NullOutputStream());
         pdf.close();
     }
     
@@ -104,7 +103,7 @@ public class LoadAndSave {
     @BenchmarkMode(Mode.AverageTime)
     public void saveNoCompressionLargeFile(Blackhole blackhole) throws IOException {
         PDDocument pdf = Loader.loadPDF(new File(LARGE_SIZE_TEST_FILE));
-        pdf.save(OutputStream.nullOutputStream(),CompressParameters.NO_COMPRESSION);
+        pdf.save(new NullOutputStream(),CompressParameters.NO_COMPRESSION);
         pdf.close();
     }
 }

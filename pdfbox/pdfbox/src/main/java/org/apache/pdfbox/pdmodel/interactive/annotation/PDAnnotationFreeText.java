@@ -193,7 +193,9 @@ public class PDAnnotationFreeText extends PDAnnotationMarkup
      */
     public final void setCallout(float[] callout)
     {
-        getCOSObject().setItem(COSName.CL, COSArray.of(callout));
+        COSArray newCallout = new COSArray();
+        newCallout.setFloatArray(callout);
+        getCOSObject().setItem(COSName.CL, newCallout);
     }
 
     /**

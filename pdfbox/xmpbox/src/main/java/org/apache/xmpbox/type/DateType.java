@@ -146,10 +146,6 @@ public class DateType extends AbstractSimpleProperty
     @Override
     public String getStringValue()
     {
-        if (dateValue == null)
-        {
-            return null;
-        }
         return DateConverter.toISO8601(dateValue);
     }
 

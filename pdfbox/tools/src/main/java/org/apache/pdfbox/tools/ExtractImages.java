@@ -35,6 +35,7 @@ import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.contentstream.PDFGraphicsStreamEngine;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDResources;
@@ -391,10 +392,9 @@ public final class ExtractImages implements Callable<Integer>
                          PDDeviceRGB.INSTANCE.getName().equals(colorSpaceName)))
                     {
                         // RGB or Gray colorspace: get and write the unmodified JPEG stream
-                        try (InputStream is = pdImage.createInputStream(JPEG))
-                        {
-                            is.transferTo(imageOutput);
-                        }
+                        InputStream data = pdImage.createInputStream(JPEG);
+                        IOUtils.copy(data, imageOutput);
+                        IOUtils.closeQuietly(data);
                     }
                     else
                     {
@@ -414,11 +414,10 @@ public final class ExtractImages implements Callable<Integer>
                             || PDDeviceRGB.INSTANCE.getName().equals(colorSpaceName)))
                     {
                         // RGB or Gray colorspace: get and write the unmodified JPEG2000 stream
-                        try (InputStream data = pdImage.createInputStream(
-                                        Collections.singletonList(COSName.JPX_DECODE.getName())))
-                        {
-                            data.transferTo(imageOutput);
-                        }
+                        InputStream data = pdImage.createInputStream(
+                                Collections.singletonList(COSName.JPX_DECODE.getName()));
+                        IOUtils.copy(data, imageOutput);
+                        IOUtils.closeQuietly(data);
                     }
                     else
                     {
@@ -465,7 +464,7 @@ public final class ExtractImages implements Callable<Integer>
             }
         }
 
-        private boolean hasMasks(PDImage pdImage)
+        private boolean hasMasks(PDImage pdImage) throws IOException
         {
             if (pdImage instanceof PDImageXObject)
             {

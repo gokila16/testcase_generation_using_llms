@@ -710,7 +710,7 @@ public class XMPSchema extends AbstractStructuredType
         AbstractField abstractProperty = getAbstractProperty(bagName);
         if (abstractProperty instanceof ArrayProperty)
         {
-            return ((ArrayProperty) abstractProperty).getElementsAsString();
+            return ((ArrayProperty) getAbstractProperty(bagName)).getElementsAsString();
         }
         return null;
     }
@@ -1227,9 +1227,4 @@ public class XMPSchema extends AbstractStructuredType
         return tm.instanciateSimpleField(getClass(), null, getPrefix(), propertyName, value);
     }
 
-    <T> T getPropertyAs(String name, Class<T> type)
-    {
-        AbstractField property = getProperty(name);
-        return type.isInstance(property) ? type.cast(property) : null;
-    }
 }

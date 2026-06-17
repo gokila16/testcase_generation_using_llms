@@ -43,10 +43,10 @@ import org.junit.jupiter.api.Test;
  */
 class TestPDDocument
 {
-    private static final File TESTRESULTSDIR = new File("target/test-output");
+    static private final File TESTRESULTSDIR = new File("target/test-output");
 
     @BeforeAll
-    static void setUp()
+    static void setUp() throws Exception
     {
         TESTRESULTSDIR.mkdirs();
     }

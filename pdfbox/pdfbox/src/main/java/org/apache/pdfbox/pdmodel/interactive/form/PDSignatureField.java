@@ -20,11 +20,10 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
-import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSeedValue;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
@@ -37,8 +36,8 @@ import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
  */
 public class PDSignatureField extends PDTerminalField
 {
-    private static final Logger LOG = LogManager.getLogger(PDSignatureField.class);
-    
+	private static final Log LOG = LogFactory.getLog(PDSignatureField.class);
+	
     /**
      * @see PDTerminalField#PDTerminalField(PDAcroForm)
      *
@@ -197,11 +196,10 @@ public class PDSignatureField extends PDTerminalField
         PDAnnotationWidget widget = this.getWidgets().get(0);
         if (widget != null)
         {
-            PDRectangle rectangle = widget.getRectangle();
             // check if the signature is visible
-            if (rectangle == null ||
-                Float.compare(rectangle.getHeight(), 0) == 0 && Float.compare(rectangle.getWidth(), 0) == 0 ||
-                widget.isNoView() || widget.isHidden())
+            if (widget.getRectangle() == null ||
+                Float.compare(widget.getRectangle().getHeight(), 0) == 0 && Float.compare(widget.getRectangle().getWidth(), 0) == 0 ||
+                widget.isNoView() ||  widget.isHidden())
             {
                 return;
             }

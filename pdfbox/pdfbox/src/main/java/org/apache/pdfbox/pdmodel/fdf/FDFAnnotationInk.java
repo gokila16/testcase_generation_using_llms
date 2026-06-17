@@ -25,8 +25,8 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
@@ -42,7 +42,7 @@ import org.w3c.dom.NodeList;
  */
 public class FDFAnnotationInk extends FDFAnnotation
 {
-    private static final Logger LOG = LogManager.getLogger(FDFAnnotationInk.class);
+    private static final Log LOG = LogFactory.getLog(FDFAnnotationInk.class);
     /**
      * COS Model value for SubType entry.
      */
@@ -96,7 +96,11 @@ public class FDFAnnotationInk extends FDFAnnotation
                 {
                     String gesture = node.getFirstChild().getNodeValue();
                     String[] gestureValues = gesture.split("[,;]");
-                    float[] values = parseFloats(gestureValues);
+                    float[] values = new float[gestureValues.length];
+                    for (int j = 0; j < gestureValues.length; j++)
+                    {
+                        values[j] = Float.parseFloat(gestureValues[j]);
+                    }
                     inklist.add(values);
                 }
             }
@@ -121,7 +125,9 @@ public class FDFAnnotationInk extends FDFAnnotation
         COSArray newInklist = new COSArray();
         for (float[] array : inklist)
         {
-            newInklist.add(COSArray.of(array));
+            COSArray newArray = new COSArray();
+            newArray.setFloatArray(array);
+            newInklist.add(newArray);
         }
         annot.setItem(COSName.INKLIST, newInklist);
     }
@@ -137,7 +143,7 @@ public class FDFAnnotationInk extends FDFAnnotation
         COSArray array = annot.getCOSArray(COSName.INKLIST);
         if (array != null)
         {
-            List<float[]> retval = new ArrayList<>(array.size());
+            List<float[]> retval = new ArrayList<>();
             for (COSBase entry : array)
             {
                 retval.add(((COSArray) entry).toFloatArray());

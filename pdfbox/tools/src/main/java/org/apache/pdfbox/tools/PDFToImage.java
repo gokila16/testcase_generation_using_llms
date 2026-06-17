@@ -22,8 +22,10 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 
 import javax.imageio.ImageIO;
 
@@ -122,10 +124,12 @@ public final class PDFToImage implements Callable<Integer>
             outputPrefix = FilenameUtils.removeExtension(infile.getAbsolutePath());
         }
 
-        if (!List.of(ImageIO.getWriterFormatNames()).contains(imageFormat))
+        List<String> writerFormatNames = Arrays.asList(ImageIO.getWriterFormatNames());
+        if (!writerFormatNames.contains(imageFormat))
         {
+            String wfn = writerFormatNames.stream().collect(Collectors.joining(", "));
             SYSERR.println("Error: Invalid image format " + imageFormat + " - supported formats: " +
-                    String.join(", ", ImageIO.getWriterFormatNames()));
+                    wfn);
             return 2;
         }
 
@@ -162,11 +166,6 @@ public final class PDFToImage implements Callable<Integer>
             long startTime = System.nanoTime();
 
             // render the pages
-            if (page != -1)
-            {
-                startPage = page;
-                endPage = page;
-            }
             boolean success = true;
             endPage = Math.min(endPage, document.getNumberOfPages());
             PDFRenderer renderer = new PDFRenderer(document);

@@ -20,8 +20,8 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.io.EOFException;
-import java.io.IOException;
 import java.io.InputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -29,8 +29,8 @@ import java.util.List;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.MemoryCacheImageInputStream;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSStream;
 import org.apache.pdfbox.pdmodel.common.PDRange;
@@ -42,7 +42,7 @@ import org.apache.pdfbox.util.Matrix;
 abstract class PDMeshBasedShadingType extends PDShadingType4
 {
 
-    private static final Logger LOG = LogManager.getLogger(PDMeshBasedShadingType.class);
+    private static final Log LOG = LogFactory.getLog(PDMeshBasedShadingType.class);
 
     PDMeshBasedShadingType(COSDictionary shadingDictionary)
     {
@@ -97,7 +97,7 @@ abstract class PDMeshBasedShadingType extends PDShadingType4
                 Point2D[] implicitEdge = new Point2D[4];
                 float[][] implicitCornerColor = new float[2][colRange.length];
                 byte flag = 0;
-    
+
                 try
                 {
                     flag = (byte) (mciis.readBits(bitsPerFlag) & 3);
@@ -107,7 +107,7 @@ abstract class PDMeshBasedShadingType extends PDShadingType4
                     LOG.error(ex);
                     return list;
                 }
-    
+
                 boolean eof = false;
                 while (!eof)
                 {
@@ -140,7 +140,7 @@ abstract class PDMeshBasedShadingType extends PDShadingType4
                             implicitCornerColor = current.getFlag3Color();
                             break;
                         default:
-                            LOG.warn("bad flag: {}", flag);
+                            LOG.warn("bad flag: " + flag);
                             break;
                         }
                     }
@@ -203,23 +203,21 @@ abstract class PDMeshBasedShadingType extends PDShadingType4
 
         try
         {
-            int bitsPerCoordinate = getBitsPerCoordinate();
             for (int i = pStart; i < controlPoints; i++)
             {
-                long x = input.readBits(bitsPerCoordinate);
-                long y = input.readBits(bitsPerCoordinate);
+                long x = input.readBits(getBitsPerCoordinate());
+                long y = input.readBits(getBitsPerCoordinate());
                 float px = interpolate(x, maxSrcCoord, rangeX.getMin(), rangeX.getMax());
                 float py = interpolate(y, maxSrcCoord, rangeY.getMin(), rangeY.getMax());
                 Point2D p = matrix.transformPoint(px, py);
                 xform.transform(p, p);
                 points[i] = p;
             }
-            int bitsPerComponent = getBitsPerComponent();
             for (int i = cStart; i < 4; i++)
             {
                 for (int j = 0; j < numberOfColorComponents; j++)
                 {
-                    long c = input.readBits(bitsPerComponent);
+                    long c = input.readBits(getBitsPerComponent());
                     color[i][j] = interpolate(c, maxSrcColor, colRange[j].getMin(),
                             colRange[j].getMax());
                 }

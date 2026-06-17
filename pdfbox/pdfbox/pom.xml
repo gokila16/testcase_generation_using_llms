@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.apache.pdfbox</groupId>
         <artifactId>pdfbox-parent</artifactId>
-        <version>4.0.0-SNAPSHOT</version>
+        <version>3.0.5</version>
         <relativePath>../parent/pom.xml</relativePath>
     </parent>
 
@@ -35,16 +35,16 @@
         The Apache PDFBox library is an open source Java tool for working with PDF documents.
     </description>
     <inceptionYear>2002</inceptionYear>
-
-	<scm>
-		<connection>scm:svn:https://svn.apache.org/repos/asf/pdfbox/trunk/pdfbox</connection>
-		<developerConnection>scm:svn:https://svn.apache.org/repos/asf/pdfbox/trunk/pdfbox</developerConnection>
-		<url>https://svn.apache.org/viewvc/pdfbox/trunk/pdfbox</url>
-	</scm>
-
+    
     <properties>
     	<git.scmJavadocUrl>git:https://git-wip-us.apache.org/repos/asf/pdfbox-docs//content/docs/${project.version}/javadocs</git.scmJavadocUrl>
     </properties>
+
+    <scm>
+	<connection>scm:svn:https://svn.apache.org/repos/asf/pdfbox/tags/3.0.5/pdfbox</connection>
+	<developerConnection>scm:svn:https://svn.apache.org/repos/asf/pdfbox/tags/3.0.5/pdfbox</developerConnection>
+	<url>https://svn.apache.org/viewvc/pdfbox/tags/3.0.5/pdfbox</url>
+    </scm>
     
     <dependencies>
         <dependency>
@@ -57,8 +57,11 @@
             <artifactId>fontbox</artifactId>
             <version>${project.version}</version>
         </dependency>
-
-        <!-- may throw NoClassDefError with PDFs that use public key encryption if bouncycastle not included -->
+        <dependency>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+            <version>${commons-logging.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk18on</artifactId>
@@ -73,12 +76,11 @@
             <scope>compile</scope>
             <optional>true</optional>
         </dependency>
-
         <dependency>
 	      <groupId>org.junit.jupiter</groupId>
 	      <artifactId>junit-jupiter</artifactId>
           <version>${junit.version}</version>
-          <scope>test</scope>
+	      <scope>test</scope>
 	    </dependency>
         <dependency>
             <groupId>com.googlecode.java-diff-utils</groupId>
@@ -92,22 +94,11 @@
             <version>${jbig2.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- can't use 5.*, doesn't support jdk8 -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>5.23.0</version>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>net.bytebuddy</groupId>
-                    <artifactId>byte-buddy</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>net.bytebuddy</groupId>
-            <artifactId>byte-buddy</artifactId>
-            <version>1.18.8</version>
+            <version>4.11.0</version>
             <scope>test</scope>
         </dependency>
         <!-- For legal reasons (incompatible license), these three dependencies below
@@ -127,11 +118,14 @@
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-api</artifactId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j2.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
+            <artifactId>log4j-jcl</artifactId>
+            <version>${log4j2.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -155,29 +149,9 @@
         </resources>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>3.2.0</version>
-                <executions>
-                    <execution>
-                        <id>delete-user-file-during-test</id>
-                        <!-- Runs before the 'test' phase -->
-                        <phase>generate-test-resources</phase>
-                        <configuration>
-                            <target>
-                                <delete file="${user.home}/.pdfbox.cache" />
-                            </target>
-                        </configuration>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <argLine>${addmod} @{surefireArgLine} -Xmx768m</argLine>
+                    <argLine>@{surefireArgLine} -Xmx768m</argLine>
                     <excludes>
                         <exclude>org/apache/pdfbox/rendering/TestPDFToImage.java</exclude>
                     </excludes>
@@ -205,32 +179,29 @@
                 <groupId>org.apache.rat</groupId>
                 <artifactId>apache-rat-plugin</artifactId>
                 <configuration>
-                    <inputExcludes>
-                        <inputExclude>src/main/resources/org/apache/pdfbox/resources/afm/*</inputExclude>
-                        <inputExclude>src/main/resources/org/apache/pdfbox/resources/icc/*</inputExclude>
-                        <inputExclude>src/main/resources/org/apache/pdfbox/resources/glyphlist/glyphlist.txt</inputExclude>
-                        <inputExclude>src/main/resources/org/apache/pdfbox/resources/glyphlist/zapfdingbats.txt</inputExclude>
-                        <inputExclude>src/main/resources/org/apache/pdfbox/resources/text/BidiMirroring.txt</inputExclude>
-                        <inputExclude>src/main/resources/META-INF/services/*</inputExclude>
-                        <inputExclude>src/test/resources/input/rendering/*.ai</inputExclude>
-                        <inputExclude>src/test/resources/input/*.txt</inputExclude>
-                        <inputExclude>src/test/resources/input/**/*.pdf</inputExclude>
-                        <inputExclude>src/test/resources/input/**/*.png</inputExclude>
-                        <inputExclude>src/test/resources/org/apache/**/*.pdf</inputExclude>
-                        <inputExclude>src/test/resources/output/*</inputExclude>
-                        <inputExclude>src/test/resources/org/apache/pdfbox/pdmodel/sRGB.*</inputExclude>
-                        <inputExclude>src/test/resources/org/apache/pdfbox/pdfparser/*.fdf</inputExclude>
-                        <inputExclude>release.properties</inputExclude>
-                        <inputExclude>src/test/resources/org/apache/pdfbox/encryption/*.der</inputExclude>
-                        <inputExclude>src/test/resources/org/apache/pdfbox/encryption/*.p12</inputExclude>
-                        <inputExclude>src/test/resources/org/apache/pdfbox/encryption/*.pfx</inputExclude>
-                        <inputExclude>src/test/resources/org/apache/pdfbox/filter/*.bin</inputExclude>
-                        <inputExclude>src/test/resources/org/apache/pdfbox/text/*.txt</inputExclude>
-                        <inputExclude>src/test/resources/*.properties</inputExclude>
-                        <inputExclude>src/main/java/org/apache/pdfbox/filter/CCITTFaxDecoderStream.java</inputExclude>
-                        <inputExclude>src/main/java/org/apache/pdfbox/filter/CCITTFaxEncoderStream.java</inputExclude>
-                        <inputExclude>src/main/java/org/apache/pdfbox/filter/TIFFExtension.java</inputExclude>
-                    </inputExcludes>
+                    <excludes>
+                        <exclude>src/main/resources/org/apache/pdfbox/resources/afm/*</exclude>
+                        <exclude>src/main/resources/org/apache/pdfbox/resources/icc/*</exclude>
+                        <exclude>src/main/resources/org/apache/pdfbox/resources/glyphlist/glyphlist.txt</exclude>
+                        <exclude>src/main/resources/org/apache/pdfbox/resources/glyphlist/zapfdingbats.txt</exclude>
+                        <exclude>src/main/resources/org/apache/pdfbox/resources/text/BidiMirroring.txt</exclude>
+                        <exclude>src/main/resources/META-INF/services/*</exclude>
+                        <exclude>src/test/resources/input/rendering/*.ai</exclude>
+                        <exclude>src/test/resources/input/*.txt</exclude>
+                        <exclude>src/test/resources/output/*</exclude>
+                        <exclude>src/test/resources/org/apache/pdfbox/pdmodel/sRGB.*</exclude>
+                        <exclude>src/test/resources/org/apache/pdfbox/pdfparser/*.fdf</exclude>
+                        <exclude>release.properties</exclude>
+                        <exclude>src/test/resources/org/apache/pdfbox/encryption/*.der</exclude>
+                        <exclude>src/test/resources/org/apache/pdfbox/encryption/*.p12</exclude>
+                        <exclude>src/test/resources/org/apache/pdfbox/encryption/*.pfx</exclude>
+                        <exclude>src/test/resources/org/apache/pdfbox/filter/*.bin</exclude>
+                        <exclude>src/test/resources/org/apache/pdfbox/text/*.txt</exclude>
+                        <exclude>src/test/resources/*.properties</exclude>
+                        <exclude>src/main/java/org/apache/pdfbox/filter/CCITTFaxDecoderStream.java</exclude>
+                        <exclude>src/main/java/org/apache/pdfbox/filter/CCITTFaxEncoderStream.java</exclude>
+                        <exclude>src/main/java/org/apache/pdfbox/filter/TIFFExtension.java</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
             <plugin>
@@ -907,61 +878,10 @@
                             <sha512>5a9c237b8e1b93eb492c7a387180d937f8fb82d1fa2ffcf73698489b3ec4cdefc2ceb4e9204867c834a2139069c5667811aaf522d6e1f6ff8fd1591528a65007</sha512>
                         </configuration>
                     </execution>
-                    <execution>
-                        <id>PDFBOX-6009</id>
-                        <phase>generate-test-resources</phase>
-                        <goals>
-                            <goal>wget</goal>
-                        </goals>
-                        <configuration>
-                            <url>https://issues.apache.org/jira/secure/attachment/13076529/pdfbox-split-missing-tags_mail%2015.5.2025.pdf</url>
-                            <outputDirectory>${project.build.directory}/pdfs</outputDirectory>
-                            <outputFileName>PDFBOX-6009.pdf</outputFileName>
-                            <sha512>60e7b46f11a655083a57f4a627edf75bee477cd1ebfb06fbaefeb8ba16a01be37039cfd51c7c181a3ea368b53d22e327d480a7b0699c0edb2e06b4faaae7790f</sha512>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>PDFBOX-6150</id>
-                        <phase>generate-test-resources</phase>
-                        <goals>
-                            <goal>wget</goal>
-                        </goals>
-                        <configuration>
-                            <url>https://issues.apache.org/jira/secure/attachment/13080392/test-form.pdf</url>
-                            <outputDirectory>${project.build.directory}/pdfs</outputDirectory>
-                            <outputFileName>PDFBOX-6150.pdf</outputFileName>
-                            <sha512>da6c630d2683937bce60f70302176f16531b36300b69d2d8585c15819b7965bf6c0c2f6fe101743d66b3dbb70e7eb0383614b669878641a480b9ea1a6d02510f</sha512>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>PDFBOX-6178</id>
-                        <phase>generate-test-resources</phase>
-                        <goals>
-                            <goal>wget</goal>
-                        </goals>
-                        <configuration>
-                            <url>https://issues.apache.org/jira/secure/attachment/13081297/form_empty.pdf</url>
-                            <outputDirectory>${project.build.directory}/pdfs</outputDirectory>
-                            <outputFileName>PDFBOX-6178.pdf</outputFileName>
-                            <sha512>d39486af0614bd099167a6adaab833aed41a0ebec7b85b13b382a2fdb6fddbcaaea9ab26ed0a81b72822258c8dd66dd535fa5c76afd1e5a8b1bff7d81e890274</sha512>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>PDFBOX-6178-1</id>
-                        <phase>generate-test-resources</phase>
-                        <goals>
-                            <goal>wget</goal>
-                        </goals>
-                        <configuration>
-                            <url>https://issues.apache.org/jira/secure/attachment/13081311/form_selected_ASCII_NUL_acrobat.pdf</url>
-                            <outputDirectory>${project.build.directory}/pdfs</outputDirectory>
-                            <outputFileName>PDFBOX-6178-1.pdf</outputFileName>
-                            <sha512>83bc557e6f7d3e98de6e81168b2e2fb3def5025cc5fab1ddb3ef658505351c615253587f09b93503bb73a6225f3d3898be894e9d05dba8d464f4dd9c54514bc3</sha512>
-                        </configuration>
-                    </execution>
                 </executions>
             </plugin>
         </plugins>
     </build>
 
 </project>
+

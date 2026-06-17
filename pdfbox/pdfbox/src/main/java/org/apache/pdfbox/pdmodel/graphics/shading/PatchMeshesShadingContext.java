@@ -15,12 +15,15 @@
  */
 package org.apache.pdfbox.pdmodel.graphics.shading;
 
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
 import java.awt.image.ColorModel;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.pdfbox.util.Matrix;
 
@@ -55,6 +58,13 @@ abstract class PatchMeshesShadingContext extends TriangleBasedShadingContext
         super(shading, colorModel, xform, matrix);
         patchList = shading.collectPatches(xform, matrix, controlPoints);
         createPixelTable(deviceBounds);
+    }
+
+    @Override
+    protected Map<Point, Integer> calcPixelTable(Rectangle deviceBounds) throws IOException
+    {
+        // deprecated
+        return Collections.emptyMap();
     }
 
     @Override

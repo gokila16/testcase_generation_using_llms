@@ -49,8 +49,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.fontbox.util.BoundingBox;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -120,7 +120,7 @@ class TestTextStripper
     /**
      * Logger instance.
      */
-    private static final Logger LOG = LogManager.getLogger(TestTextStripper.class);
+    private static final Log log = LogFactory.getLog(TestTextStripper.class);
 
     private boolean bFail = false;
     private static PDFTextStripper stripper;
@@ -128,9 +128,11 @@ class TestTextStripper
 
     /**
      * Test class initialization.
+     *
+     * @throws IOException If there is an error initializing the test.
      */
     @BeforeAll
-    static void init()
+    static void init() throws IOException
     {
         stripper = new PDFTextStripper();
         stripper.setLineSeparator("\n");
@@ -168,9 +170,9 @@ class TestTextStripper
                 if( expectedArray[expectedIndex] != actualArray[actualIndex] )
                 {
                     equals = false;
-                    LOG.warn("Lines differ at index expected: {}-{} actual: {}-{}", expectedIndex,
-                            (int) expectedArray[expectedIndex], actualIndex,
-                            (int) actualArray[actualIndex]);
+                    log.warn("Lines differ at index"
+                     + " expected:" + expectedIndex + "-" + (int)expectedArray[expectedIndex]
+                     + " actual:" + actualIndex + "-" + (int)actualArray[actualIndex] );
                     break;
                 }
                 expectedIndex = skipWhitespace( expectedArray, expectedIndex );
@@ -183,25 +185,24 @@ class TestTextStripper
                 if( expectedIndex != expectedArray.length )
                 {
                     equals = false;
-                    LOG.warn("Expected line is longer at: {}", expectedIndex);
+                    log.warn("Expected line is longer at:" + expectedIndex );
                 }
                 if( actualIndex != actualArray.length )
                 {
                     equals = false;
-                    LOG.warn("Actual line is longer at: {}", actualIndex);
+                    log.warn("Actual line is longer at:" + actualIndex );
                 }
                 if (expectedArray.length != actualArray.length)
                 {
                     equals = false;
-                    LOG.warn("Expected lines: {}, actual lines: {}", expectedArray.length,
-                            actualArray.length);
+                    log.warn("Expected lines: " + expectedArray.length + ", actual lines: " + actualArray.length);
                 }
             }
         }
         else
         {
-            equals = (expected == null && actual != null && actual.isBlank())
-                    || (actual == null && expected != null && expected.isBlank());
+            equals = (expected == null && actual != null && actual.trim().isEmpty())
+                    || (actual == null && expected != null && expected.trim().isEmpty());
         }
         return equals;
     }
@@ -232,18 +233,18 @@ class TestTextStripper
      * @param outDir The directory to store the output in
      * @param bLogResult Whether to log the extracted text
      * @param bSort Whether or not the extracted text is sorted
-     * @throws IOException when there is an exception
+     * @throws Exception when there is an exception
      */
     private void doTestFile(File inFile, File outDir, boolean bLogResult, boolean bSort)
-    throws IOException
+    throws Exception
     {
         if(bSort)
         {
-            LOG.info("Preparing to parse {} for sorted test", inFile.getName());
+            log.info("Preparing to parse " + inFile.getName() + " for sorted test");
         }
         else
         {
-            LOG.info("Preparing to parse {} for standard test", inFile.getName());
+            log.info("Preparing to parse " + inFile.getName() + " for standard test");
         }
 
         Files.createDirectories(outDir.toPath());
@@ -287,17 +288,18 @@ class TestTextStripper
 
             if (bLogResult)
             {
-                LOG.info("Text for {}:", inFile.getName());
-                LOG.info(stripper.getText(document));
+                log.info("Text for " + inFile.getName() + ":");
+                log.info(stripper.getText(document));
             }
 
             if (!expectedFile.exists())
             {
                 this.bFail = true;
-                LOG.error("FAILURE: Input verification file: {} does not exist",
-                        expectedFile.getAbsolutePath());
+                log.error("FAILURE: Input verification file: " + expectedFile.getAbsolutePath() +
+                        " did not exist");
                 return;
             }
+            
             compareResult(expectedFile, outFile, inFile, bSort, diffFile);
         }
     }
@@ -315,12 +317,12 @@ class TestTextStripper
             while (true)
             {
                 String expectedLine = expectedReader.readLine();
-                while (expectedLine != null && expectedLine.isBlank())
+                while (expectedLine != null && expectedLine.trim().isEmpty())
                 {
                     expectedLine = expectedReader.readLine();
                 }
                 String actualLine = actualReader.readLine();
-                while (actualLine != null && actualLine.isBlank())
+                while (actualLine != null && actualLine.trim().isEmpty())
                 {
                     actualLine = actualReader.readLine();
                 }
@@ -328,10 +330,13 @@ class TestTextStripper
                 {
                     this.bFail = true;
                     localFail = true;
-                    LOG.error(
-                            "FAILURE: Line mismatch for file {} (sort = {}) at expected line: {} at actual line: {}\nexpected line was: \"{}\"\nactual line was: \"{}\"\n",
-                            expectedFile.getAbsolutePath(), bSort, expectedReader.getLineNumber(),
-                            actualReader.getLineNumber(), expectedLine, actualLine);
+                    log.error("FAILURE: Line mismatch for file " + inFile.getName() +
+                            " (sort = "+bSort+")" +
+                                    " at expected line: " + expectedReader.getLineNumber() +
+                            " at actual line: " + actualReader.getLineNumber() +
+                            "\nexpected line was: \"" + expectedLine + "\"" +
+                                    "\nactual line was:   \"" + actualLine + "\"" + "\n");
+                    
                     //lets report all lines, even though this might produce some verbose logging
                     //break;
                 }
@@ -539,7 +544,7 @@ class TestTextStripper
      * @param inDir Input directory search for PDF files in.
      * @param outDir Output directory where the temp files will be created.
      */
-    private void doTestDir(File inDir, File outDir) throws IOException 
+    private void doTestDir(File inDir, File outDir) throws Exception 
     {
         File[] testFiles = inDir.listFiles((File dir, String name) -> name.endsWith(".pdf"));
         for (File testFile : testFiles) 
@@ -554,10 +559,10 @@ class TestTextStripper
     /**
      * Test to validate text extraction of file set.
      *
-     * @throws IOException when there is an exception
+     * @throws Exception when there is an exception
      */
     @Test
-    void testExtract() throws IOException
+    void testExtract() throws Exception
     {
         String filename = System.getProperty("org.apache.pdfbox.util.TextStripper.file");
         File inDir = new File("src/test/resources/input");
@@ -694,10 +699,10 @@ class TestTextStripper
     /**
      * PDFBOX-3774: test the IgnoreContentStreamSpaceGlyphs option.
      *
-     * @throws IOException 
+     * @throws Exception 
      */
     @Test
-    void testIgnoreContentStreamSpaceGlyphs() throws IOException
+    void testIgnoreContentStreamSpaceGlyphs() throws Exception
     {
         try (PDDocument doc = new PDDocument())
         {

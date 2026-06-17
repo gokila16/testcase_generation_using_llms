@@ -34,8 +34,12 @@ import org.apache.pdfbox.debugger.ui.XrefEntry;
  */
 public final class TreeStatus
 {
-    private final Object rootNode;
+    private Object rootNode;
    
+    private TreeStatus()
+    {
+    }
+    
     /**
      * Constructor.
      *

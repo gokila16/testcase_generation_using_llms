@@ -23,11 +23,11 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.BufferedOutputStream;
 import java.io.EOFException;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 import org.apache.pdfbox.io.RandomAccessRead;
 import org.apache.pdfbox.io.RandomAccessReadBuffer;
@@ -123,9 +123,9 @@ class RandomAccessReadBufferDataStreamTest
     @Test
     void ensureReadFinishes() throws IOException
     {
-        final Path path = Files.createTempFile("apache-pdfbox", ".dat");
+        final File file = File.createTempFile("apache-pdfbox", ".dat");
 
-        try (OutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(path)))
+        try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(file)))
         {
             final String content = "1234567890";
             outputStream.write(content.getBytes(StandardCharsets.UTF_8));
@@ -133,7 +133,7 @@ class RandomAccessReadBufferDataStreamTest
         }
 
         final byte[] readBuffer = new byte[2];
-        RandomAccessRead randomAccessRead = new RandomAccessReadBufferedFile(path.toFile());
+        RandomAccessRead randomAccessRead = new RandomAccessReadBufferedFile(file);
         try (RandomAccessReadDataStream randomAccessReadDataStream = new RandomAccessReadDataStream(
                 randomAccessRead))
         {
@@ -145,7 +145,7 @@ class RandomAccessReadBufferDataStreamTest
             }
             assertEquals(10, totalAmountRead);
         }
-        Files.delete(path);
+        file.delete();
     }
 
     /**
@@ -156,15 +156,15 @@ class RandomAccessReadBufferDataStreamTest
     @Test
     void testReadBuffer() throws IOException
     {
-        final Path path = Files.createTempFile("apache-pdfbox", ".dat");
+        final File file = File.createTempFile("apache-pdfbox", ".dat");
 
-        try (OutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(path)))
+        try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(file)))
         {
             final String content = "012345678A012345678B012345678C012345678D";
             outputStream.write(content.getBytes(StandardCharsets.UTF_8));
             outputStream.flush();
         }
-        RandomAccessRead randomAccessRead = new RandomAccessReadBufferedFile(path.toFile());
+        RandomAccessRead randomAccessRead = new RandomAccessReadBufferedFile(file);
 
         final byte[] readBuffer = new byte[40];
         try (RandomAccessReadDataStream randomAccessReadDataStream = new RandomAccessReadDataStream(
@@ -238,7 +238,7 @@ class RandomAccessReadBufferDataStreamTest
             assertEquals(count, bytesRead);
             assertEquals("012345678B012345678C012", new String(readBuffer, 0, count));
         }
-        Files.delete(path);
+        file.delete();
     }
 
 }

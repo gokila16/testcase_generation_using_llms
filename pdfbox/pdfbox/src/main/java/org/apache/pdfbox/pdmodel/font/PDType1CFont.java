@@ -25,8 +25,8 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.fontbox.EncodedFont;
 import org.apache.fontbox.FontBoxFont;
 import org.apache.fontbox.cff.CFFFont;
@@ -36,7 +36,6 @@ import org.apache.fontbox.util.BoundingBox;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.io.RandomAccessRead;
-import org.apache.pdfbox.pdmodel.ResourceCache;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.common.PDStream;
 import org.apache.pdfbox.pdmodel.font.encoding.Encoding;
@@ -55,7 +54,7 @@ import static org.apache.pdfbox.pdmodel.font.UniUtil.getUniNameOfCodePoint;
  */
 public class PDType1CFont extends PDSimpleFont implements PDVectorFont
 {
-    private static final Logger LOG = LogManager.getLogger(PDType1CFont.class);
+    private static final Log LOG = LogFactory.getLog(PDType1CFont.class);
 
     private final Map<String, Float> glyphHeights = new HashMap<>();
     private final AffineTransform fontMatrixTransform;
@@ -71,14 +70,11 @@ public class PDType1CFont extends PDSimpleFont implements PDVectorFont
      * Constructor.
      * 
      * @param fontDictionary the corresponding dictionary
-     * @param resourceCache ResourceCache, can be null.
-     * 
      * @throws IOException it something went wrong
      */
-    public PDType1CFont(COSDictionary fontDictionary, ResourceCache resourceCache)
-            throws IOException
+    public PDType1CFont(COSDictionary fontDictionary) throws IOException
     {
-        super(fontDictionary, resourceCache);
+        super(fontDictionary);
 
         boolean fontIsDamaged = false;
         CFFType1Font cffEmbedded = null;
@@ -88,12 +84,12 @@ public class PDType1CFont extends PDSimpleFont implements PDVectorFont
             PDStream ff3Stream = fd.getFontFile3();
             if (ff3Stream != null)
             {
-                try (RandomAccessRead randomAccessRead = ff3Stream.getCOSObject()
+                try (RandomAccessRead randomAccessRead = fd.getFontFile3().getCOSObject()
                         .createView())
                 {
                     if (randomAccessRead.length() == 0)
                     {
-                        LOG.error("Invalid data for embedded Type1C font {}", getName());
+                        LOG.error("Invalid data for embedded Type1C font " + getName());
                     }
                     else
                     {
@@ -106,15 +102,15 @@ public class PDType1CFont extends PDSimpleFont implements PDVectorFont
                         }
                         else
                         {
-                            LOG.error("Expected CFFType1Font, got {}",
-                                    parsedCffFont.getClass().getSimpleName());
+                            LOG.error("Expected CFFType1Font, got "
+                                    + parsedCffFont.getClass().getSimpleName());
                             fontIsDamaged = true;
                         }
                     }
                 }
                 catch (IOException e)
                 {
-                    LOG.error(() -> "Can't read the embedded Type1C font " + getName(), e);
+                    LOG.error("Can't read the embedded Type1C font " + getName(), e);
                     fontIsDamaged = true;
                 }
             }
@@ -128,14 +124,13 @@ public class PDType1CFont extends PDSimpleFont implements PDVectorFont
         }
         else
         {
-            String baseFont = getBaseFont();
             FontMapping<FontBoxFont> mapping = FontMappers.instance()
-                                                          .getFontBoxFont(baseFont, fd);
+                                                          .getFontBoxFont(getBaseFont(), fd);
             genericFont = mapping.getFont();
             
             if (mapping.isFallback())
             {
-                LOG.warn("Using fallback font {} for {}", genericFont.getName(), baseFont);
+                LOG.warn("Using fallback font " + genericFont.getName() + " for " + getBaseFont());
             }
             isEmbedded = false;
         }

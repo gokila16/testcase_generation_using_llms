@@ -119,7 +119,7 @@ public class Loader
      */
     public static FDFDocument loadXFDF(String filename) throws IOException
     {
-        return Loader.loadXFDF(new File(filename));
+        return Loader.loadXFDF(new BufferedInputStream(new FileInputStream(filename)));
     }
 
     /**
@@ -133,10 +133,7 @@ public class Loader
      */
     public static FDFDocument loadXFDF(File file) throws IOException
     {
-        try (InputStream is = new BufferedInputStream(new FileInputStream(file)))
-        {
-            return Loader.loadXFDF(is);
-        }
+        return Loader.loadXFDF(new BufferedInputStream(new FileInputStream(file)));
     }
 
     /**
@@ -370,7 +367,7 @@ public class Loader
      * 
      * @param randomAccessRead random access read representing the pdf to be loaded. To pass an
      * InputStream, wrap it into a {@link RandomAccessReadBuffer}.
-     * 
+     *
      * @return loaded document
      * 
      * @throws InvalidPasswordException If the PDF required a non-empty password.

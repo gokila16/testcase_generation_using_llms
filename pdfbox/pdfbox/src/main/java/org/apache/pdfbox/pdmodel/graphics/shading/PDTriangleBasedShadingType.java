@@ -23,8 +23,8 @@ import java.util.List;
 
 import javax.imageio.stream.ImageInputStream;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
@@ -41,7 +41,7 @@ abstract class PDTriangleBasedShadingType extends PDShading
     // value: same as the value of Range
     private COSArray decode = null;
 
-    private static final Logger LOG = LogManager.getLogger(PDTriangleBasedShadingType.class);
+    private static final Log LOG = LogFactory.getLog(PDTriangleBasedShadingType.class);
 
     private int bitsPerCoordinate = -1;
     private int bitsPerColorComponent = -1;
@@ -62,7 +62,7 @@ abstract class PDTriangleBasedShadingType extends PDShading
         if (bitsPerColorComponent == -1)
         {
             bitsPerColorComponent = getCOSObject().getInt(COSName.BITS_PER_COMPONENT, -1);
-            LOG.debug("bitsPerColorComponent: {}", bitsPerColorComponent);
+            LOG.debug("bitsPerColorComponent: " + bitsPerColorComponent);
         }
         return bitsPerColorComponent;
     }
@@ -89,7 +89,7 @@ abstract class PDTriangleBasedShadingType extends PDShading
         if (bitsPerCoordinate == -1)
         {
             bitsPerCoordinate = getCOSObject().getInt(COSName.BITS_PER_COORDINATE, -1);
-            LOG.debug("bitsPerCoordinate: {}", Math.pow(2, bitsPerCoordinate) - 1);
+            LOG.debug("bitsPerCoordinate: " + (Math.pow(2, bitsPerCoordinate) - 1));
         }
         return bitsPerCoordinate;
     }
@@ -118,7 +118,7 @@ abstract class PDTriangleBasedShadingType extends PDShading
         {
             numberOfColorComponents = getFunction() != null ? 1
                     : getColorSpace().getNumberOfComponents();
-            LOG.debug("numberOfColorComponents: {}", numberOfColorComponents);
+            LOG.debug("numberOfColorComponents: " + numberOfColorComponents);
         }
         return numberOfColorComponents;
     }
@@ -197,16 +197,12 @@ abstract class PDTriangleBasedShadingType extends PDShading
                                 PDRange rangeX, PDRange rangeY, PDRange[] colRangeTab,
                                 Matrix matrix, AffineTransform xform) throws IOException
     {
-        if (bitsPerCoordinate <= 0 || numberOfColorComponents <= 0 || bitsPerColorComponent <= 0)
-        {
-            throw new IOException("nothing to read, check bitsPerCoordinate, numberOfColorComponents and bitsPerColorComponent");
-        }
         float[] colorComponentTab = new float[numberOfColorComponents];
         long x = input.readBits(bitsPerCoordinate);
         long y = input.readBits(bitsPerCoordinate);
         float dstX = interpolate(x, maxSrcCoord, rangeX.getMin(), rangeX.getMax());
         float dstY = interpolate(y, maxSrcCoord, rangeY.getMin(), rangeY.getMax());
-        LOG.debug("coord: {}", () -> String.format("[%06X,%06X] -> [%f,%f]", x, y, dstX, dstY));
+        LOG.debug("coord: " + String.format("[%06X,%06X] -> [%f,%f]", x, y, dstX, dstY));
         Point2D p = matrix.transformPoint(dstX, dstY);
         xform.transform(p, p);
 
@@ -215,12 +211,8 @@ abstract class PDTriangleBasedShadingType extends PDShading
             int color = (int) input.readBits(bitsPerColorComponent);
             colorComponentTab[n] = interpolate(color, maxSrcColor, colRangeTab[n].getMin(),
                     colRangeTab[n].getMax());
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("color[{}]: {}/{}-> color[{}]: {}", n, color,
-                        String.format("%02x", color), n,
-                        colorComponentTab[n]);
-            }
+            LOG.debug("color[" + n + "]: " + color + "/" + String.format("%02x", color)
+                    + "-> color[" + n + "]: " + colorComponentTab[n]);
         }
 
         // "Each set of vertex data shall occupy a whole number of bytes.

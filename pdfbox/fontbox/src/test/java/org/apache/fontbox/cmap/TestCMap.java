@@ -40,7 +40,7 @@ class TestCMap
     @Test
     void testLookup() throws IOException
     {
-        byte[] bs = { (byte) 200 };
+        byte[] bs = new byte[] { (byte) 200 };
         CMap cMap = new CMap();
         cMap.addCharMapping(bs, "a");
         assertEquals("a", cMap.toUnicode(bs));

@@ -34,8 +34,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.fontbox.ttf.CmapLookup;
 import org.apache.fontbox.ttf.gsub.GsubWorker;
 import org.apache.fontbox.ttf.gsub.GsubWorkerFactory;
@@ -76,7 +76,7 @@ import org.apache.pdfbox.util.StringUtil;
  */
 abstract class PDAbstractContentStream implements Closeable
 {
-    private static final Logger LOG = LogManager.getLogger(PDAbstractContentStream.class);
+    private static final Log LOG = LogFactory.getLog(PDAbstractContentStream.class);
 
     protected final PDDocument document; // may be null
 
@@ -186,14 +186,13 @@ abstract class PDAbstractContentStream implements Closeable
             }
             else
             {
-                LOG.warn(
-                        "Using the subsetted font '{}' without a PDDocument context; call subset() before saving",
-                        font.getName());
+                LOG.warn("Using the subsetted font '" + font.getName() +
+                        "' without a PDDocument context; call subset() before saving");
             }
         }
         else if (!font.isEmbedded() && !font.isStandard14())
         {
-            LOG.warn("attempting to use font '{}' that isn't embedded", font.getName());
+            LOG.warn("attempting to use font '" + font.getName() + "' that isn't embedded");
         }
 
         // complex text layout
@@ -203,12 +202,16 @@ abstract class PDAbstractContentStream implements Closeable
             GsubData gsubData = type0Font.getGsubData();
             if (gsubData != GsubData.NO_DATA_FOUND)
             {
-                GsubWorker gsubWorker = gsubWorkerFactory.getGsubWorker(type0Font.getCmapLookup(), gsubData);
-                gsubWorkers.put(type0Font, gsubWorker);
+                GsubWorker gsubWorker = gsubWorkerFactory.getGsubWorker(type0Font.getCmapLookup(),
+                        gsubData);
+                gsubWorkers.put((PDType0Font) font, gsubWorker);
             }
             else
             {
-                LOG.info("No GSUB data found in font {}", font.getName());
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("No GSUB data found in font" + font.getName());
+                }
             }
         }
 
@@ -291,6 +294,7 @@ abstract class PDAbstractContentStream implements Closeable
         byte[] encodedText = null;
         if (font instanceof PDType0Font)
         {
+
             GsubWorker gsubWorker = gsubWorkers.get(font);
             if (gsubWorker != null)
             {
@@ -511,7 +515,7 @@ abstract class PDAbstractContentStream implements Closeable
         sb.append(inlineImage.getColorSpace().getName());
 
         COSArray decodeArray = inlineImage.getDecode();
-        if (decodeArray != null && !decodeArray.isEmpty())
+        if (decodeArray != null && decodeArray.size() > 0)
         {
             sb.append("\n /D ");
             sb.append('[');
@@ -656,13 +660,12 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void setStrokingColor(PDColor color) throws IOException
     {
-        PDColorSpace colorSpace = color.getColorSpace();
         if (strokingColorSpaceStack.isEmpty() ||
-            strokingColorSpaceStack.peek() != colorSpace)
+            strokingColorSpaceStack.peek() != color.getColorSpace())
         {
-            writeOperand(getName(colorSpace));
+            writeOperand(getName(color.getColorSpace()));
             writeOperator(OperatorName.STROKING_COLORSPACE);
-            setStrokingColorSpaceStack(colorSpace);
+            setStrokingColorSpaceStack(color.getColorSpace());
         }
 
         for (float value : color.getComponents())
@@ -670,15 +673,15 @@ abstract class PDAbstractContentStream implements Closeable
             writeOperand(value);
         }
 
-        if (colorSpace instanceof PDPattern)
+        if (color.getColorSpace() instanceof PDPattern)
         {
             writeOperand(color.getPatternName());
         }
 
-        if (colorSpace instanceof PDPattern ||
-            colorSpace instanceof PDSeparation ||
-            colorSpace instanceof PDDeviceN ||
-            colorSpace instanceof PDICCBased)
+        if (color.getColorSpace() instanceof PDPattern ||
+            color.getColorSpace() instanceof PDSeparation ||
+            color.getColorSpace() instanceof PDDeviceN ||
+            color.getColorSpace() instanceof PDICCBased)
         {
             writeOperator(OperatorName.STROKING_COLOR_N);
         }
@@ -696,7 +699,7 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void setStrokingColor(Color color) throws IOException
     {
-        float[] components = {
+        float[] components = new float[] {
                 color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f };
         PDColor pdColor = new PDColor(components, PDDeviceRGB.INSTANCE);
         setStrokingColor(pdColor);
@@ -776,13 +779,12 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void setNonStrokingColor(PDColor color) throws IOException
     {
-        PDColorSpace colorSpace = color.getColorSpace();
         if (nonStrokingColorSpaceStack.isEmpty() ||
-            nonStrokingColorSpaceStack.peek() != colorSpace)
+            nonStrokingColorSpaceStack.peek() != color.getColorSpace())
         {
-            writeOperand(getName(colorSpace));
+            writeOperand(getName(color.getColorSpace()));
             writeOperator(OperatorName.NON_STROKING_COLORSPACE);
-            setNonStrokingColorSpaceStack(colorSpace);
+            setNonStrokingColorSpaceStack(color.getColorSpace());
         }
 
         for (float value : color.getComponents())
@@ -790,15 +792,15 @@ abstract class PDAbstractContentStream implements Closeable
             writeOperand(value);
         }
 
-        if (colorSpace instanceof PDPattern)
+        if (color.getColorSpace() instanceof PDPattern)
         {
             writeOperand(color.getPatternName());
         }
 
-        if (colorSpace instanceof PDPattern ||
-            colorSpace instanceof PDSeparation ||
-            colorSpace instanceof PDDeviceN ||
-            colorSpace instanceof PDICCBased)
+        if (color.getColorSpace() instanceof PDPattern ||
+            color.getColorSpace() instanceof PDSeparation ||
+            color.getColorSpace() instanceof PDDeviceN ||
+            color.getColorSpace() instanceof PDICCBased)
         {
             writeOperator(OperatorName.NON_STROKING_COLOR_N);
         }
@@ -816,7 +818,7 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void setNonStrokingColor(Color color) throws IOException
     {
-        float[] components = {
+        float[] components = new float[] {
                 color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f };
         PDColor pdColor = new PDColor(components, PDDeviceRGB.INSTANCE);
         setNonStrokingColor(pdColor);
@@ -1531,7 +1533,7 @@ abstract class PDAbstractContentStream implements Closeable
     /**
      * Writes an AffineTransform to the content stream as an array.
      * 
-     * @param transform AffineTransform to be added to the content stream
+     * @param transform AffineTransfrom to be added to the content stream
      * @throws IOException If the underlying stream has a problem being written to.
      */
     private void writeAffineTransform(AffineTransform transform) throws IOException
@@ -1683,21 +1685,27 @@ abstract class PDAbstractContentStream implements Closeable
      * specified text.
      */
     private byte[] encodeForGsub(GsubWorker gsubWorker,
-            Set<Integer> glyphIds, PDType0Font font, String text) throws IOException
+                                 Set<Integer> glyphIds, PDType0Font font, String text) throws IOException
     {
-        ByteArrayOutputStream out = new ByteArrayOutputStream(2 * text.length());
+        // break the entire chunk of text into words by splitting it with space
         String[] words = StringUtil.tokenizeOnSpace(text);
+        ByteArrayOutputStream out = new ByteArrayOutputStream(2 * text.length());
         for (String word : words)
         {
-            if (word.length() == 1 && word.isBlank())
+            if (word == null)
             {
-                out.writeBytes(font.encode(word));
+                continue;
+            }
+            if (word.length() == 1 && Character.isWhitespace(word.charAt(0)))
+            {
+                out.write(font.encode(word));
             }
             else
             {
                 glyphIds.addAll(applyGSUBRules(gsubWorker, out, font, word));
             }
         }
+
         return out.toByteArray();
     }
 
@@ -1714,14 +1722,14 @@ abstract class PDAbstractContentStream implements Closeable
      * @throws IllegalStateException If we cannot find a glyph ID for any characters in the
      * specified word.
      */
-    private List<Integer> applyGSUBRules(GsubWorker gsubWorker, ByteArrayOutputStream out, PDType0Font font, String word)
+    private List<Integer> applyGSUBRules(GsubWorker gsubWorker, ByteArrayOutputStream out, PDType0Font font, String word) throws IOException
     {
-        int[] codePoints = word.codePoints().toArray();
-        List<Integer> originalGlyphIds = new ArrayList<>(codePoints.length);
+        int[] codePointArray = word.codePoints().toArray();
+        List<Integer> originalGlyphIds = new ArrayList<>(word.codePointCount(0, word.length()));
         CmapLookup cmapLookup = font.getCmapLookup();
 
-        // convert characters into glyph IDs
-        for (int codePoint : codePoints)
+        // convert characters into glyphIds
+        for (int codePoint : codePointArray)
         {
             int glyphId = cmapLookup.getGlyphId(codePoint);
             if (glyphId <= 0)
@@ -1746,13 +1754,14 @@ abstract class PDAbstractContentStream implements Closeable
             originalGlyphIds.add(glyphId);
         }
 
-        // transform glyph IDs, write them to the output stream
         List<Integer> glyphIdsAfterGsub = gsubWorker.applyTransforms(originalGlyphIds);
+
         for (Integer glyphId : glyphIdsAfterGsub)
         {
-            out.writeBytes(font.encodeGlyphId(glyphId));
+            out.write(font.encodeGlyphId(glyphId));
         }
 
         return glyphIdsAfterGsub;
+
     }
 }

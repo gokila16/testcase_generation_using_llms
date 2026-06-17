@@ -150,13 +150,10 @@ public class RandomAccessReadBuffer implements RandomAccessRead
     @Override
     public void close() throws IOException
     {
-        if (!isClosed())
-        {
-            rarbCopies.values().forEach(IOUtils::closeQuietly);
-            rarbCopies.clear();
-            currentBuffer = null;
-            bufferList.clear();
-        }
+        rarbCopies.values().forEach(IOUtils::closeQuietly);
+        rarbCopies.clear();
+        currentBuffer = null;
+        bufferList.clear();
     }
 
     /**
@@ -394,9 +391,13 @@ public class RandomAccessReadBuffer implements RandomAccessRead
     public static RandomAccessReadBuffer createBufferFromStream(InputStream inputStream) throws IOException
     {
         RandomAccessReadBuffer randomAccessRead = null;
-        try (inputStream)
+        try
         {
             randomAccessRead = new RandomAccessReadBuffer(inputStream);
+        }
+        finally
+        {
+            inputStream.close();
         }
         return randomAccessRead;
     }

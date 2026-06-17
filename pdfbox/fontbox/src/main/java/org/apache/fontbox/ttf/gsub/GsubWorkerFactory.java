@@ -17,12 +17,11 @@
 
 package org.apache.fontbox.ttf.gsub;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.fontbox.ttf.CmapLookup;
 import org.apache.fontbox.ttf.model.GsubData;
 import org.apache.fontbox.ttf.model.Language;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Gets a {@link Language} specific instance of a {@link GsubWorker}
@@ -32,16 +31,16 @@ import org.apache.logging.log4j.Logger;
  */
 public class GsubWorkerFactory
 {
-    private static final Logger LOG = LogManager.getLogger(GsubWorkerFactory.class);
+    private static final Log LOG = LogFactory.getLog(GsubWorkerFactory.class);
 
     public GsubWorker getGsubWorker(CmapLookup cmapLookup, GsubData gsubData)
     {
         //TODO this needs to be redesigned / improved because if a font supports several languages,
         // it will choose one of them and maybe not the one expected.
-        // See also PDFBOX-5700 and PDFBOX-5729
-        // For example, NotoSans-Regular hits Devanagari first
-        // See also GlyphSubstitutionDataExtractor.getSupportedLanguage() which decides the language?!
-        LOG.debug("Language: {}", gsubData.getLanguage());
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Language: " + gsubData.getLanguage());
+        }
         switch (gsubData.getLanguage())
         {
         case BENGALI:
@@ -51,13 +50,10 @@ public class GsubWorkerFactory
         case GUJARATI:
             return new GsubWorkerForGujarati(cmapLookup, gsubData);
         case LATIN:
-            return new GsubWorkerForLatin(gsubData);
-        case DFLT:
-            return new GsubWorkerForDflt(gsubData);
-        case TAMIL:
-            //TODO implement me
+            return new GsubWorkerForLatin(cmapLookup, gsubData);
         default:
             return new DefaultGsubWorker();
         }
     }
+
 }

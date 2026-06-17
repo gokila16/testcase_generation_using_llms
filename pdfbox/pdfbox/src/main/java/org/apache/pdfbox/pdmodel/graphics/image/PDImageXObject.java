@@ -38,8 +38,8 @@ import java.util.List;
 
 import javax.imageio.ImageIO;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
@@ -49,6 +49,7 @@ import org.apache.pdfbox.cos.COSObject;
 import org.apache.pdfbox.cos.COSStream;
 import org.apache.pdfbox.filter.DecodeOptions;
 import org.apache.pdfbox.filter.DecodeResult;
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDResources;
 import org.apache.pdfbox.pdmodel.common.PDMetadata;
@@ -71,7 +72,7 @@ public final class PDImageXObject extends PDXObject implements PDImage
     /**
      * Log instance.
      */
-    private static final Logger LOG = LogManager.getLogger(PDImageXObject.class);
+    private static final Log LOG = LogFactory.getLog(PDImageXObject.class);
 
     private SoftReference<BufferedImage> cachedImage;
     private PDColorSpace colorSpace;
@@ -95,8 +96,9 @@ public final class PDImageXObject extends PDXObject implements PDImage
      * }.
      *
      * @param document the current document
+     * @throws java.io.IOException if there is an error creating the XObject.
      */
-    public PDImageXObject(PDDocument document)
+    public PDImageXObject(PDDocument document) throws IOException
     {
         this(new PDStream(document), null);
     }
@@ -136,8 +138,9 @@ public final class PDImageXObject extends PDXObject implements PDImage
      *
      * @param stream the XObject stream to read
      * @param resources the current resources
+     * @throws java.io.IOException if there is an error creating the XObject.
      */
-    public PDImageXObject(PDStream stream, PDResources resources)
+    public PDImageXObject(PDStream stream, PDResources resources) throws IOException
     {
         super(stream, COSName.IMAGE);
         this.resources = resources;
@@ -152,8 +155,9 @@ public final class PDImageXObject extends PDXObject implements PDImage
      * Creates a thumbnail Image XObject from the given COSBase and name.
      * @param cosStream the COS stream
      * @return an XObject
+     * @throws IOException if there is an error creating the XObject.
      */
-    public static PDImageXObject createThumbnail(COSStream cosStream)
+    public static PDImageXObject createThumbnail(COSStream cosStream) throws IOException
     {
         // thumbnails are special, any non-null subtype is treated as being "Image"
         PDStream pdStream = new PDStream(cosStream);
@@ -169,7 +173,7 @@ public final class PDImageXObject extends PDXObject implements PDImage
         COSStream stream = document.getDocument().createCOSStream();
         try (OutputStream output = stream.createRawOutputStream())
         {
-            rawInput.transferTo(output);
+            IOUtils.copy(rawInput, output);
         }
         return stream;
     }
@@ -340,27 +344,6 @@ public final class PDImageXObject extends PDXObject implements PDImage
      */
     public static PDImageXObject createFromByteArray(PDDocument document, byte[] byteArray, String name) throws IOException
     {
-        return createFromByteArray(document, byteArray, name, null);
-    }
-
-    /**
-     * Create a PDImageXObject from an image byte array. This overloaded version allows providing 
-     * a custom factory to handle specific image formats, such as BMP and GIF, or to act as a 
-     * fallback strategy when the default converters (e.g., for PNG or TIFF) fail.
-     *
-     * @param document the document that shall use this PDImageXObject.
-     * @param byteArray bytes from an image file.
-     * @param name name of image file for exception messages, can be null.
-     * @param customFactory optional factory used to handle BMP, GIF, or fallback cases 
-     *                       (e.g., for PNG or TIFF). If {@code null}, this method delegates to
-     *                       {@link #createFromByteArray(PDDocument, byte[], String)}.
-     * @return a PDImageXObject.
-     * @throws IOException if there is an error when reading the file or creating the
-     * PDImageXObject.
-     * @throws IllegalArgumentException if the image type is not supported.
-     */
-    public static PDImageXObject createFromByteArray(PDDocument document, byte[] byteArray, String name, CustomFactory customFactory) throws IOException
-    {
         FileType fileType = FileTypeDetector.detectFileType(byteArray);
         if (fileType == null)
         {
@@ -397,11 +380,6 @@ public final class PDImageXObject extends PDXObject implements PDImage
         }
         if (fileType == FileType.BMP || fileType == FileType.GIF || fileType == FileType.PNG)
         {
-            if (customFactory != null)
-            {
-                return customFactory.createFromByteArray(document, byteArray);
-            }
-            
             ByteArrayInputStream bais = new ByteArrayInputStream(byteArray);
             BufferedImage bim = ImageIO.read(bais);
             return LosslessFactory.createFromImage(document, bim);
@@ -475,7 +453,9 @@ public final class PDImageXObject extends PDXObject implements PDImage
                 return cached;
             }
         }
+
         initJPXValues();
+
         // get RGB image w/o reference because applyMask might modify it, take long time and a lot of memory. 
         final BufferedImage image;
         final PDImageXObject softMask = getSoftMask();
@@ -799,8 +779,9 @@ public final class PDImageXObject extends PDXObject implements PDImage
      * Returns the Mask Image XObject associated with this image, or null if there is none.
      * 
      * @return Mask Image XObject
+     * @throws java.io.IOException if the mask data could not be read
      */
-    public PDImageXObject getMask()
+    public PDImageXObject getMask() throws IOException
     {
         COSArray mask = getCOSObject().getCOSArray(COSName.MASK);
         if (mask != null)
@@ -833,8 +814,9 @@ public final class PDImageXObject extends PDXObject implements PDImage
      * Returns the Soft Mask Image XObject associated with this image, or null if there is none.
      * 
      * @return the SMask Image XObject, or null.
+     * @throws java.io.IOException if the soft mask data could not be read
      */
-    public PDImageXObject getSoftMask()
+    public PDImageXObject getSoftMask() throws IOException
     {
         COSStream cosStream = getCOSObject().getCOSStream(COSName.SMASK);
         if (cosStream != null)
@@ -1041,7 +1023,7 @@ public final class PDImageXObject extends PDXObject implements PDImage
         }
         else
         {
-            LOG.warn("getSuffix() returns null, filters: {}", filters);
+            LOG.warn("getSuffix() returns null, filters: " + filters);
             return null;
         }
     }

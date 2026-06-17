@@ -31,8 +31,8 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSFloat;
@@ -54,7 +54,7 @@ import org.apache.pdfbox.pdmodel.common.PDStream;
  */
 public final class PDICCBased extends PDCIEBasedColorSpace
 {
-    private static final Logger LOG = LogManager.getLogger(PDICCBased.class);
+    private static final Log LOG = LogFactory.getLog(PDICCBased.class);
 
     private final PDStream stream;
     private int numberOfComponents = -1;
@@ -172,7 +172,7 @@ public final class PDICCBased extends PDCIEBasedColorSpace
             }
             catch (IOException e)
             {
-                LOG.warn("Error initializing alternate color space: {}", e.getLocalizedMessage());
+              LOG.warn("Error initializing alternate color space: " + e.getLocalizedMessage());
             }
         }
         try (InputStream input = this.stream.createInputStream())
@@ -233,8 +233,8 @@ public final class PDICCBased extends PDCIEBasedColorSpace
         }
         if (e != null)
         {
-            LOG.warn("Can't read embedded ICC profile ({}), using alternate color space: {}",
-                    e.getLocalizedMessage(), alternateColorSpace.getName());
+            LOG.warn("Can't read embedded ICC profile (" + e.getLocalizedMessage() +
+                     "), using alternate color space: " + alternateColorSpace.getName());
         }
         initialColor = alternateColorSpace.getInitialColor();
     }
@@ -262,7 +262,7 @@ public final class PDICCBased extends PDCIEBasedColorSpace
             if (profileData[ICC_Profile.icHdrRenderingIntent] == ICC_Profile.icPerceptual)
             {
                 LOG.warn("ICC profile is Perceptual, ignoring, treating as Display class");
-                intToBigEndian(ICC_Profile.icSigDisplayClass, profileData, ICC_Profile.icHdrDeviceClass);
+            	intToBigEndian(ICC_Profile.icSigDisplayClass, profileData, ICC_Profile.icHdrDeviceClass);
                 return ICC_Profile.getInstance(profileData);
             }
         }
@@ -344,9 +344,8 @@ public final class PDICCBased extends PDCIEBasedColorSpace
                 int numIccComponents = iccProfile.getNumComponents();
                 if (numIccComponents != numberOfComponents)
                 {
-                    LOG.warn(
-                            "Using {} components from ICC profile info instead of {} components from /N entry",
-                            numIccComponents, numberOfComponents);
+                    LOG.warn("Using " + numIccComponents + " components from ICC profile info instead of " +
+                            numberOfComponents + " components from /N entry");
                     numberOfComponents = numIccComponents;
                 }
             }
@@ -505,7 +504,7 @@ public final class PDICCBased extends PDCIEBasedColorSpace
 
     /**
      * Sets the range for this color space.
-     * @param range the new range for the component
+     * @param range the new range for the a component
      * @param n the component to set the range for
      */
     public void setRangeForComponent(PDRange range, int n)
@@ -536,9 +535,10 @@ public final class PDICCBased extends PDCIEBasedColorSpace
     }
 
     /**
+     * Internal accessor to support indexed raw images.
      * @return true if this colorspace is sRGB.
      */
-    public boolean isSRGB()
+    boolean isSRGB()
     {
         return isRGB;
     }

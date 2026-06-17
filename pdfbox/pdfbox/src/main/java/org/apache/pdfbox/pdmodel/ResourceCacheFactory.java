@@ -33,7 +33,7 @@ public class ResourceCacheFactory
     {
         setResourceCacheCreateFunction(new DefaultResourceCacheCreateImpl());
     }
-    
+
     /**
      * Use the given function to create an instance of a resource cache. Caching is disabled if a null value is
      * provided.
@@ -62,5 +62,5 @@ public class ResourceCacheFactory
     {
         return resourceCacheCreateFunction != null ? resourceCacheCreateFunction.create() : null;
     }
-    
+
 }

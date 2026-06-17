@@ -30,8 +30,8 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.file.Files;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.junit.jupiter.api.AfterEach;
@@ -47,7 +47,7 @@ class BidiTest
     /**
      * Logger instance.
      */
-    private static final Logger LOG = LogManager.getLogger(BidiTest.class);
+    private static final Log LOG = LogFactory.getLog(BidiTest.class);
     
     private static final File IN_DIR = new File("src/test/resources/org/apache/pdfbox/text/");
     private static final File OUT_DIR = new File("target/test-output");
@@ -94,18 +94,18 @@ class BidiTest
      * @param outDir The directory to store the output in
      * @param bLogResult Whether to log the extracted text
      * @param bSort Whether or not the extracted text is sorted
-     * @throws IOException when there is an exception
+     * @throws Exception when there is an exception
      */
     private void doTestFile(File inFile, File outDir, boolean bLogResult, boolean bSort)
     throws IOException
     {
         if(bSort)
         {
-            LOG.info("Preparing to parse {} for sorted test", inFile.getName());
+            LOG.info("Preparing to parse " + inFile.getName() + " for sorted test");
         }
         else
         {
-            LOG.info("Preparing to parse {} for standard test", inFile.getName());
+            LOG.info("Preparing to parse " + inFile.getName() + " for standard test");
         }
 
         File outFile;
@@ -134,7 +134,7 @@ class BidiTest
 
         if (bLogResult)
         {
-            LOG.info("Text for {}:", inFile.getName());
+            LOG.info("Text for " + inFile.getName() + ":");
             LOG.info(stripper.getText(document));
         }
 
@@ -153,12 +153,12 @@ class BidiTest
             while (true)
             {
                 String expectedLine = expectedReader.readLine();
-                while (expectedLine != null && expectedLine.isBlank())
+                while( expectedLine != null && expectedLine.trim().isEmpty())
                 {
                     expectedLine = expectedReader.readLine();
                 }
                 String actualLine = actualReader.readLine();
-                while (actualLine != null && actualLine.isBlank())
+                while( actualLine != null && actualLine.trim().isEmpty())
                 {
                     actualLine = actualReader.readLine();
                 }
@@ -212,9 +212,9 @@ class BidiTest
                 if( expectedArray[expectedIndex] != actualArray[actualIndex] )
                 {
                     equals = false;
-                    LOG.warn("Lines differ at index expected: {}-{} actual: {}-{}", expectedIndex,
-                            (int) expectedArray[expectedIndex], actualIndex,
-                            (int) actualArray[actualIndex]);
+                    LOG.warn("Lines differ at index"
+                     + " expected:" + expectedIndex + "-" + (int)expectedArray[expectedIndex]
+                     + " actual:" + actualIndex + "-" + (int)actualArray[actualIndex] );
                     break;
                 }
                 expectedIndex = skipWhitespace( expectedArray, expectedIndex );
@@ -227,19 +227,19 @@ class BidiTest
                 if( expectedIndex != expectedArray.length )
                 {
                     equals = false;
-                    LOG.warn("Expected line is longer at: {}", expectedIndex);
+                    LOG.warn("Expected line is longer at:" + expectedIndex );
                 }
                 if( actualIndex != actualArray.length )
                 {
                     equals = false;
-                    LOG.warn("Actual line is longer at: {}", actualIndex);
+                    LOG.warn("Actual line is longer at:" + actualIndex );
                 }
             }
         }
         else
         {
-            equals = (expected == null && actual != null && actual.isBlank())
-                    || (actual == null && expected != null && expected.isBlank());
+            equals = (expected == null && actual != null && actual.trim().isEmpty())
+                    || (actual == null && expected != null && expected.trim().isEmpty());
         }
         return equals;
     }

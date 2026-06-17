@@ -68,12 +68,12 @@ class TestTTFParser
     @Test
     void testPostTable() throws IOException
     {
-        TrueTypeFont font;
-        try (InputStream is = TestTTFParser.class.getResourceAsStream("/ttf/LiberationSans-Regular.ttf"))
-        {
-            TTFParser parser = new TTFParser();
-            font = parser.parse(new RandomAccessReadBuffer(is));
-        }
+        InputStream input = TestTTFParser.class.getResourceAsStream(
+                "/ttf/LiberationSans-Regular.ttf");
+        assertNotNull(input);
+
+        TTFParser parser = new TTFParser();
+        TrueTypeFont font = parser.parse(new RandomAccessReadBuffer(input));
 
         CmapTable cmapTable = font.getCmap();
         assertNotNull(cmapTable);

@@ -21,7 +21,6 @@
 
 package org.apache.xmpbox.schema;
 
-import java.util.Set;
 import org.apache.xmpbox.XMPMetadata;
 import org.apache.xmpbox.type.AbstractField;
 import org.apache.xmpbox.type.Attribute;
@@ -42,7 +41,6 @@ import org.apache.xmpbox.type.Types;
 @StructuredType(preferedPrefix = "pdfaid", namespace = "http://www.aiim.org/pdfa/ns/id/")
 public class PDFAIdentificationSchema extends XMPSchema
 {
-    private static final Set<String> VALID_VALUES = Set.of("A", "B", "U", "e", "f");
 
     @PropertyType(type = Types.Integer, card = Cardinality.Simple)
     public static final String PART = "part";
@@ -52,10 +50,6 @@ public class PDFAIdentificationSchema extends XMPSchema
 
     @PropertyType(type = Types.Text, card = Cardinality.Simple)
     public static final String CONFORMANCE = "conformance";
-
-    // PDFBOX-6088 https://pdfa.org/future-proofing-xmp-identification-schema/
-    @PropertyType(type = Types.Integer, card = Cardinality.Simple)
-    public static final String REV = "rev";
 
     /*
      * <rdf:Description rdf:about="" xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/">
@@ -79,7 +73,7 @@ public class PDFAIdentificationSchema extends XMPSchema
     }
 
     /**
-     * Set the PDF/A Version identifier (with string)
+     * Set the PDFA Version identifier (with string)
      * 
      * @param value
      *            The version Id value to set
@@ -92,7 +86,7 @@ public class PDFAIdentificationSchema extends XMPSchema
     }
 
     /**
-     * Set the PDF/A Version identifier (with an int)
+     * Set the PDFA Version identifier (with an int)
      * 
      * @param value
      *            The version Id value to set
@@ -150,35 +144,46 @@ public class PDFAIdentificationSchema extends XMPSchema
 
     /**
      * Set the PDF/A conformance level
-     *
-     * @param value The conformance level value to set
-     * @throws BadFieldValueException If conformance value not 'A', 'B', 'U' (PDF/A-2 and PDF/A-3),
-     * 'e', 'f' (PDF/A-4)
+     * 
+     * @param value
+     *            The conformance level value to set
+     * @throws BadFieldValueException
+     *             If Conformance Value not 'A', 'B' or 'U' (PDF/A-2 and PDF/A-3)
      */
     public void setConformance(String value) throws BadFieldValueException
     {
-        TextType conf = createTextType(CONFORMANCE, value);
-        setConformanceProperty(conf);
+        if (value.equals("A") || value.equals("B") || value.equals("U"))
+        {
+            TextType conf = createTextType(CONFORMANCE, value);
+            addProperty(conf);
+
+        }
+        else
+        {
+            throw new BadFieldValueException(
+                    "The property given not seems to be a PDF/A conformance level (must be A, B or U)");
+        }
     }
 
     /**
      * Set the PDF/A conformance level
-     *
-     * @param conf The conformance level property to set
-     * @throws BadFieldValueException If conformance value not 'A', 'B', 'U' (PDF/A-2 and PDF/A-3),
-     * 'e', 'f' (PDF/A-4)
+     * 
+     * @param conf
+     *            The conformance level property to set
+     * @throws BadFieldValueException
+     *             If Conformance Value not 'A', 'B' or 'U' (PDF/A-2 and PDF/A-3)
      */
     public void setConformanceProperty(TextType conf) throws BadFieldValueException
     {
         String value = conf.getStringValue();
-        if (VALID_VALUES.contains(value))
+        if (value.equals("A") || value.equals("B") || value.equals("U"))
         {
             addProperty(conf);
         }
         else
         {
             throw new BadFieldValueException(
-                    "The value '" + value + "' isn't a valid PDF/A conformance level (must be A, B, U, e or f)");
+                    "The property given not seems to be a PDF/A conformance level (must be A, B or U)");
         }
     }
 
@@ -198,7 +203,7 @@ public class PDFAIdentificationSchema extends XMPSchema
     }
 
     /**
-     * Give the property corresponding to the PDF/A Version id
+     * Give the property corresponding to the PDFA Version id
      * 
      * @return Part property
      */
@@ -228,7 +233,7 @@ public class PDFAIdentificationSchema extends XMPSchema
     }
 
     /**
-     * Give the property corresponding to the PDF/A Amendment id
+     * Give the property corresponding to the PDFA Amendment id
      * 
      * @return Amendment property
      */
@@ -243,7 +248,7 @@ public class PDFAIdentificationSchema extends XMPSchema
     }
 
     /**
-     * Give the PDF/A Amendment Id (as an String)
+     * Give the PDFA Amendment Id (as an String)
      * 
      * @return Amendment Value
      */
@@ -268,7 +273,7 @@ public class PDFAIdentificationSchema extends XMPSchema
     }
 
     /**
-     * Give the property corresponding to the PDF/A Conformance id
+     * Give the property corresponding to the PDFA Conformance id
      * 
      * @return conformance property
      */
@@ -307,76 +312,4 @@ public class PDFAIdentificationSchema extends XMPSchema
         }
     }
 
-    /**
-     * Set the PDF/A revision (with string)
-     *
-     * @param value The revision value to set
-     *
-     */
-    public void setRevValueWithString(String value)
-    {
-        IntegerType rev = (IntegerType) instanciateSimple(REV, value);
-        addProperty(rev);
-    }
-
-    /**
-     * Set the PDF/A revision (with an int)
-     *
-     * @param value The revision value to set
-     */
-    public void setRevValueWithInt(int value)
-    {
-        IntegerType rev = (IntegerType) instanciateSimple(REV, value);
-        addProperty(rev);
-    }
-
-    /**
-     * Set the PDF/A revision identifier (with an int)
-     *
-     * @param value The revision property to set
-     */
-    public void setRev(Integer value)
-    {
-        setRevValueWithInt(value);
-    }
-
-    /**
-     * Set the PDF/A revision identifier
-     *
-     * @param rev set the PDF/A revision id property
-     */
-    public void setRevProperty(IntegerType rev)
-    {
-        addProperty(rev);
-    }
-
-    /**
-     * Give the property corresponding to the PDF/A revision
-     * 
-     * @return revision property
-     */
-    public IntegerType getRevProperty()
-    {
-        AbstractField tmp = getProperty(REV);
-        if (tmp instanceof IntegerType)
-        {
-            return (IntegerType) tmp;
-        }
-        return null;
-    }
-
-    /**
-     * Give the PDF/A revision (as an integer)
-     * 
-     * @return revision value (Integer) or null if it is missing
-     */
-    public Integer getRev()
-    {
-        IntegerType tmp = getRevProperty();
-        if (tmp == null)
-        {
-            return null;
-        }
-        return tmp.getValue();
-    }
 }

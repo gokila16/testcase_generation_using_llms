@@ -22,15 +22,16 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 /**
  * Helps to autodetect/locate available operating system fonts. This class is based on a class provided by Apache FOP.
  * see org.apache.fop.fonts.autodetect.FontFileFinder
  */
 public class FontFileFinder
 {
-    private static final Logger LOG = LogManager.getLogger(FontFileFinder.class);
+    private static final Log LOG = LogFactory.getLog(FontFileFinder.class);
 
     private FontDirFinder fontDirFinder = null;
 
@@ -121,17 +122,26 @@ public class FontFileFinder
                 // skip hidden directories
                 if (file.isHidden())
                 {
-                    LOG.debug("skip hidden directory {}", file);
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug("skip hidden directory " + file);
+                    }
                     continue;
                 }
                 walk(file, results);
             }
             else
             {
-                LOG.debug("checkFontfile check {}", file);
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("checkFontfile check " + file);
+                }
                 if (checkFontfile(file))
                 {
-                    LOG.debug("checkFontfile found {}", file);
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug("checkFontfile found " + file);
+                    }
                     results.add(file.toURI());
                 }
             }

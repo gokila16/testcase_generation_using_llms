@@ -29,9 +29,6 @@ public enum Orientation
     /** Print all pages as landscape. */
     LANDSCAPE,
 
-    /** Print all pages as reverse landscape (LANDSCAPE's rotated 180 degrees). */
-    REVERSE_LANDSCAPE,
-
     /** Print all pages as portrait. */
     PORTRAIT
 }

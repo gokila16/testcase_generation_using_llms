@@ -40,7 +40,7 @@ public abstract class PDAttributeObject extends PDDictionaryWrapper
     /**
      * Default constructor.
      */
-    protected PDAttributeObject()
+    public PDAttributeObject()
     {
     }
 
@@ -49,7 +49,7 @@ public abstract class PDAttributeObject extends PDDictionaryWrapper
      * 
      * @param dictionary the dictionary
      */
-    protected PDAttributeObject(COSDictionary dictionary)
+    public PDAttributeObject(COSDictionary dictionary)
     {
         super(dictionary);
     }

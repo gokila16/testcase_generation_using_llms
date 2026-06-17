@@ -21,8 +21,8 @@ import java.io.IOException;
 
 import java.util.List;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.contentstream.PDFStreamEngine;
 import org.apache.pdfbox.contentstream.operator.MissingOperandException;
 import org.apache.pdfbox.contentstream.operator.Operator;
@@ -32,7 +32,6 @@ import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSNumber;
 import org.apache.pdfbox.pdmodel.font.PDFont;
-import org.apache.pdfbox.pdmodel.graphics.state.PDTextState;
 
 /**
  * Tf: Set text font and size.
@@ -41,7 +40,7 @@ import org.apache.pdfbox.pdmodel.graphics.state.PDTextState;
  */
 public class SetFontAndSize extends OperatorProcessor
 {
-    private static final Logger LOG = LogManager.getLogger(SetFontAndSize.class);
+    private static final Log LOG = LogFactory.getLog(SetFontAndSize.class);
 
     public SetFontAndSize(PDFStreamEngine context)
     {
@@ -69,16 +68,13 @@ public class SetFontAndSize extends OperatorProcessor
         COSName fontName = (COSName) base0;
         float fontSize = ((COSNumber) base1).floatValue();
         PDFStreamEngine context = getContext();
-        PDTextState textState = context.getGraphicsState().getTextState();
-        textState.setFontSize(fontSize);
-        // Get the font after the size has been set in case there is an exception
-        // so that PDFBox will use a default font
+        context.getGraphicsState().getTextState().setFontSize(fontSize);
         PDFont font = context.getResources().getFont(fontName);
         if (font == null)
         {
-            LOG.warn("font '{}' not found in resources", fontName.getName());
+            LOG.warn("font '" + fontName.getName() + "' not found in resources");
         }
-        textState.setFont(font);
+        context.getGraphicsState().getTextState().setFont(font);
     }
 
     @Override
