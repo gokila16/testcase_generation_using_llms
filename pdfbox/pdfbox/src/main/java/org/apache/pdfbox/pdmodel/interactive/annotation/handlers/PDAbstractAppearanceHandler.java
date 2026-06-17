@@ -19,6 +19,8 @@ package org.apache.pdfbox.pdmodel.interactive.annotation.handlers;
 
 import java.awt.geom.AffineTransform;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.pdfbox.cos.COSStream;
@@ -68,12 +70,12 @@ public abstract class PDAbstractAppearanceHandler implements PDAppearanceHandler
      */
     protected static final Set<String> ANGLED_STYLES = createAngledStyles();
 
-    protected PDAbstractAppearanceHandler(PDAnnotation annotation)
+    public PDAbstractAppearanceHandler(PDAnnotation annotation)
     {
         this(annotation, null);
     }
 
-    protected PDAbstractAppearanceHandler(PDAnnotation annotation, PDDocument document)
+    public PDAbstractAppearanceHandler(PDAnnotation annotation, PDDocument document)
     {
         this.annotation = annotation;
         this.document = document;
@@ -433,36 +435,36 @@ public abstract class PDAbstractAppearanceHandler implements PDAppearanceHandler
 
     private static Set<String> createShortStyles()
     {
-        return Set.of(
-            PDAnnotationLine.LE_OPEN_ARROW,
-            PDAnnotationLine.LE_CLOSED_ARROW,
-            PDAnnotationLine.LE_SQUARE,
-            PDAnnotationLine.LE_CIRCLE,
-            PDAnnotationLine.LE_DIAMOND
-        );
+        Set<String> shortStyles = new HashSet<>();
+        shortStyles.add(PDAnnotationLine.LE_OPEN_ARROW);
+        shortStyles.add(PDAnnotationLine.LE_CLOSED_ARROW);
+        shortStyles.add(PDAnnotationLine.LE_SQUARE);
+        shortStyles.add(PDAnnotationLine.LE_CIRCLE);
+        shortStyles.add(PDAnnotationLine.LE_DIAMOND);
+        return Collections.unmodifiableSet(shortStyles);
     }
 
     private static Set<String> createInteriorColorStyles()
     {
-        return Set.of(
-            PDAnnotationLine.LE_CLOSED_ARROW,
-            PDAnnotationLine.LE_CIRCLE,
-            PDAnnotationLine.LE_DIAMOND,
-            PDAnnotationLine.LE_R_CLOSED_ARROW,
-            PDAnnotationLine.LE_SQUARE
-        );
+        Set<String> interiorColorStyles = new HashSet<>();
+        interiorColorStyles.add(PDAnnotationLine.LE_CLOSED_ARROW);
+        interiorColorStyles.add(PDAnnotationLine.LE_CIRCLE);
+        interiorColorStyles.add(PDAnnotationLine.LE_DIAMOND);
+        interiorColorStyles.add(PDAnnotationLine.LE_R_CLOSED_ARROW);
+        interiorColorStyles.add(PDAnnotationLine.LE_SQUARE);
+        return Collections.unmodifiableSet(interiorColorStyles);
     }
 
     private static Set<String> createAngledStyles()
     {
-        return Set.of(
-            PDAnnotationLine.LE_CLOSED_ARROW,
-            PDAnnotationLine.LE_OPEN_ARROW,
-            PDAnnotationLine.LE_R_CLOSED_ARROW,
-            PDAnnotationLine.LE_R_OPEN_ARROW,
-            PDAnnotationLine.LE_BUTT,
-            PDAnnotationLine.LE_SLASH
-        );
+        Set<String> angledStyles = new HashSet<>();
+        angledStyles.add(PDAnnotationLine.LE_CLOSED_ARROW);
+        angledStyles.add(PDAnnotationLine.LE_OPEN_ARROW);
+        angledStyles.add(PDAnnotationLine.LE_R_CLOSED_ARROW);
+        angledStyles.add(PDAnnotationLine.LE_R_OPEN_ARROW);
+        angledStyles.add(PDAnnotationLine.LE_BUTT);
+        angledStyles.add(PDAnnotationLine.LE_SLASH);
+        return Collections.unmodifiableSet(angledStyles);
     }
 
     /**

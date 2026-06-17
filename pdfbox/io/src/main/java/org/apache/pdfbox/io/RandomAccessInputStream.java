@@ -19,8 +19,8 @@ package org.apache.pdfbox.io;
 import java.io.InputStream;
 import java.io.IOException;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * An InputStream which reads from a RandomAccessRead.
@@ -30,7 +30,7 @@ import org.apache.logging.log4j.LogManager;
  */
 public class RandomAccessInputStream extends InputStream
 {
-    private static final Logger LOG = LogManager.getLogger(RandomAccessInputStream.class);
+    private static final Log LOG = LogFactory.getLog(RandomAccessInputStream.class);
 
     private final RandomAccessRead input;
     private long position;
@@ -75,8 +75,8 @@ public class RandomAccessInputStream extends InputStream
         {
             // should never happen due to prior isEOF() check
             // unless there is an unsynchronized concurrent access
-            LOG.error("read() returns -1, assumed position: {}, actual position: {}", position,
-                    input.getPosition());
+            LOG.error("read() returns -1, assumed position: " +
+                       position + ", actual position: " + input.getPosition());
         }
         return b;
     }
@@ -98,8 +98,8 @@ public class RandomAccessInputStream extends InputStream
         {
             // should never happen due to prior isEOF() check
             // unless there is an unsynchronized concurrent access
-            LOG.error("read() returns -1, assumed position: {}, actual position: {}", position,
-                    input.getPosition());
+            LOG.error("read() returns -1, assumed position: " +
+                       position + ", actual position: " + input.getPosition());
         }
         return n;
     }

@@ -97,11 +97,19 @@ public class ValidateXImage
         }
         if (canEncode)
         {
-            writeOk = ImageIO.write(ximage.getImage(), format, OutputStream.nullOutputStream());
+            writeOk = ImageIO.write(ximage.getImage(), format, new NullOutputStream());
             assertTrue(writeOk);
         }
-        writeOk = ImageIO.write(ximage.getOpaqueImage(null, 1), format, OutputStream.nullOutputStream());
+        writeOk = ImageIO.write(ximage.getOpaqueImage(null, 1), format, new NullOutputStream());
         assertTrue(writeOk);
+    }
+    
+    private static class NullOutputStream extends OutputStream
+    {
+        @Override
+        public void write(int b) throws IOException
+        {
+        }
     }
 
     public static int colorCount(BufferedImage bim)

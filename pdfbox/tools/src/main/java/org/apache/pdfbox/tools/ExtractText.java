@@ -23,15 +23,14 @@ import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.Writer;
-import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 
 import org.apache.commons.io.FilenameUtils;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.io.RandomAccessReadBuffer;
@@ -62,7 +61,7 @@ import picocli.CommandLine.Option;
 @Command(name = "extracttext", header = "Extracts the text from a PDF document", versionProvider = Version.class, mixinStandardHelpOptions = true)
 public final class ExtractText  implements Callable<Integer>
 {
-    private static final Logger LOG = LogManager.getLogger(ExtractText.class);
+    private static final Log LOG = LogFactory.getLog(ExtractText.class);
 
     private static final String STD_ENCODING = "UTF-8";
 
@@ -301,7 +300,6 @@ public final class ExtractText  implements Callable<Integer>
             SYSERR.println( "Error extracting text for document [" + ioe.getClass().getSimpleName() + "]: " + ioe.getMessage());
             return 4;
         }
-
         return 0;
     }
 
@@ -309,7 +307,7 @@ public final class ExtractText  implements Callable<Integer>
     {
         if (toConsole)
         {
-            return new PrintWriter(SYSOUT, true, Charset.forName(encoding))
+            return new PrintWriter(SYSOUT)
             {
                 @Override
                 public void close()
@@ -372,7 +370,7 @@ public final class ExtractText  implements Callable<Integer>
                 {
                     throw ex;
                 }
-                LOG.error("Failed to process page {}", p, ex);
+                LOG.error("Failed to process page " + p, ex);
             }
         }
     }

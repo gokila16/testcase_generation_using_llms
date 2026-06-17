@@ -34,6 +34,7 @@ public class PDEmbeddedFilesNameTreeNode extends PDNameTreeNode<PDComplexFileSpe
      */
     public PDEmbeddedFilesNameTreeNode()
     {
+        super();
     }
 
     /**
@@ -49,10 +50,6 @@ public class PDEmbeddedFilesNameTreeNode extends PDNameTreeNode<PDComplexFileSpe
     @Override
     protected PDComplexFileSpecification convertCOSToPD( COSBase base ) throws IOException
     {
-        if (base != null && !(base instanceof COSDictionary))
-        {
-            throw new IOException("dictionary expected here, but got " + base);
-        }
         return new PDComplexFileSpecification( (COSDictionary)base );
     }
 

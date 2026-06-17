@@ -65,7 +65,6 @@ class StreamTextView implements MouseMotionListener, AncestorListener
         textPane.addMouseMotionListener(this);
         textPane.setFont(new Font("monospaced", Font.PLAIN, 13));
         searcher = new Searcher(textPane);
-        searcher.init();
 
         JScrollPane scrollPane = new JScrollPane(textPane);
 
@@ -98,7 +97,7 @@ class StreamTextView implements MouseMotionListener, AncestorListener
     {
         if (tTController != null)
         {
-            int offset = textPane.viewToModel2D(mouseEvent.getPoint());
+            int offset = textPane.viewToModel(mouseEvent.getPoint());
             textPane.setToolTipText(tTController.getToolTip(offset, textPane));
         }
     }

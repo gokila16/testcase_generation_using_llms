@@ -22,8 +22,8 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDAppearanceContentStream;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -44,7 +44,7 @@ import org.apache.pdfbox.util.Matrix;
  */
 public class PDTextAppearanceHandler extends PDAbstractAppearanceHandler
 {
-    private static final Logger LOG = LogManager.getLogger(PDTextAppearanceHandler.class);
+    private static final Log LOG = LogFactory.getLog(PDTextAppearanceHandler.class);
 
     private static final Set<String> SUPPORTED_NAMES = new HashSet<>();
 

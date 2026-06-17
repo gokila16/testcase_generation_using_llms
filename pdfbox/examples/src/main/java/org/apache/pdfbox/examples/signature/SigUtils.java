@@ -36,8 +36,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
@@ -73,7 +73,7 @@ import org.bouncycastle.util.Store;
  */
 public class SigUtils
 {
-    private static final Logger LOG = LogManager.getLogger(SigUtils.class);
+    private static final Log LOG = LogFactory.getLog(SigUtils.class);
 
     private SigUtils()
     {
@@ -184,12 +184,8 @@ public class SigUtils
 
         // Catalog
         COSDictionary catalogDict = doc.getDocumentCatalog().getCOSObject();
-        COSDictionary permsDict = catalogDict.getCOSDictionary(COSName.PERMS);
-        if (permsDict == null)
-        {
-            permsDict = new COSDictionary();
-            catalogDict.setItem(COSName.PERMS, permsDict);
-        }
+        COSDictionary permsDict = new COSDictionary();
+        catalogDict.setItem(COSName.PERMS, permsDict);
         permsDict.setItem(COSName.DOCMDP, signature);
         catalogDict.setNeedToBeUpdated(true);
         permsDict.setNeedToBeUpdated(true);
@@ -316,7 +312,7 @@ public class SigUtils
     }
 
     public static void validateTimestampToken(TimeStampToken timeStampToken)
-            throws TSPException, CertificateException, OperatorCreationException
+            throws TSPException, CertificateException, OperatorCreationException, IOException
     {
         // https://stackoverflow.com/questions/42114742/
         @SuppressWarnings("unchecked") // TimeStampToken.getSID() is untyped
@@ -415,9 +411,8 @@ public class SigUtils
                 ++n;
                 while (n < key.getNumber())
                 {
-                    LOG.warn(
-                            "Object {} missing, signature verification may fail in Adobe Reader, see https://stackoverflow.com/questions/71267471/",
-                            n);
+                    LOG.warn("Object " + n + " missing, signature verification may fail in " +
+                             "Adobe Reader, see https://stackoverflow.com/questions/71267471/");
                     ++n;
                 }
             }
@@ -442,7 +437,7 @@ public class SigUtils
         }
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         int responseCode = con.getResponseCode();
-        LOG.info("{} {}", responseCode, con.getResponseMessage());
+        LOG.info(responseCode + " " + con.getResponseMessage());
         if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP ||
             responseCode == HttpURLConnection.HTTP_MOVED_PERM ||
             responseCode == HttpURLConnection.HTTP_SEE_OTHER)
@@ -454,13 +449,13 @@ public class SigUtils
             {
                 // redirection from http:// to https://
                 // change this code if you want to be more flexible (but think about security!)
-                LOG.info("redirection to {} followed", location);
+                LOG.info("redirection to " + location + " followed");
                 con.disconnect();
                 con = (HttpURLConnection) new URI(location).toURL().openConnection();
             }
             else
             {
-                LOG.info("redirection to {} ignored", location);
+                LOG.info("redirection to " + location + " ignored");
             }
         }
         return new ConnectedInputStream(con, con.getInputStream());

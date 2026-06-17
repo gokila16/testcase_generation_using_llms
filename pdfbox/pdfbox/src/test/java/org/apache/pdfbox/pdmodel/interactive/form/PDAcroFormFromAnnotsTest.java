@@ -224,7 +224,7 @@ class PDAcroFormFromAnnotsTest
             PDAcroForm acroForm = catalog.getAcroForm(new CreateFieldsFixup(testPdf));
             assertEquals(numFormFieldsByAcrobat, acroForm.getFields().size(), "After rebuild there shall be " + numFormFieldsByAcrobat + " fields");
 
-            // the fields found are contained in the map
+            // the the fields found are contained in the map
             for (PDField field : acroForm.getFieldTree())
             {
                 assertNotNull(fieldsByName.get(field.getFullyQualifiedName()));
@@ -251,7 +251,7 @@ class PDAcroFormFromAnnotsTest
         String sourceUrl = "https://issues.apache.org/jira/secure/attachment/12881055/merge-test.pdf";
         String acrobatSourceUrl = "https://issues.apache.org/jira/secure/attachment/13014447/merge-test-na-acrobat.pdf";
 
-        // will build the expected font resource names and font decriptor names using the acrobat source document
+        // will build the expected font respurce names and font decriptor names using the acrobat source document
         Map<String, String> fontNames = new HashMap<>();
 
         try (PDDocument testPdf = Loader.loadPDF(RandomAccessReadBuffer
@@ -266,8 +266,8 @@ class PDAcroFormFromAnnotsTest
                     try
                     {
                         PDFont font = acroFormResources.getFont(fontName);
-                        String pdfBoxFontName = font.getFontDescriptor().getFontName();
-                        fontNames.put(fontName.getName(), pdfBoxFontName);
+                        font.getFontDescriptor().getFontName();
+                        fontNames.put(fontName.getName(), font.getName());
                     }
                     catch (IOException ioe)
                     {

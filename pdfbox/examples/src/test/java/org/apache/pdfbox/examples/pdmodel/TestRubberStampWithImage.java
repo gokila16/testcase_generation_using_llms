@@ -58,7 +58,7 @@ class TestRubberStampWithImage
             bim1 = new PDFRenderer(doc1).renderImage(0);
         }
 
-        String[] args = { documentFile, outFile, stampFile };
+        String[] args = new String[] { documentFile, outFile, stampFile };
         RubberStampWithImage rubberStamp = new RubberStampWithImage();
         rubberStamp.doIt(args);
 

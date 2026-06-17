@@ -24,8 +24,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
@@ -37,6 +37,7 @@ import org.apache.pdfbox.cos.COSStream;
 import org.apache.pdfbox.filter.DecodeOptions;
 import org.apache.pdfbox.filter.Filter;
 import org.apache.pdfbox.filter.FilterFactory;
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.io.RandomAccessInputStream;
 import org.apache.pdfbox.io.RandomAccessRead;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -49,7 +50,7 @@ import org.apache.pdfbox.pdmodel.common.filespecification.PDFileSpecification;
  */
 public class PDStream implements COSObjectable
 {
-    private static final Logger LOG = LogManager.getLogger(PDStream.class);
+    private static final Log LOG = LogFactory.getLog(PDStream.class);
 
     private final COSStream stream;
     
@@ -131,9 +132,13 @@ public class PDStream implements COSObjectable
     private PDStream(PDDocument doc, InputStream input, COSBase filters) throws IOException
     {
         stream = doc.getDocument().createCOSStream();
-        try (input; OutputStream output = stream.createOutputStream(filters))
+        try (OutputStream output = stream.createOutputStream(filters))
         {
-            input.transferTo(output);
+            IOUtils.copy(input, output);
+        }
+        finally
+        {
+            input.close();
         }
     }
 
@@ -199,16 +204,12 @@ public class PDStream implements COSObjectable
      */
     public InputStream createInputStream(List<String> stopFilters) throws IOException
     {
-        if (stopFilters == null)
-        {
-            stopFilters = Collections.emptyList();
-        }
         InputStream is = stream.createRawInputStream();
         List<Filter> someFilters = new ArrayList<>();
         List<COSName> filters = getFilters();
         for (COSName nextFilter : filters)
         {
-            if (stopFilters.contains(nextFilter.getName()))
+            if (stopFilters != null && stopFilters.contains(nextFilter.getName()))
             {
                 break;
             }
@@ -311,7 +312,7 @@ public class PDStream implements COSObjectable
                 }
                 else
                 {
-                    LOG.warn("Expected COSDictionary, got {}, ignored", base);
+                    LOG.warn("Expected COSDictionary, got " + base + ", ignored");
                 }
             }
             return new COSArrayList<>(actuals, array);
@@ -405,7 +406,7 @@ public class PDStream implements COSObjectable
     {
         try (InputStream is = createInputStream())
         {
-            return is.readAllBytes();
+            return IOUtils.toByteArray(is);
         }
     }
     

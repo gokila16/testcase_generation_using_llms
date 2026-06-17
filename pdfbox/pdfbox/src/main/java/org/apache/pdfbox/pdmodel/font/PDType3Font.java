@@ -22,8 +22,8 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Objects;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.apache.fontbox.FontBoxFont;
 import org.apache.fontbox.util.BoundingBox;
@@ -51,7 +51,7 @@ public class PDType3Font extends PDSimpleFont
     /**
      * Log instance.
      */
-    private static final Logger LOG = LogManager.getLogger(PDType3Font.class);
+    private static final Log LOG = LogFactory.getLog(PDType3Font.class);
 
     private PDResources resources;
     private COSDictionary charProcs;
@@ -81,7 +81,7 @@ public class PDType3Font extends PDSimpleFont
      */
     public PDType3Font(COSDictionary fontDictionary, ResourceCache resourceCache) throws IOException
     {
-        super(fontDictionary, resourceCache);
+        super(fontDictionary);
         this.resourceCache = resourceCache;
         readEncoding();
     }
@@ -102,7 +102,7 @@ public class PDType3Font extends PDSimpleFont
             encoding = Encoding.getInstance(encodingName);
             if (encoding == null)
             {
-                LOG.warn("Unknown encoding: {}", encodingName.getName());
+                LOG.warn("Unknown encoding: " + encodingName.getName());
             }
         }
         else if (encodingBase instanceof COSDictionary)

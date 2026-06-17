@@ -17,13 +17,12 @@
 package org.apache.pdfbox.examples.signature.validation;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Enumeration;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.examples.signature.validation.CertInformationCollector.CertSignatureInformation;
 import org.apache.pdfbox.util.Hex;
 import org.bouncycastle.asn1.ASN1Encodable;
@@ -36,7 +35,7 @@ import org.bouncycastle.cert.jcajce.JcaX509ExtensionUtils;
 
 public class CertInformationHelper
 {
-    private static final Logger LOG = LogManager.getLogger(CertInformationHelper.class);
+    private static final Log LOG = LogFactory.getLog(CertInformationHelper.class);
 
     private CertInformationHelper()
     {
@@ -87,12 +86,12 @@ public class CertInformationHelper
                     && location.getTagNo() == GeneralName.uniformResourceIdentifier)
             {
                 ASN1OctetString url = (ASN1OctetString) location.getBaseObject();
-                certInfo.setOcspUrl(new String(url.getOctets(), StandardCharsets.UTF_8));
+                certInfo.setOcspUrl(new String(url.getOctets()));
             }
             else if (X509ObjectIdentifiers.id_ad_caIssuers.equals(oid))
             {
                 ASN1OctetString uri = (ASN1OctetString) location.getBaseObject();
-                certInfo.setIssuerUrl(new String(uri.getOctets(), StandardCharsets.UTF_8));
+                certInfo.setIssuerUrl(new String(uri.getOctets()));
             }
         }
     }
@@ -153,7 +152,7 @@ public class CertInformationHelper
         if (taggedObject.getBaseObject() instanceof ASN1OctetString)
         {
             ASN1OctetString uri = (ASN1OctetString) taggedObject.getBaseObject();
-            String url = new String(uri.getOctets(), StandardCharsets.UTF_8);
+            String url = new String(uri.getOctets());
 
             // return first http(s)-Url for crl
             if (url.startsWith("http"))

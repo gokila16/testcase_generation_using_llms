@@ -58,7 +58,9 @@ public class PDAnnotationTextMarkup extends PDAnnotationMarkup
      */
     public final void setQuadPoints(float[] quadPoints)
     {
-        getCOSObject().setItem(COSName.QUADPOINTS, COSArray.of(quadPoints));
+        COSArray newQuadPoints = new COSArray();
+        newQuadPoints.setFloatArray(quadPoints);
+        getCOSObject().setItem(COSName.QUADPOINTS, newQuadPoints);
     }
 
     /**

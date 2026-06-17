@@ -20,8 +20,8 @@ import java.io.IOException;
 import java.util.Calendar;
 import java.util.Objects;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
@@ -49,7 +49,7 @@ public abstract class PDAnnotation implements COSObjectable
     /**
      * Log instance.
      */
-    private static final Logger LOG = LogManager.getLogger(PDAnnotation.class);
+    private static final Log LOG = LogFactory.getLog(PDAnnotation.class);
 
     /**
      * An annotation flag.
@@ -157,7 +157,7 @@ public abstract class PDAnnotation implements COSObjectable
                 default:
                     // TODO not yet implemented:
                     // Movie, Screen, PrinterMark, TrapNet, Watermark, 3D, Redact
-                    LOG.debug("Unknown or unsupported annotation subtype {}", subtype);
+                    LOG.debug("Unknown or unsupported annotation subtype " + subtype);
                     return new PDAnnotationUnknown(annotDic);
             }
         }
@@ -170,7 +170,7 @@ public abstract class PDAnnotation implements COSObjectable
     /**
      * Constructor.
      */
-    protected PDAnnotation()
+    public PDAnnotation()
     {
         dictionary = new COSDictionary();
         dictionary.setItem(COSName.TYPE, COSName.ANNOT);
@@ -181,7 +181,7 @@ public abstract class PDAnnotation implements COSObjectable
      * 
      * @param dict The annotations dictionary.
      */
-    protected PDAnnotation(COSDictionary dict)
+    public PDAnnotation(COSDictionary dict)
     {
         dictionary = dict;
         COSBase type = dict.getDictionaryObject(COSName.TYPE);
@@ -191,7 +191,7 @@ public abstract class PDAnnotation implements COSObjectable
         }
         else if (!COSName.ANNOT.equals(type))
         {
-            LOG.warn("Annotation has type {}, further mayhem may follow", type);
+            LOG.warn("Annotation has type " + type + ", further mayhem may follow");
         }
     }
 
@@ -199,8 +199,7 @@ public abstract class PDAnnotation implements COSObjectable
      * {@inheritDoc}
      */
     @Override
-    public boolean equals (Object o)
-    {
+    public boolean equals (Object o) {
         if (o == this)
         {
             return true;
@@ -268,7 +267,7 @@ public abstract class PDAnnotation implements COSObjectable
             }
             else
             {
-                LOG.warn("{} is not a rectangle array, returning null", rectArray);
+                LOG.warn(rectArray + " is not a rectangle array, returning null");
             }
         }
         return rectangle;
@@ -337,20 +336,6 @@ public abstract class PDAnnotation implements COSObjectable
     }
 
     /**
-     * This will set the annotations appearance state name.
-     * 
-     * <p>Note that the PDF specification defines the AS entry as a name, but some PDFs use a string.
-     * This method will write a name, which is correct and should be preferred but may cause issues
-     * with some viewers if the PDF being edited already uses a string.</p>
-     * 
-     * @param as The COSName of the appearance stream.
-     */
-    public void setAppearanceState(COSName as)
-    {
-        getCOSObject().setItem(COSName.AS, as);
-    }
-
-    /**
      * This will get the appearance dictionary associated with this annotation. This may return null.
      * 
      * @return This annotations appearance.
@@ -398,7 +383,6 @@ public abstract class PDAnnotation implements COSObjectable
         }
         else
         {
-            // PDAppearanceStream extends PDFormXObject, but does not reference the resource cache
             return normalAppearance.getAppearanceStream();
         }
     }

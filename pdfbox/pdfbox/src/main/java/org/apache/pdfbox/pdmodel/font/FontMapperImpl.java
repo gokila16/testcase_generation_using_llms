@@ -29,8 +29,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.fontbox.FontBoxFont;
 import org.apache.fontbox.ttf.OpenTypeFont;
 import org.apache.fontbox.ttf.TTFParser;
@@ -46,7 +46,7 @@ import org.apache.pdfbox.pdmodel.font.Standard14Fonts.FontName;
  */
 final class FontMapperImpl implements FontMapper
 {
-    private static final Logger LOG = LogManager.getLogger(FontMapperImpl.class);
+    private static final Log LOG = LogFactory.getLog(FontMapperImpl.class);
 
     private static final FontCache fontCache = new FontCache(); // todo: static cache isn't ideal
     private FontProvider fontProvider;
@@ -122,8 +122,8 @@ final class FontMapperImpl implements FontMapper
             {
                 throw new IOException("resource '" + resourceName + "' not found");
             }
-            RandomAccessReadBuffer randomAccessReadBuffer = RandomAccessReadBuffer
-                    .createBufferFromStream(resourceAsStream);
+            RandomAccessReadBuffer randomAccessReadBuffer = new RandomAccessReadBuffer(
+                    resourceAsStream);
             TTFParser ttfParser = new TTFParser();
             lastResortFont = ttfParser.parse(randomAccessReadBuffer);
         }
@@ -405,7 +405,10 @@ final class FontMapperImpl implements FontMapper
         }
         
         // make sure the font provider is initialized
-        getProvider();
+        if (fontProvider == null)
+        {
+            getProvider();
+        }
 
         // first try to match the PostScript name
         FontInfo info = getFont(format, postScriptName);
@@ -465,18 +468,20 @@ final class FontMapperImpl implements FontMapper
      */
     private FontInfo getFont(FontFormat format, String postScriptName)
     {
-        int index = postScriptName.indexOf('+');
         // strip subset tag (happens when we substitute a corrupt embedded font, see PDFBOX-2642)
-        if (index > -1)
+        if (postScriptName.contains("+"))
         {
-            postScriptName = postScriptName.substring(index + 1);
+            postScriptName = postScriptName.substring(postScriptName.indexOf('+') + 1);
         }
         
         // look up the PostScript name
         FontInfo info = fontInfoByName.get(postScriptName.toLowerCase(Locale.ENGLISH));
         if (info != null && info.getFormat() == format)
         {
-            LOG.debug(String.format("getFont('%s','%s') returns %s", format, postScriptName, info));
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug(String.format("getFont('%s','%s') returns %s", format, postScriptName, info));
+            }
             return info;
         }
         return null;
@@ -507,7 +512,7 @@ final class FontMapperImpl implements FontMapper
             return new CIDFontMapping(null, ttf, false);
         }
 
-        if (cidSystemInfo != null && fontDescriptor != null)
+        if (cidSystemInfo != null)
         {
             // "In Acrobat 3.0.1 and later, Type 0 fonts that use a CMap whose CIDSystemInfo
             // dictionary defines the Adobe-GB1, Adobe-CNS1 Adobe-Japan1, or Adobe-Korea1 character
@@ -523,7 +528,10 @@ final class FontMapperImpl implements FontMapper
                 FontMatch bestMatch = queue.poll();
                 if (bestMatch != null)
                 {
-                    LOG.debug("Best match for '{}': {}", baseFont, bestMatch.info);
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug("Best match for '" + baseFont + "': " + bestMatch.info);
+                    }
                     FontBoxFont font = bestMatch.info.getFont();
                     if (font instanceof OpenTypeFont)
                     {
@@ -551,9 +559,6 @@ final class FontMapperImpl implements FontMapper
     private PriorityQueue<FontMatch> getFontMatches(PDFontDescriptor fontDescriptor,
                                                            PDCIDSystemInfo cidSystemInfo)
     {
-        // make sure the font provider is initialized
-        getProvider();
-
         PriorityQueue<FontMatch> queue = new PriorityQueue<>(20);
         
         for (FontInfo info : fontInfoByName.values())
@@ -666,15 +671,10 @@ final class FontMapperImpl implements FontMapper
      */
     private boolean isCharSetMatch(PDCIDSystemInfo cidSystemInfo, FontInfo info)
     {
-        String ordering = cidSystemInfo.getOrdering();
-        if (ordering == null)
-        {
-            return false;
-        }
         if (info.getCIDSystemInfo() != null)
         {
             return info.getCIDSystemInfo().getRegistry().equals(cidSystemInfo.getRegistry()) &&
-                   info.getCIDSystemInfo().getOrdering().equals(ordering);
+                   info.getCIDSystemInfo().getOrdering().equals(cidSystemInfo.getOrdering());
         }
         else
         {
@@ -691,24 +691,24 @@ final class FontMapperImpl implements FontMapper
                 // PDFBOX-4793 and PDF.js 10699: This font has only Korean, but has bits 17-21 set.
                 codePageRange &= ~(JIS_JAPAN | CHINESE_SIMPLIFIED | CHINESE_TRADITIONAL);
             }
-            if (ordering.equals("GB1") &&
+            if (cidSystemInfo.getOrdering().equals("GB1") &&
                     (codePageRange & CHINESE_SIMPLIFIED) == CHINESE_SIMPLIFIED)
             {
                 return true;
             }
-            else if (ordering.equals("CNS1") &&
+            else if (cidSystemInfo.getOrdering().equals("CNS1") && 
                     (codePageRange & CHINESE_TRADITIONAL) == CHINESE_TRADITIONAL)
             {
                 return true;
             }
-            else if (ordering.equals("Japan1") &&
+            else if (cidSystemInfo.getOrdering().equals("Japan1") &&
                     (codePageRange & JIS_JAPAN) == JIS_JAPAN)
             {
                 return true;
             }
             else
             {
-                return ordering.equals("Korea1") &&
+                return cidSystemInfo.getOrdering().equals("Korea1") &&
                         ((codePageRange & KOREAN_WANSUNG) == KOREAN_WANSUNG ||
                          (codePageRange & KOREAN_JOHAB) == KOREAN_JOHAB);
             }

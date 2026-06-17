@@ -29,8 +29,9 @@ import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Random;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.util.Hex;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder;
@@ -49,7 +50,7 @@ import org.bouncycastle.tsp.TimeStampTokenInfo;
  */
 public class TSAClient
 {
-    private static final Logger LOG = LogManager.getLogger(TSAClient.class);
+    private static final Log LOG = LogFactory.getLog(TSAClient.class);
 
     private static final DigestAlgorithmIdentifierFinder ALGORITHM_OID_FINDER =
             new DefaultDigestAlgorithmIdentifierFinder();
@@ -116,21 +117,21 @@ public class TSAClient
         catch (TSPException e)
         {
             // You can visualize the hex with an ASN.1 Decoder, e.g. http://ldh.org/asn1.html
-            LOG.error("request: {} ", () -> Hex.getString(encodedRequest));
+            LOG.error("request: " + Hex.getString(encodedRequest));
             if (response != null)
             {
-                LOG.error("response: {}", () -> Hex.getString(tsaResponse));
+                LOG.error("response: " + Hex.getString(tsaResponse));
                 // See https://github.com/bcgit/bc-java/blob/4a10c27a03bddd96cf0a3663564d0851425b27b9/pkix/src/main/java/org/bouncycastle/tsp/TimeStampResponse.java#L159
                 if ("response contains wrong nonce value.".equals(e.getMessage()))
                 {
-                    LOG.error("request nonce: {}", () -> request.getNonce().toString(16));
+                    LOG.error("request nonce: " + request.getNonce().toString(16));
                     if (response.getTimeStampToken() != null)
                     {
                         TimeStampTokenInfo tsi = response.getTimeStampToken().getTimeStampInfo();
                         if (tsi != null && tsi.getNonce() != null)
                         {
                             // the nonce of the "wrong" test response is 0x3d3244ef
-                            LOG.error("response nonce: {}", () -> tsi.getNonce().toString(16));
+                            LOG.error("response nonce: " + tsi.getNonce().toString(16));
                         }
                     }
                 }
@@ -172,8 +173,8 @@ public class TSAClient
                 contentEncoding = StandardCharsets.UTF_8.name();
             }
             connection.setRequestProperty("Authorization", 
-                    "Basic " + Base64.getEncoder().encodeToString(
-                            (username + ":" + password).getBytes(contentEncoding)));
+                    "Basic " + new String(Base64.getEncoder().encode((username + ":" + password).
+                            getBytes(contentEncoding))));
         }
 
         // read response
@@ -183,7 +184,7 @@ public class TSAClient
         }
         catch (IOException ex)
         {
-            LOG.error(() -> "Exception when writing to " + this.url, ex);
+            LOG.error("Exception when writing to " + this.url, ex);
             throw ex;
         }
 
@@ -192,11 +193,11 @@ public class TSAClient
         byte[] response;
         try (InputStream input = connection.getInputStream())
         {
-            response = input.readAllBytes();
+            response = IOUtils.toByteArray(input);
         }
         catch (IOException ex)
         {
-            LOG.error(() -> "Exception when reading from " + this.url, ex);
+            LOG.error("Exception when reading from " + this.url, ex);
             throw ex;
         }
 

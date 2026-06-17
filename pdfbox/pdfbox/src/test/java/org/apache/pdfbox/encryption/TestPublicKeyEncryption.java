@@ -148,7 +148,7 @@ class TestPublicKeyEncryption
      * {@inheritDoc}
      */
     @AfterEach
-    void tearDown() throws IOException
+    void tearDown() throws Exception 
     {
         document.close();
     }
@@ -157,7 +157,7 @@ class TestPublicKeyEncryption
      * Protect a document with certificate 1 and try to open it with
      * certificate 2 and catch the exception.
      *
-     * @throws IOException If there is an unexpected error during the test.
+     * @throws Exception If there is an unexpected error during the test.
      */
     @ParameterizedTest
     @MethodSource("keyLengths")
@@ -186,11 +186,11 @@ class TestPublicKeyEncryption
      * Protect a document with a public certificate and try to open it
      * with the corresponding private certificate.
      *
-     * @throws IOException If there is an unexpected error during the test.
+     * @throws Exception If there is an unexpected error during the test.
      */
     @ParameterizedTest
     @MethodSource("keyLengths")
-    void testProtection(int keyLength) throws IOException
+    void testProtection(int keyLength) throws Exception
     {
         PublicKeyProtectionPolicy policy = new PublicKeyProtectionPolicy();
         policy.addRecipient(recipient1);
@@ -218,11 +218,11 @@ class TestPublicKeyEncryption
     /**
      * Protect the document for 2 recipients and try to open it.
      *
-     * @throws IOException If there is an error during the test.
+     * @throws Exception If there is an error during the test.
      */
     @ParameterizedTest
     @MethodSource("keyLengths")
-    void testMultipleRecipients(int keyLength) throws IOException
+    void testMultipleRecipients(int keyLength) throws Exception
     {
         PublicKeyProtectionPolicy policy = new PublicKeyProtectionPolicy();
         policy.addRecipient(recipient1);
@@ -267,7 +267,7 @@ class TestPublicKeyEncryption
      * @param decryptionPassword password to be used to decrypt the doc
      * @param keyStore password to be used to decrypt the doc
      * @return reloaded document
-     * @throws IOException
+     * @throws Exception if 
      */
     private PDDocument reload(File file, String decryptionPassword, InputStream keyStore)
             throws IOException

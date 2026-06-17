@@ -25,8 +25,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSBoolean;
@@ -52,7 +52,7 @@ import org.apache.pdfbox.pdfwriter.COSWriter;
  */
 public class COSWriterObjectStream
 {
-    private static final Logger LOG = LogManager.getLogger(COSWriterObjectStream.class);
+    private static final Log LOG = LogFactory.getLog(COSWriterObjectStream.class);
 
     private final COSWriterCompressionPool compressionPool;
     private final List<COSObjectKey> preparedKeys = new ArrayList<>();
@@ -113,15 +113,15 @@ public class COSWriterObjectStream
         stream.setInt(COSName.N, objectCount);
         // Prepare the compressible objects for writing.
         List<Long> objectNumbers = new ArrayList<>(objectCount);
-        List<DirectAccessByteArrayOutputStream> objectsBuffer = new ArrayList<>(objectCount);
+        List<byte[]> objectsBuffer = new ArrayList<>(objectCount);
         for (int i = 0; i < objectCount; i++)
         {
-            try (DirectAccessByteArrayOutputStream partialOutput = new DirectAccessByteArrayOutputStream())
+            try (ByteArrayOutputStream partialOutput = new ByteArrayOutputStream())
             {
                 objectNumbers.add(preparedKeys.get(i).getNumber());
                 COSBase base = preparedObjects.get(i);
                 writeObject(partialOutput, base, true);
-                objectsBuffer.add(partialOutput);
+                objectsBuffer.add(partialOutput.toByteArray());
             }
         }
 
@@ -138,7 +138,7 @@ public class COSWriterObjectStream
                 partialOutput.write(
                         String.valueOf(nextObjectOffset).getBytes(StandardCharsets.ISO_8859_1));
                 partialOutput.write(COSWriter.SPACE);
-                nextObjectOffset += objectsBuffer.get(i).size();
+                nextObjectOffset += objectsBuffer.get(i).length;
             }
             offsetsMapBuffer = partialOutput.toByteArray();
         }
@@ -148,9 +148,9 @@ public class COSWriterObjectStream
         {
             output.write(offsetsMapBuffer);
             stream.setInt(COSName.FIRST, offsetsMapBuffer.length);
-            for (DirectAccessByteArrayOutputStream rawObject : objectsBuffer)
+            for (byte[] rawObject : objectsBuffer)
             {
-                output.write(rawObject.getRawData(), 0, rawObject.size());
+                output.write(rawObject);
             }
         }
         return stream;
@@ -172,12 +172,16 @@ public class COSWriterObjectStream
         {
             return;
         }
+        if (!(object instanceof COSBase))
+        {
+            throw new IOException("Error: Unknown type in object stream:" + object);
+        }
         COSBase base;
         if (object instanceof COSObject)
         {
             if (!topLevel)
             {
-                COSObjectKey actualKey = object.getKey();
+                COSObjectKey actualKey = ((COSObject) object).getKey();
                 if (actualKey != null)
                 {
                     writeObjectReference(output, actualKey);
@@ -187,13 +191,9 @@ public class COSWriterObjectStream
             base = ((COSObject) object).getObject();
             if (base == null)
             {
-                LOG.debug("Can't dereference indirect object, writing COSNull instead {}", object);
+                LOG.debug("Can't dereference indirect object, writing COSNull instead " + object);
                 writeCOSNull(output);
                 return;
-            }
-            if (base instanceof COSObject)
-            {
-                LOG.error("COSObject {} references another COSObject?!", object);
             }
         }
         else
@@ -318,7 +318,7 @@ public class COSWriterObjectStream
     private void writeCOSArray(OutputStream output, COSArray cosArray) throws IOException
     {
         output.write(COSWriter.ARRAY_OPEN);
-        for (COSBase value : cosArray)
+        for (COSBase value : cosArray.toList())
         {
             if (value == null)
             {
@@ -384,28 +384,7 @@ public class COSWriterObjectStream
      */
     private void writeCOSNull(OutputStream output) throws IOException
     {
-        output.write(COSNull.NULL_BYTES);
+        output.write("null".getBytes(StandardCharsets.ISO_8859_1));
         output.write(COSWriter.SPACE);
     }
-
-    /**
-     * Reuse the underlying byte array instead of copying it.
-     * 
-     * This is a private class as reusing the byte array may have some unwanted side effects.
-     * 
-     */
-    private class DirectAccessByteArrayOutputStream extends ByteArrayOutputStream
-    {
-        /**
-         * Gets the underlying byte array. It is most likely bigger than the real size of the stream, so that you have
-         * to take the size of the stream into account when accessing the data.
-         * 
-         * @return the underlying byte array.
-         */
-        public byte[] getRawData()
-        {
-            return buf;
-        }
-    }
-
 }

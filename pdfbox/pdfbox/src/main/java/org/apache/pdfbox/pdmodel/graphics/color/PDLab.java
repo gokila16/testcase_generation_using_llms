@@ -183,13 +183,11 @@ public final class PDLab extends PDCIEDictionaryBasedColorSpace
      */
     private COSArray getDefaultRangeArray()
     {
-        COSFloat minus100 = new COSFloat(-100f);
-        COSFloat plus100 = new COSFloat(100f);
         COSArray range = new COSArray();
-        range.add(minus100);
-        range.add(plus100);
-        range.add(minus100);
-        range.add(plus100);
+        range.add(new COSFloat(-100));
+        range.add(new COSFloat(100));
+        range.add(new COSFloat(-100));
+        range.add(new COSFloat(100));
         return range;
     }
 
@@ -224,7 +222,7 @@ public final class PDLab extends PDCIEDictionaryBasedColorSpace
     }
 
     /**
-     * This will set the range for the "a" component.
+     * This will set the a range for the "a" component.
      * @param range the new range for the "a" component, 
      * or null if defaults (-100..100) are to be set.
      */
@@ -234,7 +232,7 @@ public final class PDLab extends PDCIEDictionaryBasedColorSpace
     }
 
     /**
-     * This will set the range for the "b" component.
+     * This will set the "b" range for this color space.
      * @param range the new range for the "b" component,
      * or null if defaults (-100..100) are to be set.
      */

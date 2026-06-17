@@ -17,8 +17,8 @@
 package org.apache.pdfbox.pdmodel.interactive.annotation.handlers;
 
 import java.io.IOException;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.pdmodel.PDFormContentStream;
 import org.apache.pdfbox.pdmodel.PDResources;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
@@ -38,7 +38,7 @@ import org.apache.pdfbox.pdmodel.graphics.form.PDTransparencyGroupAttributes;
  */
 public class PDHighlightAppearanceHandler extends PDAbstractAppearanceHandler
 {
-    private static final Logger LOG = LogManager.getLogger(PDHighlightAppearanceHandler.class);
+    private static final Log LOG = LogFactory.getLog(PDHighlightAppearanceHandler.class);
 
     public PDHighlightAppearanceHandler(PDAnnotation annotation)
     {

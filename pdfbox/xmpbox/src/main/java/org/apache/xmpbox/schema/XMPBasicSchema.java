@@ -378,7 +378,7 @@ public class XMPBasicSchema extends XMPSchema
      */
     public ArrayProperty getAdvisoryProperty()
     {
-        return getPropertyAs(ADVISORY, ArrayProperty.class);
+        return (ArrayProperty) getProperty(ADVISORY);
     }
 
     /**
@@ -398,7 +398,7 @@ public class XMPBasicSchema extends XMPSchema
      */
     public TextType getBaseURLProperty()
     {
-        return getPropertyAs(BASEURL, TextType.class);
+        return (TextType) getProperty(BASEURL);
     }
 
     /**
@@ -408,7 +408,7 @@ public class XMPBasicSchema extends XMPSchema
      */
     public String getBaseURL()
     {
-        TextType tt = getBaseURLProperty();
+        TextType tt = ((TextType) getProperty(BASEURL));
         return tt == null ? null : tt.getStringValue();
     }
 
@@ -419,7 +419,7 @@ public class XMPBasicSchema extends XMPSchema
      */
     public DateType getCreateDateProperty()
     {
-        return getPropertyAs(CREATEDATE, DateType.class);
+        return (DateType) getProperty(CREATEDATE);
     }
 
     /**
@@ -429,7 +429,7 @@ public class XMPBasicSchema extends XMPSchema
      */
     public Calendar getCreateDate()
     {
-        DateType createDate = getCreateDateProperty();
+        DateType createDate = (DateType) getProperty(CREATEDATE);
         if (createDate != null)
         {
             return createDate.getValue();
@@ -444,7 +444,7 @@ public class XMPBasicSchema extends XMPSchema
      */
     public TextType getCreatorToolProperty()
     {
-        return getPropertyAs(CREATORTOOL, TextType.class);
+        return (TextType) getProperty(CREATORTOOL);
     }
 
     /**
@@ -454,7 +454,7 @@ public class XMPBasicSchema extends XMPSchema
      */
     public String getCreatorTool()
     {
-        TextType tt = getCreatorToolProperty();
+        TextType tt = ((TextType) getProperty(CREATORTOOL));
         return tt == null ? null : tt.getStringValue();
     }
 
@@ -465,7 +465,7 @@ public class XMPBasicSchema extends XMPSchema
      */
     public ArrayProperty getIdentifiersProperty()
     {
-        return getPropertyAs(IDENTIFIER, ArrayProperty.class);
+        return (ArrayProperty) getProperty(IDENTIFIER);
     }
 
     /**
@@ -485,7 +485,7 @@ public class XMPBasicSchema extends XMPSchema
      */
     public TextType getLabelProperty()
     {
-        return getPropertyAs(LABEL, TextType.class);
+        return (TextType) getProperty(LABEL);
     }
 
     /**
@@ -495,7 +495,7 @@ public class XMPBasicSchema extends XMPSchema
      */
     public String getLabel()
     {
-        TextType tt = getLabelProperty();
+        TextType tt = ((TextType) getProperty(LABEL));
         return tt == null ? null : tt.getStringValue();
     }
 
@@ -506,7 +506,7 @@ public class XMPBasicSchema extends XMPSchema
      */
     public DateType getMetadataDateProperty()
     {
-        return getPropertyAs(METADATADATE, DateType.class);
+        return (DateType) getProperty(METADATADATE);
     }
 
     /**
@@ -516,7 +516,7 @@ public class XMPBasicSchema extends XMPSchema
      */
     public Calendar getMetadataDate()
     {
-        DateType dt = getMetadataDateProperty();
+        DateType dt = ((DateType) getProperty(METADATADATE));
         return dt == null ? null : dt.getValue();
     }
 
@@ -527,12 +527,12 @@ public class XMPBasicSchema extends XMPSchema
      */
     public DateType getModifyDateProperty()
     {
-        return getPropertyAs(MODIFYDATE, DateType.class);
+        return (DateType) getProperty(MODIFYDATE);
     }
 
     public DateType getModifierDateProperty()
     {
-        return getPropertyAs(MODIFIER_DATE, DateType.class);
+        return (DateType) getProperty(MODIFIER_DATE);
     }
 
     /**
@@ -542,7 +542,7 @@ public class XMPBasicSchema extends XMPSchema
      */
     public Calendar getModifyDate()
     {
-        DateType modifyDate = getModifyDateProperty();
+        DateType modifyDate = (DateType) getProperty(MODIFYDATE);
         if (modifyDate != null)
         {
             return modifyDate.getValue();
@@ -553,7 +553,7 @@ public class XMPBasicSchema extends XMPSchema
 
     public Calendar getModifierDate()
     {
-        DateType modifierDate = getModifierDateProperty();
+        DateType modifierDate = (DateType) getProperty(MODIFIER_DATE);
         if (modifierDate != null)
         {
             return modifierDate.getValue();
@@ -569,7 +569,7 @@ public class XMPBasicSchema extends XMPSchema
      */
     public TextType getNicknameProperty()
     {
-        return getPropertyAs(NICKNAME, TextType.class);
+        return (TextType) getProperty(NICKNAME);
     }
 
     /**
@@ -579,7 +579,7 @@ public class XMPBasicSchema extends XMPSchema
      */
     public String getNickname()
     {
-        TextType tt = getNicknameProperty();
+        TextType tt = ((TextType) getProperty(NICKNAME));
         return tt == null ? null : tt.getStringValue();
     }
 
@@ -590,7 +590,7 @@ public class XMPBasicSchema extends XMPSchema
      */
     public IntegerType getRatingProperty()
     {
-        return getPropertyAs(RATING, IntegerType.class);
+        return ((IntegerType) getProperty(RATING));
     }
 
     /**
@@ -600,7 +600,7 @@ public class XMPBasicSchema extends XMPSchema
      */
     public Integer getRating()
     {
-        IntegerType it = getRatingProperty();
+        IntegerType it = ((IntegerType) getProperty(RATING));
         return it == null ? null : it.getValue();
     }
 

@@ -19,6 +19,7 @@ package org.apache.pdfbox.util;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import java.io.IOException;
 import java.text.ParsePosition;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -27,11 +28,7 @@ import java.util.SimpleTimeZone;
 import java.util.TimeZone;
 
 import org.apache.pdfbox.cos.COSString;
-
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Isolated;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 
 /**
  * Test the date conversion utility.
@@ -40,7 +37,6 @@ import org.junit.jupiter.api.parallel.Resources;
  * @author Fred Hansen
  * 
  */
-@Isolated
 class TestDateUtil
 {
     private static final int MINS = 60*1000, HRS = 60*MINS;
@@ -49,10 +45,11 @@ class TestDateUtil
     
     /**
      * Test common date formats.
+     *
+     * @throws Exception when there is an exception
      */
-    @ResourceLock(Resources.TIME_ZONE)
     @Test
-    void testExtract()
+    void testExtract() throws Exception
     {
         TimeZone timezone = TimeZone.getDefault();
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
@@ -83,9 +80,11 @@ class TestDateUtil
     /**
      * Test case for
      * <a href="https://issues.apache.org/jira/browse/PDFBOX-598">PDFBOX-598</a>.
+     * 
+     * @throws IOException if something went wrong.
      */
     @Test
-    void testDateConversion()
+    void testDateConversion() throws IOException
     { 
         Calendar c = DateConverter.toCalendar("D:20050526205258+01'00'"); 
         assertEquals(2005, c.get(Calendar.YEAR)); 
@@ -109,10 +108,11 @@ class TestDateUtil
      * @param offsetHours expected timezone offset in hours (-11..11)
      * @param offsetMinutes expected timezone offset in minutes (0..59)
      * @param orig A date to be parsed.
+     * @throws Exception If an unexpected error occurs.
      */
     private static void checkParse(int yr, int mon, int day, 
                 int hr, int min, int sec, int offsetHours, int offsetMinutes,
-                String orig)
+                String orig) throws Exception 
     {
         String pdfDate = String.format(Locale.US, "D:%04d%02d%02d%02d%02d%02d%+03d'%02d'", 
                 yr,mon,day,hr,min,sec,offsetHours,offsetMinutes);
@@ -140,9 +140,10 @@ class TestDateUtil
     /**
      * Test dates in various formats.
      * Years differ to make it easier to find failures.
+     * @throws Exception none expected
      */
     @Test
-    void testDateConverter()
+    void testDateConverter() throws Exception
     {
             int year = Calendar.getInstance().get(Calendar.YEAR);
             checkParse(2010, 4,23, 0, 0, 0, 0, 0, "D:20100423");
@@ -291,7 +292,7 @@ class TestDateUtil
 
     private static void checkToString(int yr, int mon, int day, 
                 int hr, int min, int sec, 
-                TimeZone tz, int offsetHours, int offsetMinutes)
+                TimeZone tz, int offsetHours, int offsetMinutes) throws Exception 
     {
         // construct a GregoreanCalendar from args
         GregorianCalendar cal = new GregorianCalendar(tz, Locale.ENGLISH);
@@ -309,9 +310,11 @@ class TestDateUtil
     
     /** 
      * Test toString() and toISO8601() for various dates.
+     * 
+     * @throws Exception if something went wrong.
      */
     @Test
-    void testToString()
+    void testToString() throws Exception
     {                                                              // std DST
         TimeZone tzPgh = TimeZone.getTimeZone("America/New_York");   // -5 -4
         TimeZone tzBerlin = TimeZone.getTimeZone("Europe/Berlin");   // +1 +2

@@ -81,7 +81,7 @@ public class PDActionGoTo extends PDAction
         {
             PDPageDestination pageDest = (PDPageDestination) d;
             COSArray destArray = pageDest.getCOSObject();
-            if (!destArray.isEmpty())
+            if (destArray.size() >= 1)
             {
                 COSBase page = destArray.getObject(0);
                 if (!(page instanceof COSDictionary))

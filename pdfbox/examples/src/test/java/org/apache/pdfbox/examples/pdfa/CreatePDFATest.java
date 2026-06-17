@@ -22,13 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStreamReader;
-import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.util.HashSet;
 import java.util.Set;
-import javax.xml.transform.TransformerException;
 
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.examples.pdmodel.CreatePDFA;
@@ -36,19 +33,18 @@ import org.apache.pdfbox.examples.signature.CreateSignature;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
 import org.apache.pdfbox.pdmodel.common.PDMetadata;
+import org.apache.pdfbox.preflight.ValidationResult;
+import org.apache.pdfbox.preflight.ValidationResult.ValidationError;
+import org.apache.pdfbox.preflight.parser.PreflightParser;
 import org.apache.xmpbox.XMPMetadata;
 import org.apache.xmpbox.schema.DublinCoreSchema;
-import org.apache.xmpbox.type.BadFieldValueException;
 import org.apache.xmpbox.xml.DomXmpParser;
-import org.apache.xmpbox.xml.XmpParsingException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.verapdf.core.VeraPDFException;
 import org.verapdf.gf.foundry.VeraGreenfieldFoundryProvider;
 import org.verapdf.pdfa.Foundries;
 import org.verapdf.pdfa.PDFAParser;
 import org.verapdf.pdfa.PDFAValidator;
-import org.verapdf.pdfa.VeraPDFFoundry;
 import org.verapdf.pdfa.flavours.PDFAFlavour;
 
 /**
@@ -69,8 +65,7 @@ class CreatePDFATest
      * Test of doIt method of class CreatePDFA.
      */
     @Test
-    void testCreatePDFA() throws IOException, TransformerException, GeneralSecurityException,
-            XmpParsingException, BadFieldValueException, VeraPDFException
+    void testCreatePDFA() throws Exception
     {
         String pdfaFilename = OUTDIR + "/PDFA.pdf";
         String signedPdfaFilename = OUTDIR + "/PDFA_signed.pdf";
@@ -82,12 +77,17 @@ class CreatePDFATest
 
         // sign PDF - because we want to make sure that the signed PDF is also PDF/A-1b
         KeyStore keystore = KeyStore.getInstance("PKCS12");
-        try(FileInputStream is = new FileInputStream(keystorePath))
-        {
-            keystore.load(is, "123456".toCharArray());
-        }
+        keystore.load(new FileInputStream(keystorePath), "123456".toCharArray());
         CreateSignature signing = new CreateSignature(keystore, "123456".toCharArray());
         signing.signDetached(new File(pdfaFilename), new File(signedPdfaFilename));
+
+        // Verify that it is PDF/A-1b
+        ValidationResult result = PreflightParser.validate(new File(signedPdfaFilename));
+        for (ValidationError ve : result.getErrorsList())
+        {
+            System.err.println(ve.getErrorCode() + ": " + ve.getDetails());
+        }
+        assertTrue(result.isValid(), "PDF file created with CreatePDFA is not valid PDF/A-1b");
 
         // check the XMP metadata
         try (PDDocument document = Loader.loadPDF(new File(pdfaFilename)))
@@ -131,18 +131,14 @@ class CreatePDFATest
             }
         }
 
-        checkWithVeraPDF(signedFile);
-    }
-
-    static void checkWithVeraPDF(File file) throws IOException, VeraPDFException
-    {
         // https://docs.verapdf.org/develop/
         VeraGreenfieldFoundryProvider.initialise();
-        try (VeraPDFFoundry foundry = Foundries.defaultInstance();
-                PDFAParser parser = foundry.createParser(file, PDFAFlavour.PDFA_1_B);
-                PDFAValidator validator = foundry.createValidator(PDFAFlavour.PDFA_1_B, false))
+        PDFAFlavour flavour = PDFAFlavour.fromString("1b");
+        try (PDFAParser parser = Foundries.defaultInstance().createParser(new File(signedPdfaFilename), flavour))
         {
-            assertTrue(validator.validate(parser).isCompliant());
+            PDFAValidator validator = Foundries.defaultInstance().createValidator(flavour, false);
+            org.verapdf.pdfa.results.ValidationResult veraResult = validator.validate(parser);
+            assertTrue(veraResult.isCompliant());
         }
     }
 }

@@ -26,8 +26,8 @@ import java.util.List;
 import javax.imageio.stream.MemoryCacheImageInputStream;
 import javax.imageio.stream.MemoryCacheImageOutputStream;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 
@@ -43,7 +43,7 @@ public class LZWFilter extends Filter
     /**
      * Log instance.
      */
-    private static final Logger LOG = LogManager.getLogger(LZWFilter.class);
+    private static final Log LOG = LogFactory.getLog(LZWFilter.class);
 
     /**
      * The LZW clear table code.
@@ -54,6 +54,9 @@ public class LZWFilter extends Filter
      * The LZW end of data code.
      */
     public static final long EOD = 257;
+    
+    //BEWARE: codeTable must be local to each method, because there is only
+    // one instance of each filter
 
     /**
      * {@inheritDoc}
@@ -70,12 +73,11 @@ public class LZWFilter extends Filter
 
     private static void doLZWDecode(InputStream encoded, OutputStream decoded, boolean earlyChange) throws IOException
     {
-        List<byte[]> codeTable = createCodeTable();      // includes CLEAR/EOD handling as needed
+        List<byte[]> codeTable = new ArrayList<>();
         int chunk = 9;
         final MemoryCacheImageInputStream in = new MemoryCacheImageInputStream(encoded);
-
-        byte[] prev = null; // no previous string yet
         long nextCommand;
+        long prevCommand = -1;
 
         try
         {
@@ -85,50 +87,60 @@ public class LZWFilter extends Filter
                 {
                     chunk = 9;
                     codeTable = createCodeTable();
-                    prev = null;
-                    continue;
-                }
-
-                byte[] curr;
-
-                if (nextCommand < codeTable.size())
-                {
-                    // Normal case: code exists
-                    curr = codeTable.get((int) nextCommand);
-                    decoded.write(curr);
-
-                    if (prev != null)
-                    {
-                        // Add prev + first(curr)
-                        byte[] entry = Arrays.copyOf(prev, prev.length + 1);
-                        entry[prev.length] = curr[0];
-                        codeTable.add(entry);
-                    }
-                }
-                else if (nextCommand == codeTable.size() && prev != null)
-                {
-                    // KwKwK case: code equals next available index
-                    curr = Arrays.copyOf(prev, prev.length + 1);
-                    curr[prev.length] = prev[0];
-                    decoded.write(curr);
-                    codeTable.add(curr);
+                    prevCommand = -1;
                 }
                 else
                 {
-                    // Corrupt stream (code out of range, or KwKwK without prev)
-                    throw new EOFException("Invalid LZW code: " + nextCommand);
+                    if (nextCommand < codeTable.size())
+                    {
+                        byte[] data = codeTable.get((int) nextCommand);
+                        byte firstByte = data[0];
+                        decoded.write(data);
+                        if (prevCommand != -1)
+                        {
+                            checkIndexBounds(codeTable, prevCommand, in);
+                            data = codeTable.get((int) prevCommand);
+                            byte[] newData = Arrays.copyOf(data, data.length + 1);
+                            newData[data.length] = firstByte;
+                            codeTable.add(newData);
+                        }
+                    }
+                    else
+                    {
+                        checkIndexBounds(codeTable, prevCommand, in);
+                        byte[] data = codeTable.get((int) prevCommand);
+                        byte[] newData = Arrays.copyOf(data, data.length + 1);
+                        newData[data.length] = data[0];
+                        decoded.write(newData);
+                        codeTable.add(newData);
+                    }
+                    
+                    chunk = calculateChunk(codeTable.size(), earlyChange);
+                    prevCommand = nextCommand;
                 }
-
-                prev = curr; // move forward
-                chunk = calculateChunk(codeTable.size(), earlyChange);
             }
         }
         catch (EOFException ex)
         {
             LOG.warn("Premature EOF in LZW stream, EOD code missing", ex);
         }
-
         decoded.flush();
+    }
+
+    private static void checkIndexBounds(List<byte[]> codeTable, long index, MemoryCacheImageInputStream in)
+            throws IOException
+    {
+        if (index < 0)
+        {
+            throw new IOException("negative array index: " + index + " near offset "
+                    + in.getStreamPosition());
+        }
+        if (index >= codeTable.size())
+        {
+            throw new IOException("array index overflow: " + index +
+                    " >= " + codeTable.size() + " near offset "
+                    + in.getStreamPosition());
+        }
     }
 
     /**

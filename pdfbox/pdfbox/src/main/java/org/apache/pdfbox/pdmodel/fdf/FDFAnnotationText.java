@@ -69,7 +69,7 @@ public class FDFAnnotationText extends FDFAnnotation
         String icon = element.getAttribute("icon");
         if (icon != null && !icon.isEmpty())
         {
-            setIcon(icon);
+            setIcon(element.getAttribute("icon"));
         }
         String state = element.getAttribute("state");
         if (state != null && !state.isEmpty())
@@ -77,8 +77,8 @@ public class FDFAnnotationText extends FDFAnnotation
             String statemodel = element.getAttribute("statemodel");
             if (statemodel != null && !statemodel.isEmpty())
             {
-                setState(state);
-                setStateModel(statemodel);
+                setState(element.getAttribute("state"));
+                setStateModel(element.getAttribute("statemodel"));
             }
         }
     }

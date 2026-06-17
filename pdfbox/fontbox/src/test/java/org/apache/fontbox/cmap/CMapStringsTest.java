@@ -127,7 +127,6 @@ class CMapStringsTest
         // the cached value isn't the same object than the given one
         assertNotSame(minValueOneByte, CMapStrings.getByteValue(minValueOneByte));
 
-
         byte[] maxValueOneByte = new byte[] { (byte) 0xff };
         assertEquals(CMapStrings.getByteValue(maxValueOneByte),
                 CMapStrings.getByteValue(maxValueOneByte));

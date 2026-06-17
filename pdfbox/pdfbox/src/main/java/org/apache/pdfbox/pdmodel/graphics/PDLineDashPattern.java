@@ -79,7 +79,9 @@ public final class PDLineDashPattern implements COSObjectable
     public COSBase getCOSObject()
     {
         COSArray cos = new COSArray();
-        cos.add(COSArray.of(array));
+        COSArray patternArray = new COSArray();
+        patternArray.setFloatArray(array);
+        cos.add(patternArray);
         cos.add(COSInteger.get(phase));
         return cos;
     }

@@ -34,7 +34,7 @@ public abstract class COSBase implements COSObjectable
     /**
      * Constructor.
      */
-    protected COSBase()
+    public COSBase()
     {
     }
 

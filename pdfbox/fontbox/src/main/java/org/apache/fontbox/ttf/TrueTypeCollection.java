@@ -62,9 +62,11 @@ public class TrueTypeCollection implements Closeable
     }
 
     /**
-     * Creates a new TrueTypeCollection from a TTFDataStream.
+     * Creates a new TrueTypeCollection from a RandomAccessRead.
      *
-     * @param stream A data stream to read.
+     * @param randomAccessRead
+     * @param closeAfterReading {@code true} to close randomAccessRead
+     * @param buffered {@code true} to use {@link RandomAccessReadDataStream}, {@code false} to use {@link RandomAccessReadUnbufferedDataStream}
      * @throws IOException If the font could not be parsed.
      */
     private TrueTypeCollection(TTFDataStream stream) throws IOException

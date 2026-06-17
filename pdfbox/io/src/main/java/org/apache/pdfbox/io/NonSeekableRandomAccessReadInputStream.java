@@ -16,12 +16,11 @@
  */
 package org.apache.pdfbox.io;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * An implementation of the RandomAccessRead interface using an InputStream as source.
@@ -36,8 +35,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class NonSeekableRandomAccessReadInputStream implements RandomAccessRead
 {
-    private static final Logger LOG = LogManager
-            .getLogger(NonSeekableRandomAccessReadInputStream.class);
+    private static final Log LOG = LogFactory.getLog(NonSeekableRandomAccessReadInputStream.class);
 
     // current position within the stream
     protected long position = 0;
@@ -95,16 +93,9 @@ public class NonSeekableRandomAccessReadInputStream implements RandomAccessRead
     @Override
     public void skip(int length) throws IOException
     {
-        byte[] skipBuffer = new byte[Math.min(length, BUFFER_SIZE)];
-        int remaining = length;
-        while (remaining > 0)
+        for (int i = 0; i < length; i++)
         {
-            int bytesRead = read(skipBuffer, 0, Math.min(remaining, skipBuffer.length));
-            if (bytesRead == -1)
-            {
-                break;
-            }
-            remaining -= bytesRead;
+            read();
         }
     }
 
@@ -117,7 +108,7 @@ public class NonSeekableRandomAccessReadInputStream implements RandomAccessRead
         checkClosed();
         return position;
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -145,20 +136,6 @@ public class NonSeekableRandomAccessReadInputStream implements RandomAccessRead
     public int read(byte[] b, int offset, int length) throws IOException
     {
         checkClosed();
-        // Parameter validation as defined in InputStream.read(byte[], int, int)
-        if (b == null)
-        {
-            throw new NullPointerException("buffer is null");
-        }
-        if (offset < 0 || length < 0 || offset + length > b.length)
-        {
-            throw new IndexOutOfBoundsException("buffer length=" + b.length + " offset=" + offset
-                    + " length=" + length);
-        }
-        if (length == 0)
-        {
-            return 0;
-        }
         if (isEOF())
         {
             return -1;
@@ -171,8 +148,7 @@ public class NonSeekableRandomAccessReadInputStream implements RandomAccessRead
             {
                 int bytes2Copy = Math.min(length - numberOfBytesRead, available);
                 System.arraycopy(buffers[CURRENT], currentBufferPointer, b,
-                        numberOfBytesRead + offset,
-                        bytes2Copy);
+                        numberOfBytesRead + offset, bytes2Copy);
                 currentBufferPointer += bytes2Copy;
                 position += bytes2Copy;
                 numberOfBytesRead += bytes2Copy;
@@ -183,24 +159,7 @@ public class NonSeekableRandomAccessReadInputStream implements RandomAccessRead
                 break;
             }
         }
-        return numberOfBytesRead > 0 ? numberOfBytesRead : -1;
-    }
-
-    @Override
-    public void readFully(byte[] b, int offset, int length) throws IOException
-    {
-        // override the default implementation as the return value from length isn't reliable
-        checkClosed();
-        int bytesReadTotal = 0;
-        while (bytesReadTotal < length)
-        {
-            int bytesReadNow = read(b, offset + bytesReadTotal, length - bytesReadTotal);
-            if (bytesReadNow <= 0)
-            {
-                throw new EOFException("EOF, should have been detected earlier");
-            }
-            bytesReadTotal += bytesReadNow;
-        }
+        return numberOfBytesRead;
     }
 
     private void switchBuffers(int firstBuffer, int secondBuffer)
@@ -253,23 +212,12 @@ public class NonSeekableRandomAccessReadInputStream implements RandomAccessRead
         }
         catch (IOException exception)
         {
-            LOG.warn("premature end of stream, some data could be read ", exception);
+            // some data could be read -> don't throw an exception
+            LOG.warn("FlateFilter: premature end of stream due to a DataFormatException");
             isEOF = true;
             throw exception;
         }
         return true;
-    }
-
-    /**
-     * Returns an estimate of the number of bytes that can be read (or skipped over) from the underlying input stream
-     * without blocking, which may be 0, or 0 when end of stream is detected.
-     */
-    @Override
-    public int available() throws IOException
-    {
-        checkClosed();
-        int buffered = Math.max(0, bufferBytes[CURRENT] - currentBufferPointer);
-        return buffered + is.available();
     }
 
     /**
@@ -279,7 +227,7 @@ public class NonSeekableRandomAccessReadInputStream implements RandomAccessRead
     public long length() throws IOException
     {
         checkClosed();
-        return size + is.available();
+        return size;
     }
 
     @Override
@@ -290,9 +238,8 @@ public class NonSeekableRandomAccessReadInputStream implements RandomAccessRead
         {
             currentBufferPointer -= bytes;
             position -= bytes;
-            isEOF = false;
         }
-        else if (bufferBytes[LAST] > 0 && (bytes - currentBufferPointer) <= bufferBytes[LAST])
+        else if (bufferBytes[LAST] > 0)
         {
             // there is a former buffer
             int remainingBytesToRewind = bytes - currentBufferPointer;
@@ -309,12 +256,13 @@ public class NonSeekableRandomAccessReadInputStream implements RandomAccessRead
         else
         {
             // there aren't enough bytes left in the buffers to perform the rewind operation
-            throw new IOException("not enough bytes available to perform the rewind operation");
+            throw new IOException("not enough bytes available to perfomr the rewind operation");
         }
     }
 
     /**
      * Ensure that the RandomAccessBuffer is not closed
+     * 
      * @throws IOException If RandomAccessBuffer already closed
      */
     protected void checkClosed() throws IOException

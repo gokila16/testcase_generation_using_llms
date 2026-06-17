@@ -21,13 +21,12 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.fontbox.FontBoxFont;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
-import org.apache.pdfbox.pdmodel.ResourceCache;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts.FontName;
 import org.apache.pdfbox.pdmodel.font.encoding.DictionaryEncoding;
@@ -45,7 +44,7 @@ import org.apache.pdfbox.pdmodel.font.encoding.ZapfDingbatsEncoding;
  */
 public abstract class PDSimpleFont extends PDFont
 {
-    private static final Logger LOG = LogManager.getLogger(PDSimpleFont.class);
+    private static final Log LOG = LogFactory.getLog(PDSimpleFont.class);
 
     protected Encoding encoding;
     protected GlyphList glyphList;
@@ -72,11 +71,10 @@ public abstract class PDSimpleFont extends PDFont
      * Constructor.
      *
      * @param fontDictionary Font dictionary.
-     * @param resourceCache ResourceCache, can be null.
      */
-    PDSimpleFont(COSDictionary fontDictionary, ResourceCache resourceCache)
+    PDSimpleFont(COSDictionary fontDictionary)
     {
-        super(fontDictionary, resourceCache);
+        super(fontDictionary);
     }
 
     /**
@@ -103,7 +101,7 @@ public abstract class PDSimpleFont extends PDFont
                 this.encoding = Encoding.getInstance(encodingName);
                 if (this.encoding == null)
                 {
-                    LOG.warn("Unknown encoding: {}", encodingName.getName());
+                    LOG.warn("Unknown encoding: " + encodingName.getName());
                     this.encoding = readEncodingFromFont(); // fallback
                 }
             }
@@ -321,11 +319,13 @@ public abstract class PDSimpleFont extends PDFont
             noUnicode.add(code);
             if (name != null)
             {
-                LOG.warn("No Unicode mapping for {} ({}) in font {}", name, code, getName());
+                LOG.warn("No Unicode mapping for " + name + " (" + code + ") in font " +
+                        getName());
             }
             else
             {
-                LOG.warn("No Unicode mapping for character code {} in font {}", code, getName());
+                LOG.warn("No Unicode mapping for character code " + code + " in font " +
+                        getName());
             }
         }
 
@@ -377,7 +377,7 @@ public abstract class PDSimpleFont extends PDFont
         if (getEncoding() instanceof DictionaryEncoding)
         {
             DictionaryEncoding dictionary = (DictionaryEncoding)getEncoding();
-            if (!dictionary.getDifferences().isEmpty())
+            if (dictionary.getDifferences().size() > 0)
             {
                 // we also require that the differences are actually different, see PDFBOX-1900 with
                 // the file from PDFBOX-2192 on Windows

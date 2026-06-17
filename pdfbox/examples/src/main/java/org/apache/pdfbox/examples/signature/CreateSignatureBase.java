@@ -61,7 +61,7 @@ public abstract class CreateSignatureBase implements SignatureInterface
      * @throws CertificateException if the certificate is not valid as signing time
      * @throws IOException if no certificate could be found
      */
-    protected CreateSignatureBase(KeyStore keystore, char[] pin)
+    public CreateSignatureBase(KeyStore keystore, char[] pin)
             throws KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException, IOException, CertificateException
     {
         // grabs the first alias from the keystore and get the private key. An
@@ -146,7 +146,7 @@ public abstract class CreateSignatureBase implements SignatureInterface
             gen.addCertificates(new JcaCertStore(Arrays.asList(certificateChain)));
             CMSProcessableInputStream msg = new CMSProcessableInputStream(content);
             CMSSignedData signedData = gen.generate(msg, false);
-            if (tsaUrl != null && !tsaUrl.isEmpty())
+            if (tsaUrl != null && tsaUrl.length() > 0)
             {
                 ValidationTimeStamp validation = new ValidationTimeStamp(tsaUrl);
                 signedData = validation.addSignedTimeStamp(signedData);

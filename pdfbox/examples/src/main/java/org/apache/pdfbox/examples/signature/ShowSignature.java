@@ -43,8 +43,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
@@ -55,6 +55,7 @@ import org.apache.pdfbox.cos.COSStream;
 import org.apache.pdfbox.cos.COSString;
 import org.apache.pdfbox.examples.signature.cert.CertificateVerificationException;
 import org.apache.pdfbox.examples.signature.cert.CertificateVerifier;
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
 import org.apache.pdfbox.pdfparser.PDFParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -90,7 +91,7 @@ import org.bouncycastle.util.Store;
  */
 public final class ShowSignature
 {
-    private static final Logger LOG = LogManager.getLogger(ShowSignature.class);
+    private static final Log LOG = LogFactory.getLog(ShowSignature.class);
 
     private final SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
 
@@ -665,7 +666,7 @@ public final class ShowSignature
                 COSStream cosStream = (COSStream) streamObj.getObject();
                 try (InputStream is = cosStream.createInputStream())
                 {
-                    byte[] streamBytes = is.readAllBytes();
+                    byte[] streamBytes = IOUtils.toByteArray(is);
                     System.out.println(description + " (" + elements.indexOf(streamObj) + "): "
                         + Hex.getString(streamBytes));
                 }

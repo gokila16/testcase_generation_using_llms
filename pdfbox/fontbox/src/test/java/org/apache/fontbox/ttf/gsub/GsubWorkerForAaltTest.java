@@ -49,7 +49,7 @@ class GsubWorkerForAaltTest
                 new RandomAccessReadBufferedFile("src/test/resources/otf/FoglihtenNo07.otf")))
         {
             cmapLookup = ttf.getUnicodeCmapLookup();
-            gsubWorkerForAlt = new GsubWorkerForAalt(ttf.getGsubData());
+            gsubWorkerForAlt = new GsubWorkerForAalt(cmapLookup, ttf.getGsubData());
         }
 
         // Values should be the same you get by looking at the GSUB lookup lists 12 or 13 with 

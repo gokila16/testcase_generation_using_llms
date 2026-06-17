@@ -23,22 +23,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 /**
  * Glyph description for composite glyphs. Composite glyphs are made up of one
  * or more simple glyphs, usually with some sort of transformation applied to
  * each.
  *
  * This class is based on code from Apache Batik a subproject of Apache
- * XMLGraphics. See <a href="http://xmlgraphics.apache.org/batik/">The Apache™ Batik Project</a> for further details.
+ * XMLGraphics. see http://xmlgraphics.apache.org/batik/ for further details.
  */
 public class GlyfCompositeDescript extends GlyfDescript
 {
     /**
      * Log instance.
      */
-    private static final Logger LOG = LogManager.getLogger(GlyfCompositeDescript.class);
+    private static final Log LOG = LogFactory.getLog(GlyfCompositeDescript.class);
 
     private final List<GlyfCompositeComp> components = new ArrayList<>();
     private final Map<Integer,GlyphDescription> descriptions = new HashMap<>();
@@ -207,7 +208,7 @@ public class GlyfCompositeDescript extends GlyfDescript
             GlyphDescription gd = descriptions.get(c.getGlyphIndex());
             if (gd == null)
             {
-                LOG.error("GlyphDescription for index {} is null, returning 0", c.getGlyphIndex());
+                LOG.error("GlyphDescription for index " + c.getGlyphIndex() + " is null, returning 0");
                 pointCount = 0;
             }
             else
@@ -234,7 +235,7 @@ public class GlyfCompositeDescript extends GlyfDescript
             GlyphDescription gd = descriptions.get(c.getGlyphIndex());
             if (gd == null)
             {
-                LOG.error("missing glyph description for index {}", c.getGlyphIndex());
+                LOG.error("missing glyph description for index " + c.getGlyphIndex());
                 contourCount = 0;
             }
             else

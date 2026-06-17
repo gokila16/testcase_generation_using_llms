@@ -136,7 +136,8 @@ public class CFFType1Font extends CFFFont implements EncodedFont
                 // .notdef
                 bytes = charStrings[0];
             }
-            List<Object> type2seq = getParser().parse(bytes, globalSubrIndex, getLocalSubrIndex());
+            List<Object> type2seq = getParser().parse(bytes, globalSubrIndex, getLocalSubrIndex(),
+                    name);
             type2 = new Type2CharString(reader, getName(), name, gid, type2seq, getDefaultWidthX(),
                     getNominalWidthX());
             charStringCache.put(gid, type2);

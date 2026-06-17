@@ -123,7 +123,9 @@ public class PDAnnotationPolygon extends PDAnnotationMarkup
      */
     public void setVertices(float[] points)
     {
-        getCOSObject().setItem(COSName.VERTICES, COSArray.of(points));
+        COSArray ar = new COSArray();
+        ar.setFloatArray(points);
+        getCOSObject().setItem(COSName.VERTICES, ar);
     }
 
     /**
@@ -139,7 +141,6 @@ public class PDAnnotationPolygon extends PDAnnotationMarkup
         if (array != null)
         {
             float[][] pathArray = new float[array.size()][];
-            float[] emptyArray = new float[0];
             for (int i = 0; i < array.size(); ++i)
             {
                 COSBase base2 = array.getObject(i);
@@ -149,7 +150,7 @@ public class PDAnnotationPolygon extends PDAnnotationMarkup
                 }
                 else
                 {
-                    pathArray[i] = emptyArray;
+                    pathArray[i] = new float[0];
                 }
             }
             return pathArray;

@@ -89,37 +89,37 @@ public class LogDialog extends JDialog
         SimpleAttributeSet levelStyle = new SimpleAttributeSet();
         switch (level)
         {
-            case "FATAL":
+            case "fatal":
                 levelText = "Fatal";
                 StyleConstants.setForeground(levelStyle, Color.WHITE);
                 StyleConstants.setBackground(levelStyle, Color.BLACK);
                 fatalCount++;
                 break;
-            case "ERROR":
+            case "error":
                 levelText = "Error";
                 StyleConstants.setForeground(levelStyle, new Color(0xFF291F));
                 StyleConstants.setBackground(levelStyle, new Color(0xFFF0F0));
                 errorCount++;
                 break;
-            case "WARN":
+            case "warn":
                 levelText = "Warning";
                 StyleConstants.setForeground(levelStyle, new Color(0x614201));
                 StyleConstants.setBackground(levelStyle, new Color(0xFFFCE5));
                 warnCount++;
                 break;
-            case "INFO":
+            case "info":
                 levelText = "Info";
                 StyleConstants.setForeground(levelStyle, new Color(0x203261));
                 StyleConstants.setBackground(levelStyle, new Color(0xE2E8FF));
                 otherCount++;
                 break;
-            case "DEBUG":
+            case "debug":
                 levelText = "Debug";
                 StyleConstants.setForeground(levelStyle, new Color(0x32612E));
                 StyleConstants.setBackground(levelStyle, new Color(0xF4FFEC));
                 otherCount++;
                 break;
-            case "TRACE":
+            case "trace":
                 levelText = "Trace";
                 StyleConstants.setForeground(levelStyle, new Color(0x64438D));
                 StyleConstants.setBackground(levelStyle, new Color(0xFEF3FF));
@@ -165,12 +165,12 @@ public class LogDialog extends JDialog
 
         if (exceptionCount > 0)
         {
-            infos.add(exceptionCount + " exception" + (exceptionCount > 1 ? "s" : ""));
+            infos.add(exceptionCount + " exception" + (errorCount > 1 ? "s" : ""));
         }
 
         if (fatalCount > 0)
         {
-            infos.add(fatalCount + " fatal error" + (fatalCount > 1 ? "s" : ""));
+            infos.add(errorCount + " error" + (errorCount > 1 ? "s" : ""));
         }
 
         if (errorCount > 0)

@@ -18,6 +18,7 @@ package org.apache.pdfbox.pdmodel.graphics.optionalcontent;
 
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -54,7 +55,6 @@ import org.apache.pdfbox.pdmodel.graphics.optionalcontent.PDOptionalContentPrope
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.text.PDFMarkedContentExtractor;
 import org.apache.pdfbox.text.TextPosition;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -73,10 +73,10 @@ class TestOptionalContentGroups
 
     /**
      * Tests OCG generation.
-     * @throws IOException if an error occurs
+     * @throws Exception if an error occurs
      */
     @Test
-    void testOCGGeneration() throws IOException
+    void testOCGGeneration() throws Exception
     {
         try (PDDocument doc = new PDDocument())
         {
@@ -162,10 +162,10 @@ class TestOptionalContentGroups
 
     /**
      * Tests OCG functions on a loaded PDF.
-     * @throws IOException if an error occurs
+     * @throws Exception if an error occurs
      */
     @Test
-    void testOCGConsumption() throws IOException
+    void testOCGConsumption() throws Exception
     {
         File pdfFile = new File(testResultsDir, "ocg-generation.pdf");
         if (!pdfFile.exists())
@@ -256,7 +256,7 @@ class TestOptionalContentGroups
     }
 
     @Test
-    void testOCGsWithSameNameCanHaveDifferentVisibility() throws IOException
+    void testOCGsWithSameNameCanHaveDifferentVisibility() throws Exception
     {
         try (PDDocument doc = new PDDocument())
         {

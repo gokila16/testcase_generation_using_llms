@@ -17,7 +17,6 @@
 
 package org.apache.fontbox.ttf.gsub;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +47,7 @@ public class GSUBTablePrintUtil
                         + "RawUnicode: [<Space separated unicode representation of each character "
                         + "to be replaced in hexadecimal>] : <The compound character> : "
                         + "<The GlyphId with which these characters are replaced>");
-        Map<List<Integer>, List<Integer>> rawGSubTableData = new HashMap<>();
+        Map<Integer, List<Integer>> rawGSubTableData = new HashMap<>();
 
         for (String featureName : gsubData.getSupportedFeatures())
         {
@@ -78,7 +77,7 @@ public class GSUBTablePrintUtil
 
     }
 
-    private String getUnicodeChar(Map<List<Integer>, List<Integer>> rawGSubTableData, CmapLookup cmap,
+    private String getUnicodeChar(Map<Integer, List<Integer>> rawGSubTableData, CmapLookup cmap,
             Integer glyphId)
     {
         List<Integer> keyChars = cmap.getCharCodes(glyphId);
@@ -86,7 +85,7 @@ public class GSUBTablePrintUtil
         // its a compound glyph
         if (keyChars == null)
         {
-            List<Integer> constituentGlyphs = rawGSubTableData.get(Collections.singletonList(glyphId));
+            List<Integer> constituentGlyphs = rawGSubTableData.get(glyphId);
 
             if (constituentGlyphs == null || constituentGlyphs.isEmpty())
             {
@@ -111,7 +110,7 @@ public class GSUBTablePrintUtil
 
     }
 
-    private String getUnicodeString(Map<List<Integer>, List<Integer>> rawGSubTableData, CmapLookup cmap,
+    private String getUnicodeString(Map<Integer, List<Integer>> rawGSubTableData, CmapLookup cmap,
             List<Integer> glyphIDs)
     {
         StringBuilder sb = new StringBuilder();

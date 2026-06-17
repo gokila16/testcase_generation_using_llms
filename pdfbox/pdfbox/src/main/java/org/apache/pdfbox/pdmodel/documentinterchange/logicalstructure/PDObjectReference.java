@@ -18,8 +18,8 @@ package org.apache.pdfbox.pdmodel.documentinterchange.logicalstructure;
 
 import java.io.IOException;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
@@ -42,7 +42,7 @@ public class PDObjectReference implements COSObjectable
     /**
      * Log instance.
      */
-    private static final Logger LOG = LogManager.getLogger(PDObjectReference.class);
+    private static final Log LOG = LogFactory.getLog(PDObjectReference.class);
 
     /**
      * TYPE of this object.

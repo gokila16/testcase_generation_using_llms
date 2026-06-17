@@ -63,7 +63,7 @@ public class PDFAExtensionSchema extends XMPSchema
      */
     public ArrayProperty getSchemasProperty()
     {
-        return getPropertyAs(SCHEMAS, ArrayProperty.class);
+        return (ArrayProperty) getProperty(SCHEMAS);
     }
 
 }

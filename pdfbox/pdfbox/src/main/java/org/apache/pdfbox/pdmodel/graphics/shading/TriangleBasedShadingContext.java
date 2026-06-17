@@ -23,6 +23,7 @@ import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.pdfbox.util.Matrix;
 
@@ -68,6 +69,16 @@ abstract class TriangleBasedShadingContext extends ShadingContext
     }
 
     /**
+     * Calculate every point and its color and store them in a Hash table.
+     *
+     * @return a Hash table which contains all the points' positions and colors of one image
+     * 
+     * @deprecated the map was replaced with an array due to a better performance
+     */
+    @Deprecated
+    abstract Map<Point, Integer> calcPixelTable(Rectangle deviceBounds) throws IOException;
+
+    /**
      * Calculate every point and its color and store them in a two-dimensional array.
      *
      * @return an array which contains all the points' positions and colors of one image
@@ -76,8 +87,19 @@ abstract class TriangleBasedShadingContext extends ShadingContext
 
     /**
      * Get the points from the triangles, calculate their color and add point-color mappings.
+     * 
+     * @deprecated the map was replaced with an array due to a better performance
      */
-    protected void calcPixelTable(List<ShadedTriangle> triangleList, int[][] array,
+    @Deprecated
+    protected void calcPixelTable(List<ShadedTriangle> triangleList, Map<Point, Integer> map,
+            Rectangle deviceBounds) throws IOException
+    {
+    }
+
+    /**
+     * Get the points from the triangles, calculate their color and add point-color mappings.
+     */
+    protected int[][] calcPixelTable(List<ShadedTriangle> triangleList, int[][] array,
             Rectangle deviceBounds) throws IOException
     {
         for (ShadedTriangle tri : triangleList)
@@ -107,19 +129,21 @@ abstract class TriangleBasedShadingContext extends ShadingContext
                         }
                     }
                 }
+
                 // "fatten" triangle by drawing the borders with Bresenham's line algorithm
                 // Inspiration: Raph Levien in http://bugs.ghostscript.com/show_bug.cgi?id=219588
                 Point p0 = new Point((int) Math.round(tri.corner[0].getX()),
-                                     (int) Math.round(tri.corner[0].getY()));
+                        (int) Math.round(tri.corner[0].getY()));
                 Point p1 = new Point((int) Math.round(tri.corner[1].getX()),
-                                     (int) Math.round(tri.corner[1].getY()));
+                        (int) Math.round(tri.corner[1].getY()));
                 Point p2 = new Point((int) Math.round(tri.corner[2].getX()),
-                                     (int) Math.round(tri.corner[2].getY()));
+                        (int) Math.round(tri.corner[2].getY()));
                 addLinePoints(new Line(p0, p1, tri.color[0], tri.color[1]), array);
                 addLinePoints(new Line(p1, p2, tri.color[1], tri.color[2]), array);
                 addLinePoints(new Line(p2, p0, tri.color[2], tri.color[0]), array);
             }
         }
+        return array;
     }
 
     private void addLinePoints(Line line, int[][] array) throws IOException
@@ -154,8 +178,8 @@ abstract class TriangleBasedShadingContext extends ShadingContext
     }
 
     /**
-     * Convert color to RGB color value, using function if required, then convert from the shading
-     * color space to an RGB value, which is encoded into an integer.
+     * Convert color to RGB color value, using function if required, then convert from the shading color space to an RGB
+     * value, which is encoded into an integer.
      */
     private int evalFunctionAndConvertToRGB(float[] values) throws IOException
     {
@@ -199,4 +223,5 @@ abstract class TriangleBasedShadingContext extends ShadingContext
         raster.setPixels(0, 0, w, h, data);
         return raster;
     }
+
 }

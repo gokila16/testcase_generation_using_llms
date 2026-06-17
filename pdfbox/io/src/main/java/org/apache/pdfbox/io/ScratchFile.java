@@ -23,8 +23,8 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * Implements a memory page handling mechanism as base for creating (multiple)
@@ -51,7 +51,7 @@ import org.apache.logging.log4j.LogManager;
  */
 public class ScratchFile implements RandomAccessStreamCache
 {
-    private static final Logger LOG = LogManager.getLogger(ScratchFile.class);
+    private static final Log LOG = LogFactory.getLog(ScratchFile.class);
 
     /** number of pages by which we enlarge the scratch file (reduce I/O-operations) */
     private static final int ENLARGE_PAGE_COUNT = 16;
@@ -156,9 +156,7 @@ public class ScratchFile implements RandomAccessStreamCache
         catch (IOException ioe)
         {
             // cannot happen for main memory setup
-            LOG.error(() ->
-                    "Unexpected exception occurred creating main memory scratch file instance: " +
-                            ioe.getMessage(), ioe);
+            LOG.error("Unexpected exception occurred creating main memory scratch file instance: " + ioe.getMessage(), ioe);
             return null;
         }
     }
@@ -181,9 +179,7 @@ public class ScratchFile implements RandomAccessStreamCache
         catch (IOException ioe)
         {
             // cannot happen for main memory setup
-            LOG.error(() -> 
-                    "Unexpected exception occurred creating main memory scratch file instance: " +
-                        ioe.getMessage(), ioe);
+            LOG.error("Unexpected exception occurred creating main memory scratch file instance: " + ioe.getMessage(), ioe);
             return null;
         }
     }
@@ -253,14 +249,7 @@ public class ScratchFile implements RandomAccessStreamCache
                 // create scratch file is needed
                 if ( raf == null )
                 {
-                    if (scratchFileDirectory == null)
-                    {
-                        file = IOUtils.createProtectedTempFile(null, "PDFBox", ".tmp").toFile();
-                    }
-                    else
-                    {
-                        file = IOUtils.createProtectedTempFile(scratchFileDirectory.toPath(), "PDFBox", ".tmp").toFile();
-                    }
+                    file = File.createTempFile("PDFBox", ".tmp", scratchFileDirectory);
                     try
                     {
                         raf = new java.io.RandomAccessFile(file, "rw");
@@ -269,7 +258,7 @@ public class ScratchFile implements RandomAccessStreamCache
                     {
                         if (!file.delete())
                         {
-                            LOG.warn("Error deleting scratch file: {}", file.getAbsolutePath());
+                            LOG.warn("Error deleting scratch file: " + file.getAbsolutePath());
                         }
                         throw e;
                     }

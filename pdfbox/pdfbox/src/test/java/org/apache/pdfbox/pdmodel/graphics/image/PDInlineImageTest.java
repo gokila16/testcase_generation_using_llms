@@ -198,21 +198,21 @@ class PDInlineImageTest
     @Test
     void testShortCCITT1() throws IOException
     {
-        byte[] ba = { 8, 0x10, 0x20, 0x40, (byte) 0x81, 2, 4, 8, 0x10, 0, 0x40, 4, 0, 0x40, 4, 0, 0x40, 4 };
+        byte[] ba = new byte [] { 8, 0x10, 0x20, 0x40, (byte) 0x81, 2, 4, 8, 0x10, 0, 0x40, 4, 0, 0x40, 4, 0, 0x40, 4 };
         doInlineCcittImage(23, 10, ba);
     }
 
     @Test
     void testShortCCITT2() throws IOException
     {
-        byte[] ba = { 8, 0x10, 0x20, 0x40, (byte) 0x81, 2, 0, 8, 0, (byte) 0x80, 8, 8, (byte) 0x80, 8, 0, (byte) 0x80};
+        byte[] ba = new byte [] { 8, 0x10, 0x20, 0x40, (byte) 0x81, 2, 0, 8, 0, (byte) 0x80, 8, 8, (byte) 0x80, 8, 0, (byte) 0x80};
         doInlineCcittImage(23, 7, ba);
     }
 
     @Test
     void testShortCCITT3() throws IOException
     {
-        byte[] ba = { 103, 44, 103, 44, 103, 44, 103, 44, 0, 16, 1, 0, 16, 1, 0, 16, 1, 10};
+        byte[] ba = new byte [] { 103, 44, 103, 44, 103, 44, 103, 44, 0, 16, 1, 0, 16, 1, 0, 16, 1, 10};
         doInlineCcittImage(683, 4, ba);
     }
 
@@ -252,56 +252,5 @@ class PDInlineImageTest
         {
             Assertions.assertEquals(0, data[i]);
         }
-    }
-
-    /**
-     * Tests that getDecode() does not throw ClassCastException when the /D parameter
-     * is a non-array type (e.g., integer). Malformed PDFs may provide an integer or
-     * other type instead of a COSArray for the Decode parameter.
-     * 
-     * @throws IOException
-     */
-    @Test
-    void testGetDecodeWithInvalidType() throws IOException
-    {
-        // Test 1: /D set to integer (should return null, not throw ClassCastException)
-        COSDictionary dict = new COSDictionary();
-        dict.setBoolean(COSName.IM, true);
-        dict.setInt(COSName.W, 1);
-        dict.setInt(COSName.H, 1);
-        dict.setInt(COSName.BPC, 1);
-        dict.setInt(COSName.D, 123); // wrong type: integer instead of array
-
-        byte[] data = new byte[]{0};
-        PDInlineImage inlineImage = new PDInlineImage(dict, data, null);
-        Assertions.assertNull(inlineImage.getDecode(),
-                "getDecode() should return null for non-array /D value");
-
-        // Test 2: /D set to valid COSArray (should still work)
-        COSDictionary dict2 = new COSDictionary();
-        dict2.setBoolean(COSName.IM, true);
-        dict2.setInt(COSName.W, 1);
-        dict2.setInt(COSName.H, 1);
-        dict2.setInt(COSName.BPC, 1);
-        COSArray decodeArray = new COSArray();
-        decodeArray.add(COSInteger.ONE);
-        decodeArray.add(COSInteger.ZERO);
-        dict2.setItem(COSName.D, decodeArray);
-
-        PDInlineImage inlineImage2 = new PDInlineImage(dict2, data, null);
-        Assertions.assertNotNull(inlineImage2.getDecode(),
-                "getDecode() should return array for valid /D value");
-        Assertions.assertEquals(2, inlineImage2.getDecode().size());
-
-        // Test 3: /D not set (should return null)
-        COSDictionary dict3 = new COSDictionary();
-        dict3.setBoolean(COSName.IM, true);
-        dict3.setInt(COSName.W, 1);
-        dict3.setInt(COSName.H, 1);
-        dict3.setInt(COSName.BPC, 1);
-
-        PDInlineImage inlineImage3 = new PDInlineImage(dict3, data, null);
-        Assertions.assertNull(inlineImage3.getDecode(),
-                "getDecode() should return null when /D is not set");
     }
 }

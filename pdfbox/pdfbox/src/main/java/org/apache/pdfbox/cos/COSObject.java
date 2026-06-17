@@ -18,8 +18,8 @@ package org.apache.pdfbox.cos;
 
 import java.io.IOException;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * This class represents a PDF object.
@@ -34,7 +34,7 @@ public class COSObject extends COSBase implements COSUpdateInfo
     private boolean isDereferenced = false;
     private final COSUpdateState updateState;
     
-    private static final Logger LOG = LogManager.getLogger(COSObject.class);
+    private static final Log LOG = LogFactory.getLog(COSObject.class);
 
     /**
      * Constructor.
@@ -119,7 +119,7 @@ public class COSObject extends COSBase implements COSUpdateInfo
             }
             catch (IOException e)
             {
-                LOG.error(() -> "Can't dereference " + this, e);
+                LOG.error("Can't dereference " + this, e);
             }
             finally
             {
@@ -152,6 +152,32 @@ public class COSObject extends COSBase implements COSUpdateInfo
     }
 
     /**
+     * Getter for property objectNumber.
+     * 
+     * @return Value of property objectNumber.
+     * 
+     * @deprecated will be removed in 4.0.0
+     */
+    @Deprecated
+    public long getObjectNumber()
+    {
+        return getKey() != null ? getKey().getNumber() : 0;
+    }
+
+    /**
+     * Getter for property generationNumber.
+     * 
+     * @return Value of property generationNumber.
+     * 
+     * @deprecated will be removed in 4.0.0
+     */
+    @Deprecated
+    public int getGenerationNumber()
+    {
+        return getKey() != null ? getKey().getGeneration() : 0;
+    }
+
+    /**
      * visitor pattern double dispatch method.
      *
      * @param visitor The object to notify when visiting this object.
@@ -160,7 +186,15 @@ public class COSObject extends COSBase implements COSUpdateInfo
     @Override
     public void accept( ICOSVisitor visitor ) throws IOException
     {
-        visitor.visitFromObject(this);
+        COSBase object = getObject();
+        if (object != null)
+        {
+            object.accept(visitor);
+        }
+        else
+        {
+            COSNull.NULL.accept(visitor);
+        }
     }
 
     /**

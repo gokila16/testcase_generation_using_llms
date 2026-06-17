@@ -24,7 +24,6 @@ import java.awt.image.IndexColorModel;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
@@ -56,12 +55,18 @@ public final class PDIndexed extends PDSpecialColorSpace
     private int[][] rgbColorTable;
 
     /**
-     * Private constructor.
+     * Creates a new Indexed color space.
+     * Default DeviceRGB, hival 255.
      */
-    private PDIndexed()
+    public PDIndexed()
     {
-        // needed for the create factory method
+        array = new COSArray();
+        array.add(COSName.INDEXED);
+        array.add(COSName.DEVICERGB);
+        array.add(COSInteger.get(255));
+        array.add(org.apache.pdfbox.cos.COSNull.NULL);
     }
+
     /**
      * Creates a new indexed color space from the given PDF array.
      * 
@@ -88,52 +93,6 @@ public final class PDIndexed extends PDSpecialColorSpace
         baseColorSpace = PDColorSpace.create(array.get(1), resources);
         readColorTable();
         initRgbColorTable();
-    }
-
-    /**
-     * Factory method to create a new indexed color space.
-     * 
-     * @param base base colorspace, mandantory has to be != null
-     * @param hival maximum valid index value for lookup data
-     * @param lookupData array for lookup data, mandantory has to be != null
-     * 
-     * @return an instance of PDIndedex initialized with the given values
-     * 
-     * @throws IOException if the colorspace could not be created
-     */
-    public static PDIndexed create(PDColorSpace base, int hival, byte[] lookupData)
-            throws IOException
-    {
-        if (base == null)
-        {
-            throw new IllegalArgumentException("base must not be null");
-        }
-        if (lookupData == null)
-        {
-            throw new IllegalArgumentException("lookupData must not be null");
-        }
-        if (hival < 0 || hival > 255)
-        {
-            throw new IllegalArgumentException(" hival has to be a positive value <= 255");
-        }
-        int expected = (hival + 1) * base.getNumberOfComponents();
-        if (lookupData.length < expected)
-        {
-            throw new IllegalArgumentException("lookupData too short: expected at least " + expected
-                    + " bytes ((hival+1) * components), got " + lookupData.length);
-        }
-        PDIndexed pdIndexed = new PDIndexed();
-        pdIndexed.array = new COSArray();
-        pdIndexed.array.add(COSName.INDEXED);
-        pdIndexed.baseColorSpace = base;
-        pdIndexed.array.add(1, base.getCOSObject());
-        pdIndexed.array.add(2, COSInteger.get(hival));
-        pdIndexed.lookupData = Arrays.copyOf(lookupData, lookupData.length);
-        COSString cosLookupData = new COSString(pdIndexed.lookupData, true);
-        pdIndexed.array.add(3, cosLookupData);
-        pdIndexed.readColorTable();
-        pdIndexed.initRgbColorTable();
-        return pdIndexed;
     }
 
     @Override
@@ -239,14 +198,15 @@ public final class PDIndexed extends PDSpecialColorSpace
         BufferedImage rgbImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         WritableRaster rgbRaster = rgbImage.getRaster();
 
-        int[] src = new int[width];
+        int[] src = new int[1];
         for (int y = 0; y < height; y++)
         {
-            raster.getPixels(0, y, width, 1, src);
             for (int x = 0; x < width; x++)
             {
+                raster.getPixel(x, y, src);
+
                 // lookup
-                int index = Math.min(src[x], actualMaxIndex);
+                int index = Math.min(src[0], actualMaxIndex);
                 rgbRaster.setPixel(x, y, rgbColorTable[index]);
             }
         }
@@ -343,6 +303,25 @@ public final class PDIndexed extends PDSpecialColorSpace
                 offset++;
             }
         }
+    }
+
+    /**
+     * Sets the base color space.
+     * @param base the base color space
+     */
+    public void setBaseColorSpace(PDColorSpace base)
+    {
+        array.set(1, base.getCOSObject());
+        baseColorSpace = base;
+    }
+
+    /**
+     * Sets the highest value that is allowed. This cannot be higher than 255.
+     * @param high the highest value for the lookup table
+     */
+    public void setHighValue(int high)
+    {
+        array.set(2, high);
     }
 
     @Override

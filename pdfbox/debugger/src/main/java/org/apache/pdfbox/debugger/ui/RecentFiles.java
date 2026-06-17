@@ -17,6 +17,7 @@
 package org.apache.pdfbox.debugger.ui;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +51,10 @@ public class RecentFiles
         this.maximum = maximumFile;
         this.pref = Preferences.userNodeForPackage(className);
         filePaths = readHistoryFromPref();
+        if (filePaths == null)
+        {
+            filePaths = new ArrayDeque<>();
+        }
     }
 
     /**
@@ -103,21 +108,27 @@ public class RecentFiles
      */
     public List<String> getFiles()
     {
-        List<String> files = filePaths.stream().
-                filter(path -> new File(path).exists()).
-                collect(Collectors.toList());
-        if (files.size() > maximum)
+        if (!isEmpty())
         {
-            files.remove(0);
+            List<String> files = filePaths.stream().
+                    filter(path -> new File(path).exists()).
+                    collect(Collectors.toList());
+            if (files.size() > maximum)
+            {
+                files.remove(0);
+            }
+            return files;
         }
-        return files;
+        return null;
     }
 
     /**
      * This method save the present recent file history in the preference. To get the recent file
      * history in next session this method must be called.
+     *
+     * @throws IOException if saving in preference doesn't success.
      */
-    public void close()
+    public void close() throws IOException
     {
         writeHistoryToPref(filePaths);
     }
@@ -136,7 +147,7 @@ public class RecentFiles
             beginIndex = endIndex;
             remainingLength = fullPath.length() - endIndex;
         }
-        return pieces.toArray(String[]::new);
+        return pieces.toArray(new String[pieces.size()]);
     }
 
     private void writeHistoryToPref(Queue<String> filePaths)
@@ -164,7 +175,12 @@ public class RecentFiles
     {
         Preferences node = pref.node(KEY);
         int historyLength = node.getInt(HISTORY_LENGTH, 0);
+        if (historyLength == 0)
+        {
+            return null;
+        }
         Queue<String> history = new ArrayDeque<>();
+
         for (int i = 1; i <= historyLength; i++)
         {
             int totalPieces = node.getInt(String.format(PIECES_LENGTH_KEY, i), 0);

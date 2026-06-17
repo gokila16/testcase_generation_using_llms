@@ -192,43 +192,40 @@ class XMPSchemaTester
         Field[] fields = schemaClass.getFields();
         for (Field field : fields)
         {
-            if (field.isAnnotationPresent(PropertyType.class) && !field.get(schema).equals(property))
+            if (field.isAnnotationPresent(PropertyType.class))
             {
-                PropertyType pt = field.getAnnotation(PropertyType.class);
-                if (pt.type() == Types.LangAlt)
+                if (!field.get(schema).equals(property))
                 {
-                    // do not check method existence
-                }
-                else if (pt.type() == Types.Thumbnail && pt.card() == Cardinality.Alt)
-                {
-                    // do not check method existence
-                }
-                else if (pt.type() == Types.ResourceRef)
-                {
-                    // do not check method existence
-                }
-                else if (pt.type() == Types.Version && pt.card() == Cardinality.Seq)
-                {
-                    // do not check method existence
-                }
-                else
-                {
-                    // type test
-                    PropertyType spt = retrievePropertyType(field.get(schema).toString());
-                    String getNameProperty = "get" + prepareName(field.get(schema).toString(), spt) + "Property";
-                    Method getMethod = schemaClass.getMethod(getNameProperty);
-                    assertNull(getMethod.invoke(schema), getNameProperty + " should return null when testing " + property);
-                    // value test
-                    String getNameValue = "get" + prepareName(field.get(schema).toString(), spt);
-                    if (schemaClass == XMPMediaManagementSchema.class && "getHistory".equals(getNameValue))
+                    PropertyType pt = field.getAnnotation(PropertyType.class);
+                    if (pt.type() == Types.LangAlt)
                     {
-                        // PDFBOX-6111: getHistory() has been removed because it doesn't work
-                        // because it's an array of a structured type and not of a text value
-                        continue;
+                        // do not check method existence
                     }
-                    getMethod = schemaClass.getMethod(getNameValue);
-                    assertNotNull(getMethod, getNameValue + " method should exist");
-                    assertNull(getMethod.invoke(schema), getNameValue + " should return null when testing " + property);
+                    else if (pt.type() == Types.Thumbnail && pt.card() == Cardinality.Alt)
+                    {
+                        // do not check method existence
+                    }
+                    else if (pt.type() == Types.ResourceRef)
+                    {
+                        // do not check method existence
+                    }
+                    else if (pt.type() == Types.Version && pt.card() == Cardinality.Seq)
+                    {
+                        // do not check method existence
+                    }
+                    else
+                    {
+                        // type test
+                        PropertyType spt = retrievePropertyType(field.get(schema).toString());
+                        String getNameProperty = "get" + prepareName(field.get(schema).toString(), spt) + "Property";
+                        Method getMethod = schemaClass.getMethod(getNameProperty);
+                        assertNull(getMethod.invoke(schema), getNameProperty + " should return null when testing " + property);
+                        // value test
+                        String getNameValue = "get" + prepareName(field.get(schema).toString(), spt);
+                        getMethod = schemaClass.getMethod(getNameValue);
+                        assertNotNull(getMethod, getNameValue + " method should exist");
+                        assertNull(getMethod.invoke(schema), getNameValue + " should return null when testing " + property);
+                    }
                 }
             }
         }
@@ -443,12 +440,6 @@ class XMPSchemaTester
             setMethod.invoke(schema, string);
         }
         // retrieve
-        if (schemaClass == XMPMediaManagementSchema.class && "getHistory".equals(getName))
-        {
-            // PDFBOX-6111: getHistory() has been removed because it doesn't work
-            // because it's an array of a structured type and not of a text value
-            return;
-        }    
         Method getMethod = schemaClass.getMethod(getName);
         List<String> fields = (List<String>) getMethod.invoke(schema);
         for (String field : fields)

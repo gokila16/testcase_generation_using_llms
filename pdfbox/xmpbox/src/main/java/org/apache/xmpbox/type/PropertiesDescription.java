@@ -27,13 +27,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Represents all properties known for a specific namespace Type and attributes associated to each
- * properties. If a specific well declared type is used, this class maps it to a basic type.
- *
+ * Represents all properties known for a specific namespace Type and attributes associated to each properties are saved
+ * If a specific type well declared is used, this class map it to a basic type
+ * 
  * @author a183132
- *
- * Attribute management pre-implemented in order to give clues to make an attribute management
- * system.
+ * 
+ *         Attribute management pre-implemented in order to give clues to make an attribute management system
  */
 public class PropertiesDescription
 {
@@ -50,11 +49,11 @@ public class PropertiesDescription
     }
 
     /**
-     * Get all property names
+     * Get All Properties Name
      * 
      * @return a list of properties qualifiedName
      */
-    public List<String> getPropertiesNames()
+    public List<String> getPropertiesName()
     {
         return new ArrayList<>(types.keySet());
     }
@@ -84,9 +83,4 @@ public class PropertiesDescription
         return types.get(name);
     }
 
-    @Override
-    public String toString()
-    {
-        return "PropertiesDescription{" + "types=" + types + '}';
-    }
 }

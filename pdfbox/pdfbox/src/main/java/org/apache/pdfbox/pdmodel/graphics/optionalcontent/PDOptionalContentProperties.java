@@ -112,11 +112,6 @@ public class PDOptionalContentProperties implements COSObjectable
         return this.dict;
     }
 
-    /**
-     * Return the /OCGs array.
-     * 
-     * @return /OCGs array, never null.
-     */
     private COSArray getOCGs()
     {
         COSArray ocgs = this.dict.getCOSArray(COSName.OCGS);
@@ -128,11 +123,6 @@ public class PDOptionalContentProperties implements COSObjectable
         return ocgs;
     }
 
-    /**
-     * Return the /D dictionary.
-     *
-     * @return the /D dictionary, never null.
-     */
     private COSDictionary getD()
     {
         COSDictionary d = dict.getCOSDictionary(COSName.D);
@@ -212,12 +202,12 @@ public class PDOptionalContentProperties implements COSObjectable
 
     /**
      * Returns the base state for optional content groups.
-     * @return the base state, never null.
+     * @return the base state
      */
     public BaseState getBaseState()
     {
         COSDictionary d = getD();
-        COSName name = d.getCOSName(COSName.BASE_STATE, COSName.ON);
+        COSName name = (COSName)d.getItem(COSName.BASE_STATE);
         return BaseState.valueOf(name);
     }
 

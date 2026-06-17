@@ -23,8 +23,8 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
@@ -38,7 +38,7 @@ import org.w3c.dom.Element;
  */
 public class FDFAnnotationPolygon extends FDFAnnotation
 {
-    private static final Logger LOG = LogManager.getLogger(FDFAnnotationPolygon.class);
+    private static final Log LOG = LogFactory.getLog(FDFAnnotationPolygon.class);
     /**
      * COS Model value for SubType entry.
      */
@@ -94,8 +94,12 @@ public class FDFAnnotationPolygon extends FDFAnnotation
             {
                 throw new IOException("Error: missing element 'vertices'");
             }
-            String[] verticesValues = vertices.split(",|;");
-            float[] values = parseFloats(verticesValues);
+            String[] verticesValues = vertices.split("[,;]");
+            float[] values = new float[verticesValues.length];
+            for (int i = 0; i < verticesValues.length; i++)
+            {
+                values[i] = Float.parseFloat(verticesValues[i]);
+            }
             setVertices(values);
         }
         catch (XPathExpressionException e)
@@ -111,7 +115,9 @@ public class FDFAnnotationPolygon extends FDFAnnotation
      */
     public final void setVertices(float[] vertices)
     {
-        annot.setItem(COSName.VERTICES, COSArray.of(vertices));
+        COSArray newVertices = new COSArray();
+        newVertices.setFloatArray(vertices);
+        annot.setItem(COSName.VERTICES, newVertices);
     }
 
     /**
@@ -135,7 +141,9 @@ public class FDFAnnotationPolygon extends FDFAnnotation
         COSArray array = null;
         if (color != null)
         {
-            array = COSArray.of(color.getRGBColorComponents(null));
+            float[] colors = color.getRGBColorComponents(null);
+            array = new COSArray();
+            array.setFloatArray(colors);
         }
         annot.setItem(COSName.IC, array);
     }
@@ -147,6 +155,16 @@ public class FDFAnnotationPolygon extends FDFAnnotation
      */
     public Color getInteriorColor()
     {
-        return getColor(COSName.IC);
+        Color retval = null;
+        COSArray array = annot.getCOSArray(COSName.IC);
+        if (array != null)
+        {
+            float[] rgb = array.toFloatArray();
+            if (rgb.length >= 3)
+            {
+                retval = new Color(rgb[0], rgb[1], rgb[2]);
+            }
+        }
+        return retval;
     }
 }

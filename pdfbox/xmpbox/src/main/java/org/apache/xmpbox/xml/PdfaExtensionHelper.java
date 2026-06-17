@@ -22,7 +22,6 @@
 package org.apache.xmpbox.xml;
 
 import java.util.List;
-import java.util.function.Supplier;
 
 import org.apache.xmpbox.XMPMetadata;
 import org.apache.xmpbox.schema.PDFAExtensionSchema;
@@ -51,11 +50,9 @@ import org.w3c.dom.NamedNodeMap;
 public final class PdfaExtensionHelper
 {
 
-    private static final String CLOSED_CHOICE = "closed Choice of ";
-    private static final String CLOSED_CHOICE_U = "Closed Choice of ";
+    public static final String CLOSED_CHOICE = "closed Choice of ";
 
-    private static final String OPEN_CHOICE = "open Choice of ";
-    private static final String OPEN_CHOICE_U = "Open Choice of ";
+    public static final String OPEN_CHOICE = "open Choice of ";
 
     private PdfaExtensionHelper()
     {
@@ -78,11 +75,6 @@ public final class PdfaExtensionHelper
     private static void checkNamespaceDeclaration(Attr attr, Class<? extends AbstractStructuredType> clz)
             throws XmpParsingException
     {
-        if (attr.getPrefix() == null)
-        {
-            // PDFBOX-6136: not relevant here
-            return;
-        }
         String prefix = attr.getLocalName();
         String namespace = attr.getValue();
         String cprefix = clz.getAnnotation(StructuredType.class).preferedPrefix();
@@ -102,7 +94,7 @@ public final class PdfaExtensionHelper
         }
     }
 
-    public static void populateSchemaMapping(XMPMetadata meta, boolean strictParsing) throws XmpParsingException
+    public static void populateSchemaMapping(XMPMetadata meta) throws XmpParsingException
     {
         List<XMPSchema> schems = meta.getAllSchemas();
         TypeMapping tm = meta.getTypeMapping();
@@ -125,19 +117,23 @@ public final class PdfaExtensionHelper
                 {
                     if (af instanceof PDFASchemaType)
                     {
-                        populatePDFASchemaType(meta, (PDFASchemaType) af, tm, strictParsing);
+                        populatePDFASchemaType(meta, (PDFASchemaType) af, tm);
                     } // TODO unmanaged ?
                 }
             }
         }
     }
 
-    private static void populatePDFASchemaType(XMPMetadata meta, PDFASchemaType st, TypeMapping tm, boolean strictParsing)
+    private static void populatePDFASchemaType(XMPMetadata meta, PDFASchemaType st, TypeMapping tm)
             throws XmpParsingException
     {
         String namespaceUri = st.getNamespaceURI();
-        // PDFBOX-5525
-        requireNonNull(namespaceUri, () -> "Missing pdfaSchema:namespaceURI in type definition");
+        if (namespaceUri == null)
+        {
+            // PDFBOX-5525
+            throw new XmpParsingException(ErrorType.RequiredProperty,
+                    "Missing pdfaSchema:namespaceURI in type definition");
+        }
         namespaceUri = namespaceUri.trim();
         String prefix = st.getPrefixValue();
         ArrayProperty properties = st.getProperty();
@@ -162,11 +158,11 @@ public final class PdfaExtensionHelper
             }
         }
         // populate properties
-        if (properties == null && !strictParsing)
+        if (properties == null)
         {
-            return;
+            throw new XmpParsingException(ErrorType.RequiredProperty,
+                    "Missing pdfaSchema:property in type definition");
         }
-        requireNonNull(properties, () -> "Missing pdfaSchema:property in type definition");
         for (AbstractField af2 : properties.getAllProperties())
         {
             if (af2 instanceof PDFAPropertyType)
@@ -181,12 +177,15 @@ public final class PdfaExtensionHelper
     {
         String pname = property.getName();
         String ptype = property.getValueType();
+        String pdescription = property.getDescription();
+        String pCategory = property.getCategory();
         // check all mandatory fields are OK
-        requireNonNull(pname, () -> String.format("Missing field '%s' in property definition", PDFAPropertyType.NAME));
-        requireNonNull(ptype, () -> String.format("Missing field '%s' in property definition", PDFAPropertyType.VALUETYPE));
-        requireNonNull(property.getDescription(), () -> String.format("Missing field '%s' in property definition", PDFAPropertyType.DESCRIPTION));
-        requireNonNull(property.getCategory(), () -> String.format("Missing field '%s' in property definition", PDFAPropertyType.CATEGORY));
-
+        if (pname == null || ptype == null || pdescription == null || pCategory == null)
+        {
+            // all fields are mandatory
+            throw new XmpParsingException(ErrorType.RequiredProperty,
+                    "Missing field in property definition");
+        }
         // check ptype existence
         PropertyType pt = transformValueType(tm, ptype);
         if (pt == null)
@@ -214,16 +213,17 @@ public final class PdfaExtensionHelper
         String ttype = type.getType();
         String tns = type.getNamespaceURI();
         String tprefix = type.getPrefixValue();
-        // all fields are mandatory
-        requireNonNull(ttype, () -> String.format("Missing field '%s' in type definition", PDFATypeType.TYPE));
-        requireNonNull(tns, () -> String.format("Missing field '%s' in type definition", PDFATypeType.NS_URI));
-        requireNonNull(tprefix, () -> String.format("Missing field '%s' in type definition", PDFATypeType.PREFIX));
-        requireNonNull(type.getDescription(), () -> String.format("Missing field '%s' in type definition", PDFATypeType.DESCRIPTION));
-
+        String tdescription = type.getDescription();
+        ArrayProperty fields = type.getFields();
+        if (ttype == null || tns == null || tprefix == null || tdescription == null)
+        {
+            // all fields are mandatory
+            throw new XmpParsingException(ErrorType.RequiredProperty,
+                    "Missing field in type definition");
+        }
         // create the structured type
         DefinedStructuredType structuredType = new DefinedStructuredType(meta, tns, tprefix, null); // TODO
         // maybe a name exists
-        ArrayProperty fields = type.getFields();
         if (fields != null)
         {
             List<AbstractField> definedFields = fields.getAllProperties();
@@ -246,11 +246,12 @@ public final class PdfaExtensionHelper
             throws XmpParsingException
     {
         String fName = field.getName();
+        String fDescription = field.getDescription();
         String fValueType = field.getValueType();
-        requireNonNull(fName, () -> String.format("Missing field '%s' in field definition", PDFAFieldType.NAME));
-        requireNonNull(field.getDescription(), () -> String.format("Missing field '%s' in field definition", PDFAFieldType.DESCRIPTION));
-        requireNonNull(fValueType, () -> String.format("Missing field '%s' in field definition", PDFAFieldType.VALUETYPE));
-
+        if (fName == null || fDescription == null || fValueType == null)
+        {
+            throw new XmpParsingException(ErrorType.RequiredProperty, "Missing field in field definition");
+        }
         try
         {
             Types fValue = Types.valueOf(fValueType);
@@ -270,11 +271,11 @@ public final class PdfaExtensionHelper
             return TypeMapping.createPropertyType(Types.LangAlt, Cardinality.Simple);
         }
         // else all other cases
-        if (valueType.startsWith(CLOSED_CHOICE) || valueType.startsWith(CLOSED_CHOICE_U))
+        if (valueType.startsWith(CLOSED_CHOICE))
         {
             valueType = valueType.substring(CLOSED_CHOICE.length());
         }
-        else if (valueType.startsWith(OPEN_CHOICE) || valueType.startsWith(OPEN_CHOICE_U))
+        else if (valueType.startsWith(OPEN_CHOICE))
         {
             valueType = valueType.substring(OPEN_CHOICE.length());
         }
@@ -282,7 +283,7 @@ public final class PdfaExtensionHelper
         Cardinality card = Cardinality.Simple;
         if (pos > 0)
         {
-            String scard = valueType.substring(0, pos).toLowerCase();
+            String scard = valueType.substring(0, pos);
             switch (scard)
             {
                 case "seq":
@@ -314,11 +315,4 @@ public final class PdfaExtensionHelper
         return TypeMapping.createPropertyType(type, card);
     }
 
-    private static void requireNonNull(Object value, Supplier<String> message) throws XmpParsingException
-    {
-        if (value == null)
-        {
-            throw new XmpParsingException(ErrorType.RequiredProperty, message.get());
-        }
-    }
 }

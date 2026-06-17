@@ -70,6 +70,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.StringTokenizer;
 import java.util.List;
 
 /**
@@ -91,38 +92,66 @@ public class OSXAdapter implements InvocationHandler
 
     static Object macOSXApplication;
     
-    // Pass this method an Object and Method equipped to perform application shutdown logic
-    // The method passed should return a boolean stating whether the quit should occur
-    public static void setQuitHandler(final Object target, final Method quitHandler)
+    private static boolean isMinJdk9()
     {
+        // strategy from lucene-solr/lucene/core/src/java/org/apache/lucene/util/Constants.java
+        String version = System.getProperty("java.specification.version");
+        final StringTokenizer st = new StringTokenizer(version, ".");
         try
         {
-            Desktop desktopObject = Desktop.getDesktop();
-            Class<?> filesHandlerClass = Class.forName("java.awt.desktop.QuitHandler");
-            final Method setQuitHandlerMethod = desktopObject.getClass().getMethod("setQuitHandler",
-                    filesHandlerClass);
-            Object osxAdapterProxy = Proxy.newProxyInstance(OSXAdapter.class.getClassLoader(),
-                    new Class[] { filesHandlerClass }, new InvocationHandler()
+            int major = Integer.parseInt(st.nextToken());
+            int minor = 0;
+            if (st.hasMoreTokens())
             {
-                        @Override
-                        public Object invoke(Object proxy, Method method, Object[] args)
-                                throws Throwable
-                {
-                            if ("handleQuitRequestWith".equals(method.getName()))
-                    {
-                                // We just call our own quit handler
-                                quitHandler.invoke(target);
-                    }
-                            return null;
-                        }
-                    });
-            setQuitHandlerMethod.invoke(desktopObject, osxAdapterProxy);
+                minor = Integer.parseInt(st.nextToken());
+            }
+            return major > 1 || (major == 1 && minor >= 9);
         }
-        catch (Exception ex)
+        catch (NumberFormatException nfe)
         {
-            new ErrorDialog(ex).setVisible(true);
+            // maybe some new numbering scheme in the 22nd century
+            return true;
         }
-        return;
+    }
+
+    // Pass this method an Object and Method equipped to perform application shutdown logic
+    // The method passed should return a boolean stating whether or not the quit should occur
+    public static void setQuitHandler(final Object target, final Method quitHandler)
+    {
+        if (isMinJdk9())
+        {
+            try
+            {
+                Desktop desktopObject = Desktop.getDesktop();
+                Class<?> filesHandlerClass = Class.forName("java.awt.desktop.QuitHandler");
+                final Method setQuitHandlerMethod = desktopObject.getClass().getMethod("setQuitHandler", filesHandlerClass);
+                Object osxAdapterProxy = Proxy.newProxyInstance(OSXAdapter.class.getClassLoader(),
+                        new Class[]
+                        {
+                            filesHandlerClass
+                        }, new InvocationHandler()
+                {
+                    @Override
+                    public Object invoke(Object proxy, Method method, Object[] args)
+                            throws Throwable
+                    {
+                        if ("handleQuitRequestWith".equals(method.getName()))
+                        {
+                            // We just call our own quit handler
+                            quitHandler.invoke(target);
+                        }
+                        return null;
+                    }
+                });
+                setQuitHandlerMethod.invoke(desktopObject, osxAdapterProxy);
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+            return;
+        }
+        setHandler(new OSXAdapter("handleQuit", target, quitHandler));
     }
 
     // Pass this method an Object and Method equipped to display application info
@@ -166,48 +195,69 @@ public class OSXAdapter implements InvocationHandler
     // application bundle's Info.plist
     public static void setFileHandler(Object target, Method fileHandler)
     {
-        try
+        if (isMinJdk9())
         {
-            Desktop desktopObject = Desktop.getDesktop();
-            Class<?> filesHandlerClass = Class.forName("java.awt.desktop.OpenFilesHandler");
-            Method setOpenFileHandlerMethod = desktopObject.getClass()
-                    .getMethod("setOpenFileHandler", filesHandlerClass);
-            Object osxAdapterProxy = Proxy.newProxyInstance(OSXAdapter.class.getClassLoader(),
-                    new Class[] { filesHandlerClass },
-                    new OSXAdapter("openFiles", target, fileHandler)
+            try
             {
-                        // Override OSXAdapter.callTarget to send information on the
-                        // file to be opened
-                        @Override
-                        public boolean callTarget(Object openFilesEvent)
-                {
-                            if (openFilesEvent != null)
-                    {
-                                try
-                                {
-                                    Method getFilesMethod = openFilesEvent.getClass()
-                                            .getDeclaredMethod("getFiles", (Class[]) null);
-                                    @SuppressWarnings("unchecked")
-                                    List<File> files = (List<File>) getFilesMethod
-                                            .invoke(openFilesEvent, (Object[]) null);
-                                    this.targetMethod.invoke(this.targetObject,
-                                            files.get(0).getAbsolutePath());
-                                }
-                                catch (Exception ex)
+                Desktop desktopObject = Desktop.getDesktop();
+                Class<?> filesHandlerClass = Class.forName("java.awt.desktop.OpenFilesHandler");
+                Method setOpenFileHandlerMethod = desktopObject.getClass().getMethod("setOpenFileHandler", filesHandlerClass);
+                Object osxAdapterProxy = Proxy.newProxyInstance(OSXAdapter.class.getClassLoader(),
+                        new Class[]
                         {
-                                    throw new RuntimeException(ex);
+                            filesHandlerClass
+                        }, new OSXAdapter("openFiles", target, fileHandler)
+                {
+                    // Override OSXAdapter.callTarget to send information on the
+                    // file to be opened
+                    @Override
+                    public boolean callTarget(Object openFilesEvent)
+                    {
+                        if (openFilesEvent != null)
+                        {
+                            try
+                            {
+                                Method getFilesMethod = openFilesEvent.getClass().getDeclaredMethod("getFiles",
+                                        (Class[]) null);
+                                @SuppressWarnings("unchecked")
+                                List<File> files = (List<File>) getFilesMethod.invoke(openFilesEvent,
+                                        (Object[]) null);
+                                this.targetMethod.invoke(this.targetObject, files.get(0).getAbsolutePath());
+                            }
+                            catch (Exception ex)
+                            {
+                                throw new RuntimeException(ex);
+                            }
                         }
+                        return true;
                     }
-                            return true;
-                        }
-                    });
-            setOpenFileHandlerMethod.invoke(desktopObject, osxAdapterProxy);
+                });
+                setOpenFileHandlerMethod.invoke(desktopObject, osxAdapterProxy);
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+            return;
         }
-        catch (Exception ex)
-        {
-            new ErrorDialog(ex).setVisible(true);
-        }
-        return;
+        /* JDK <= 1.8, using Apple classes */
+        setHandler(new OSXAdapter("handleOpenFile", target, fileHandler) {
+            // Override OSXAdapter.callTarget to send information on the
+            // file to be opened
+            @Override
+            public boolean callTarget(Object appleEvent) {
+                if (appleEvent != null) {
+                    try {
+                        Method getFilenameMethod = appleEvent.getClass().getDeclaredMethod("getFilename", (Class[])null);
+                        String filename = (String) getFilenameMethod.invoke(appleEvent, (Object[])null);
+                        this.targetMethod.invoke(this.targetObject, filename);
+                    } catch (Exception ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }
+                return true;
+            }
+        });
     }
 
     // setHandler creates a Proxy object from the passed OSXAdapter and adds it as an ApplicationListener

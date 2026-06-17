@@ -38,8 +38,8 @@ import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * Subsetter for TrueType (TTF) fonts.
@@ -51,9 +51,9 @@ import org.apache.logging.log4j.Logger;
  */
 public final class TTFSubsetter
 {
-    private static final Logger LOG = LogManager.getLogger(TTFSubsetter.class);
+    private static final Log LOG = LogFactory.getLog(TTFSubsetter.class);
     
-    private static final byte[] PAD_BUF = { 0, 0, 0, 0 };
+    private static final byte[] PAD_BUF = new byte[] { 0, 0, 0, 0 };
 
     private static final TimeZone TIMEZONE_UTC = TimeZone.getTimeZone("UTC"); // clone before using
 
@@ -511,28 +511,27 @@ public final class TTFSubsetter
 
                 if (Long.compare(isResult, g.getOffset()) != 0)
                 {
-                    LOG.debug("Tried skipping {} bytes but skipped only {} bytes", g.getOffset(),
-                            isResult);
+                    LOG.debug("Tried skipping " + g.getOffset() + " bytes but skipped only " + isResult + " bytes");
                 }
 
                 long lastOff = 0L;
-                for (Integer gid : glyphIds)
+                for (Integer glyphId : glyphIds)
                 {
-                    long offset = offsets[gid];
-                    long length = offsets[gid + 1] - offset;
+                    long offset = offsets[glyphId];
+                    long len = offsets[glyphId + 1] - offset;
                     isResult = is.skip(offset - lastOff);
                     
                     if (Long.compare(isResult, offset - lastOff) != 0)
                     {
-                        LOG.debug("Tried skipping {} bytes but skipped only {} bytes",
-                                offset - lastOff, isResult);
+                        LOG.debug("Tried skipping " + (offset - lastOff) + " bytes but skipped only " + isResult + " bytes");
                     }
-                    byte[] buf = new byte[(int) length];
+
+                    byte[] buf = new byte[(int)len];
                     isResult = is.read(buf);
 
-                    if (Long.compare(isResult, length) != 0)
+                    if (Long.compare(isResult, len) != 0)
                     {
-                        LOG.debug("Tried reading {} bytes but only {} bytes read", length, isResult);
+                        LOG.debug("Tried reading " + len + " bytes but only " + isResult + " bytes read");
                     }
                     
                     // rewrite glyphIds for compound glyphs
@@ -582,7 +581,7 @@ public final class TTFSubsetter
                         while ((flags & 1 << 5) != 0); // MORE_COMPONENTS
 
                     }
-                    lastOff = offsets[gid + 1];
+                    lastOff = offsets[glyphId + 1];
                 }
             }
             hasNested = glyphIdsToAdd != null;
@@ -607,11 +606,10 @@ public final class TTFSubsetter
 
             if (Long.compare(isResult, g.getOffset()) != 0)
             {
-                LOG.debug("Tried skipping {} bytes but skipped only {} bytes", g.getOffset(),
-                        isResult);
+                LOG.debug("Tried skipping " + g.getOffset() + " bytes but skipped only " + isResult + " bytes");
             }
 
-            long lastOff = 0;    // previously read glyph offset
+            long prevEnd = 0;    // previously read glyph offset
             long newOffset = 0;  // new offset for the glyph in the subset font
             int newGid = 0;      // new GID in subset font
 
@@ -622,19 +620,17 @@ public final class TTFSubsetter
                 long length = offsets[gid + 1] - offset;
 
                 newOffsets[newGid++] = newOffset;
-                isResult = is.skip(offset - lastOff);
+                isResult = is.skip(offset - prevEnd);
 
-                if (Long.compare(isResult, offset - lastOff) != 0)
+                if (Long.compare(isResult, offset - prevEnd) != 0)
                 {
-                    LOG.debug("Tried skipping {} bytes but skipped only {} bytes", offset - lastOff,
-                            isResult);
+                    LOG.debug("Tried skipping " + (offset - prevEnd) + " bytes but skipped only " + isResult + " bytes");
                 }
 
                 // glyphs with no outlines have an empty entry in the 'glyf' table, with a
                 // corresponding 'loca' table entry with length = 0
                 if (invisibleGlyphIds.contains(gid))
                 {
-                    lastOff = offset;
                     continue;
                 }
 
@@ -643,7 +639,7 @@ public final class TTFSubsetter
 
                 if (Long.compare(isResult, length) != 0)
                 {
-                    LOG.debug("Tried reading {} bytes but only {} bytes read", length, isResult);
+                    LOG.debug("Tried reading " + length + " bytes but only " + isResult + " bytes read");
                 }
 
                 // detect glyph type
@@ -660,11 +656,8 @@ public final class TTFSubsetter
 
                         // glyphIndex
                         int componentGid = (buf[off] & 0xff) << 8 | buf[off + 1] & 0xff;
-                        if (!glyphIds.contains(componentGid))
-                        {
-                            // PDFBOX-6085
-                            throw new IOException("Internal error: componentGid " + componentGid + " not in glyphIds set");
-                        }
+                        glyphIds.add(componentGid);
+
                         int newComponentGid = getNewGlyphId(componentGid);
                         buf[off]   = (byte)(newComponentGid >>> 8);
                         buf[off + 1] = (byte)newComponentGid;
@@ -731,7 +724,7 @@ public final class TTFSubsetter
                     newOffset += len;
                 }
 
-                lastOff = offset + length;
+                prevEnd = offset + length;
             }
             newOffsets[newGid++] = newOffset;
         }
@@ -940,18 +933,17 @@ public final class TTFSubsetter
 
             if (Long.compare(isResult, hm.getOffset()) != 0)
             {
-                LOG.debug("Tried skipping {} bytes but only {} bytes skipped", hm.getOffset(),
-                        isResult);
+                LOG.debug("Tried skipping " + hm.getOffset() + " bytes but only " + isResult + " bytes skipped");
             }
 
             long lastOffset = 0;
-            for (Integer gid : glyphIds)
+            for (Integer glyphId : glyphIds)
             {
                 // offset in original file
                 long offset;
-                if (gid <= lastgid)
+                if (glyphId <= lastgid)
                 {
-                    if (invisibleGlyphIds.contains(gid))
+                    if (invisibleGlyphIds.contains(glyphId))
                     {
                         // force zero width (no change to last offset)
                         // 4 bytes total, 2 bytes each for: advance width = 0, left side bearing = 0
@@ -960,7 +952,7 @@ public final class TTFSubsetter
                     else
                     {
                         // copy width and lsb
-                        offset = gid * 4l;
+                        offset = glyphId * 4l;
                         lastOffset = copyBytes(is, bos, offset, lastOffset, 4);
                     }
                 }
@@ -978,7 +970,7 @@ public final class TTFSubsetter
                     }
 
                     // copy lsb only, as we are beyond numOfHMetrics
-                    offset = h.getNumberOfHMetrics() * 4l + (gid - h.getNumberOfHMetrics()) * 2l;
+                    offset = h.getNumberOfHMetrics() * 4l + (glyphId - h.getNumberOfHMetrics()) * 2l;
                     lastOffset = copyBytes(is, bos, offset, lastOffset, 2);
                 }
             }

@@ -34,8 +34,8 @@ import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.stream.ImageInputStream;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.apache.pdfbox.cos.COSDictionary;
 
@@ -50,7 +50,7 @@ import org.w3c.dom.NodeList;
  */
 final class DCTFilter extends Filter
 {
-    private static final Logger LOG = LogManager.getLogger(DCTFilter.class);
+    private static final Log LOG = LogFactory.getLog(DCTFilter.class);
 
     private static final int POS_TRANSFORM = 11;
     private static final String ADOBE = "Adobe";
@@ -82,17 +82,18 @@ final class DCTFilter extends Filter
             if (raster.getNumBands() == 4)
             {
                 // get APP14 marker
-                int colorTransform;
+                Integer transform;
                 try
                 {
-                    colorTransform = getAdobeTransform(reader.getImageMetadata(0));
+                    transform = getAdobeTransform(reader.getImageMetadata(0));
                 }
                 catch (IIOException | NegativeArraySizeException e)
                 {
                     // we really tried asking nicely, now we're using brute force.
                     LOG.debug("Couldn't read usíng getAdobeTransform() - using getAdobeTransformByBruteForce() as fallback", e);
-                    colorTransform = getAdobeTransformByBruteForce(iis);
+                    transform = getAdobeTransformByBruteForce(iis);
                 }
+                int colorTransform = transform != null ? transform : 0;
 
                 // 0 = Unknown (RGB or CMYK), 1 = YCbCr, 2 = YCCK
                 // https://exiftool.org/TagNames/JPEG.html#Adobe

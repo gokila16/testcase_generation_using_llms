@@ -24,8 +24,8 @@ import java.awt.color.ColorSpace;
 import java.awt.image.ColorModel;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * AWT composite for blend modes.
@@ -37,7 +37,7 @@ public final class BlendComposite implements Composite
     /**
      * Log instance.
      */
-    private static final Logger LOG = LogManager.getLogger(BlendComposite.class);
+    private static final Log LOG = LogFactory.getLog(BlendComposite.class);
 
     /**
      * Creates a blend composite
@@ -52,12 +52,12 @@ public final class BlendComposite implements Composite
     {
         if (constantAlpha < 0)
         {
-            LOG.warn("using 0 instead of incorrect Alpha {}", constantAlpha);
+            LOG.warn("using 0 instead of incorrect Alpha " + constantAlpha);
             constantAlpha = 0;
         }
         else if (constantAlpha > 1)
         {
-            LOG.warn("using 1 instead of incorrect Alpha {}", constantAlpha);
+            LOG.warn("using 1 instead of incorrect Alpha " + constantAlpha);
             constantAlpha = 1;
         }
         if (blendMode == null)

@@ -177,12 +177,11 @@ public abstract class PDButton extends PDTerminalField
      */
     public void setValue(int index) throws IOException
     {
-        List<String> exportValues = getExportValues();
-        if (exportValues.isEmpty() || index < 0 || index >= exportValues.size())
+        if (getExportValues().isEmpty() || index < 0 || index >= getExportValues().size())
         {
             throw new IllegalArgumentException("index '" + index
                     + "' is not a valid index for the field " + getFullyQualifiedName()
-                    + ", valid indices are from 0 to " + (exportValues.size() - 1));
+                    + ", valid indices are from 0 to " + (getExportValues().size() - 1));
         }
 
         updateByValue(String.valueOf(index));
@@ -293,17 +292,16 @@ public abstract class PDButton extends PDTerminalField
                 continue;
             }
             PDAppearanceEntry appearanceEntry = appearance.getNormalAppearance();
-            COSName value = getCOSObject().getCOSName(COSName.V);
-            if (appearanceEntry.getCOSObject().containsKey(value))
+            if (appearanceEntry.getCOSObject().containsKey(getCOSObject().getCOSName(COSName.V)))
             {
-                widget.setAppearanceState(value);
+                widget.setAppearanceState(getCOSObject().getCOSName(COSName.V).getName());
             }
             else
             {
-                widget.setAppearanceState(COSName.Off);
+                widget.setAppearanceState(COSName.Off.getName());
             }
         }
-    } 
+    }  
 
     /**
      * Get the values to set individual buttons within a group to the on state.
@@ -390,10 +388,8 @@ public abstract class PDButton extends PDTerminalField
 
     private void updateByValue(String value)
     {
-        // Find the matching appearance key from the first widget that has it
-        COSName matchingKey = null;
-        
-        // update the appearance state (AS) for each widget
+        getCOSObject().setName(COSName.V, value);
+        // update the appearance state (AS)
         for (PDAnnotationWidget widget : getWidgets())
         {
             PDAppearanceDictionary appearance = widget.getAppearance();
@@ -402,65 +398,15 @@ public abstract class PDButton extends PDTerminalField
                 continue;
             }
             PDAppearanceEntry appearanceEntry = appearance.getNormalAppearance();
-            COSDictionary appearanceDict = appearanceEntry.getCOSObject();
-            
-            // Find the matching appearance key by searching through the actual keys
-            // and comparing their decoded names. This handles encoding differences:
-            // the appearance key might be ISO-8859-1 encoded (e.g. /m#e4nnlich for "männlich")
-            // while the value String is UTF-8.
-            COSName widgetMatchingKey = findMatchingAppearanceKey(appearanceDict, value);
-            
-            // Save the first matching key to use for the V entry
-            if (widgetMatchingKey != null && matchingKey == null)
+            if (appearanceEntry.getCOSObject().containsKey(value))
             {
-                matchingKey = widgetMatchingKey;
-            }
-            
-            if (widgetMatchingKey != null)
-            {
-                // Use the exact COSName from the appearance dictionary to preserve encoding
-                widget.setAppearanceState(widgetMatchingKey);
+                widget.setAppearanceState(value);
             }
             else
             {
-                // Fall back to Off if no match found for this widget
-                widget.setAppearanceState(COSName.Off);
+                widget.setAppearanceState(COSName.Off.getName());
             }
         }
-        
-        // Set the V entry once using the first matching key found
-        if (matchingKey != null)
-        {
-            getCOSObject().setItem(COSName.V, matchingKey);
-        }
-        else
-        {
-            // Fall back to UTF-8 encoding if no match found in any widget
-            getCOSObject().setName(COSName.V, value);
-        }
-    }
-
-    /**
-     * Find the appearance dictionary key that matches the given value String.
-     * This method handles encoding differences - the value might be UTF-8 while
-     * appearance keys in the PDF could be ISO-8859-1 or other encodings.
-     *
-     * @param appearanceDict the appearance dictionary with keys to search
-     * @param value the value String to match against (typically UTF-8)
-     * @return the matching COSName key, or null if no match found
-     */
-    private COSName findMatchingAppearanceKey(COSDictionary appearanceDict, String value)
-    {
-        // Search all keys in the appearance dictionary and compare their decoded names
-        // COSName.getName() uses UTF-8 decoding with ISO-8859-1 fallback for non-UTF-8 bytes
-        for (COSName key : appearanceDict.keySet())
-        {
-            if (value.equals(key.getName()))
-            {
-                return key;
-            }
-        }
-        return null;
     }
 
     private void updateByOption(String value)
@@ -491,5 +437,4 @@ public abstract class PDButton extends PDTerminalField
             }
         }
     }
-    
 }

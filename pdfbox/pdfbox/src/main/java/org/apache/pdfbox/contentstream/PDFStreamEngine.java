@@ -30,8 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.DataFormatException;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.contentstream.operator.MissingOperandException;
 import org.apache.pdfbox.contentstream.operator.state.EmptyGraphicsStackException;
 import org.apache.pdfbox.cos.COSArray;
@@ -77,9 +77,9 @@ import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceGray;
  */
 public abstract class PDFStreamEngine
 {
-    private static final Logger LOG = LogManager.getLogger(PDFStreamEngine.class);
+    private static final Log LOG = LogFactory.getLog(PDFStreamEngine.class);
 
-    private final Map<String, OperatorProcessor> operators = new HashMap<>();
+    private final Map<String, OperatorProcessor> operators = new HashMap<>(80);
 
     private Deque<PDGraphicsState> graphicsStack = new ArrayDeque<>();
 
@@ -199,15 +199,14 @@ public abstract class PDFStreamEngine
     protected void processSoftMask(PDTransparencyGroup group) throws IOException
     {
         saveGraphicsState();
-        PDGraphicsState graphicsState = getGraphicsState();
-        Matrix softMaskCTM = graphicsState.getSoftMask().getInitialTransformationMatrix();
-        graphicsState.setCurrentTransformationMatrix(softMaskCTM);
-        graphicsState.setTextMatrix(new Matrix());
-        graphicsState.setTextLineMatrix(new Matrix());
-        graphicsState.setNonStrokingColorSpace(PDDeviceGray.INSTANCE);
-        graphicsState.setNonStrokingColor(PDDeviceGray.INSTANCE.getInitialColor());
-        graphicsState.setStrokingColorSpace(PDDeviceGray.INSTANCE);
-        graphicsState.setStrokingColor(PDDeviceGray.INSTANCE.getInitialColor());
+        Matrix softMaskCTM = getGraphicsState().getSoftMask().getInitialTransformationMatrix();
+        getGraphicsState().setCurrentTransformationMatrix(softMaskCTM);
+        getGraphicsState().setTextMatrix(new Matrix());
+        getGraphicsState().setTextLineMatrix(new Matrix());
+        getGraphicsState().setNonStrokingColorSpace(PDDeviceGray.INSTANCE);
+        getGraphicsState().setNonStrokingColor(PDDeviceGray.INSTANCE.getInitialColor());
+        getGraphicsState().setStrokingColorSpace(PDDeviceGray.INSTANCE);
+        getGraphicsState().setStrokingColor(PDDeviceGray.INSTANCE.getInitialColor());
 
         try
         {
@@ -287,18 +286,17 @@ public abstract class PDFStreamEngine
 
         PDResources parent = pushResources(charProc);
         Deque<PDGraphicsState> savedStack = saveGraphicsStack();
-        PDGraphicsState graphicsState = getGraphicsState();
 
         // replace the CTM with the TRM
-        graphicsState.setCurrentTransformationMatrix(textRenderingMatrix);
+        getGraphicsState().setCurrentTransformationMatrix(textRenderingMatrix);
 
         // transform the CTM using the stream's matrix (this is the FontMatrix)
         textRenderingMatrix.concatenate(charProc.getMatrix());
 
         // note: we don't clip to the BBox as it is often wrong, see PDFBOX-1917
 
-        graphicsState.setTextMatrix(new Matrix());
-        graphicsState.setTextLineMatrix(new Matrix());
+        getGraphicsState().setTextMatrix(new Matrix());
+        getGraphicsState().setTextLineMatrix(new Matrix());
 
         try
         {
@@ -324,19 +322,17 @@ public abstract class PDFStreamEngine
         PDRectangle bbox = appearance.getBBox();
         PDRectangle rect = annotation.getRectangle();
 
-        // PDFBOX-4783: zero-sized rectangles are not valid
+        // zero-sized rectangles are not valid
         if (rect != null && rect.getWidth() > 0 && rect.getHeight() > 0 &&
             bbox != null && bbox.getWidth() > 0 && bbox.getHeight() > 0)
         {
+            PDResources parent = pushResources(appearance);
+            Deque<PDGraphicsState> savedStack = saveGraphicsStack();
+
             Matrix matrix = appearance.getMatrix();
 
             // transformed appearance box  fixme: may be an arbitrary shape
             Rectangle2D transformedBox = bbox.transform(matrix).getBounds2D();
-            if (transformedBox.isEmpty())
-            {
-                // PDFBOX-6095: zero-sized rectangles are not valid
-                return;
-            }
 
             // compute a matrix which scales and translates the transformed appearance box to align
             // with the edges of the annotation's rectangle
@@ -351,9 +347,6 @@ public abstract class PDFStreamEngine
             // HOWEVER only the opposite order works for rotated pages with 
             // filled fields / annotations that have a matrix in the appearance stream, see PDFBOX-3083
             Matrix aa = Matrix.concatenate(a, matrix);
-
-            PDResources parent = pushResources(appearance);
-            Deque<PDGraphicsState> savedStack = saveGraphicsStack();
 
             // make matrix AA the CTM
             getGraphicsState().setCurrentTransformationMatrix(aa);
@@ -710,12 +703,12 @@ public abstract class PDFStreamEngine
             }
             else if (obj instanceof COSArray)
             {
-                LOG.error("Nested arrays are not allowed in an array for TJ operation: {}", obj);
+                LOG.error("Nested arrays are not allowed in an array for TJ operation: " + obj);
             }
             else
             {
-                LOG.error("Unknown type {} in array for TJ operation: {}",
-                        obj.getClass().getSimpleName(), obj);
+                LOG.error("Unknown type " + obj.getClass().getSimpleName() +
+                        " in array for TJ operation: " + obj);
             }
         }
     }
@@ -762,7 +755,7 @@ public abstract class PDFStreamEngine
                 0, fontSize,                     // 0
                 0, textState.getRise());         // 1
         
-        Matrix textMatrix = state.getTextMatrix();
+        Matrix textMatrix = getGraphicsState().getTextMatrix();
 
         // read the stream until it is empty
         InputStream in = new ByteArrayInputStream(string);
@@ -959,7 +952,7 @@ public abstract class PDFStreamEngine
      *
      * @param operator The unknown operator.
      * @param operands The list of operands.
-     * @param exception the exception which occurred when processing the operator
+     * @param exception the excpetion which occured when processing the operator
      * 
      * @throws IOException if there is an error processing the operator exception
      */
@@ -1179,7 +1172,7 @@ public abstract class PDFStreamEngine
         --level;
         if (level < 0)
         {
-            LOG.error("level is {}", level);
+            LOG.error("level is " + level);
         }
     }
 

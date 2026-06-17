@@ -72,7 +72,9 @@ public class PDAnnotationInk extends PDAnnotationMarkup
         COSArray array = new COSArray();
         for (float[] path : inkList)
         {
-            array.add(COSArray.of(path));
+            COSArray innerArray = new COSArray();
+            innerArray.setFloatArray(path);
+            array.add(innerArray);
         }
         getCOSObject().setItem(COSName.INKLIST, array);
     }

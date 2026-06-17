@@ -22,9 +22,8 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
-
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.fontbox.cff.CharStringCommand.Type1KeyWord;
 
 /**
@@ -37,7 +36,7 @@ import org.apache.fontbox.cff.CharStringCommand.Type1KeyWord;
  */
 public class Type1CharStringParser
 {
-    private static final Logger LOG = LogManager.getLogger(Type1CharStringParser.class);
+    private static final Log LOG = LogFactory.getLog(Type1CharStringParser.class);
 
     // 1-byte commands
     private static final int CALLSUBR = 10;
@@ -112,9 +111,8 @@ public class Type1CharStringParser
         Object obj = sequence.remove(sequence.size() - 1);
         if (!(obj instanceof Integer))
         {
-            LOG.warn(
-                    "Parameter {} for CALLSUBR is ignored, integer expected in glyph '{}' of font {}",
-                    obj, currentGlyph, fontName);
+            LOG.warn("Parameter " + obj + " for CALLSUBR is ignored, integer expected in glyph '"
+                    + currentGlyph + "' of font " + fontName);
             return;
         }
         int operand = (int) obj;
@@ -132,10 +130,10 @@ public class Type1CharStringParser
         }
         else
         {
-            LOG.warn("CALLSUBR is ignored, operand: {}, subrs.size(): {} in glyph '{}' of font {}",
-                    operand, subrs.size(), currentGlyph, fontName);
+            LOG.warn("CALLSUBR is ignored, operand: " + operand + ", subrs.size(): " + subrs.size()
+                    + " in glyph '" + currentGlyph + "' of font " + fontName);
             // remove all parameters (there can be more than one)
-            while (!sequence.isEmpty() && sequence.get(sequence.size() - 1) instanceof Integer)
+            while (sequence.get(sequence.size() - 1) instanceof Integer)
             {
                 sequence.remove(sequence.size() - 1);
             }
@@ -160,12 +158,12 @@ public class Type1CharStringParser
             sequence.remove(sequence.size() - 1);
             // end flex
             sequence.add(0);
-            sequence.add(CharStringCommand.CALLOTHERSUBR);
+            sequence.add(CharStringCommand.COMMAND_CALLOTHERSUBR);
             break;
         case 1:
             // begin flex
             sequence.add(1);
-            sequence.add(CharStringCommand.CALLOTHERSUBR);
+            sequence.add(CharStringCommand.COMMAND_CALLOTHERSUBR);
             break;
         case 3:
             // allows hint replacement
@@ -190,8 +188,8 @@ public class Type1CharStringParser
 
         if (!results.isEmpty())
         {
-            LOG.warn("Value left on the PostScript stack in glyph {} of font {}", currentGlyph,
-                    fontName);
+            LOG.warn("Value left on the PostScript stack in glyph " + currentGlyph + " of font "
+                    + fontName);
         }
     }
 

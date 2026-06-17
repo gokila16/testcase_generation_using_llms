@@ -18,8 +18,8 @@ package org.apache.pdfbox.pdmodel.font.encoding;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
@@ -33,7 +33,7 @@ import org.apache.pdfbox.cos.COSNumber;
  */
 public class DictionaryEncoding extends Encoding
 {
-    private static final Logger LOG = LogManager.getLogger(DictionaryEncoding.class);
+    private static final Log LOG = LogFactory.getLog(DictionaryEncoding.class);
 
     private final COSDictionary encoding;
     private final Encoding baseEncoding;

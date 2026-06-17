@@ -68,10 +68,10 @@ public class TiffSchema extends XMPSchema
     @PropertyType(type = Types.Integer, card = Cardinality.Simple)
     public static final String PLANAR_CONFIGURATION = "PlanarConfiguration";
 
-    @PropertyType(type = Types.Integer, card = Cardinality.Seq)
+    @PropertyType(type = Types.Integer, card = Cardinality.Simple)
     public static final String YCB_CR_SUB_SAMPLING = "YCbCrSubSampling";
 
-    @PropertyType(type = Types.Integer, card = Cardinality.Simple)
+    @PropertyType(type = Types.Integer, card = Cardinality.Seq)
     public static final String YCB_CR_POSITIONING = "YCbCrPositioning";
 
     @PropertyType(type = Types.Rational, card = Cardinality.Simple)
@@ -126,7 +126,7 @@ public class TiffSchema extends XMPSchema
      */
     public ProperNameType getArtistProperty()
     {
-        return getPropertyAs(ARTIST, ProperNameType.class);
+        return (ProperNameType) getProperty(ARTIST);
     }
 
     /**
@@ -136,7 +136,7 @@ public class TiffSchema extends XMPSchema
      */
     public String getArtist()
     {
-        ProperNameType tt = getArtistProperty();
+        ProperNameType tt = (ProperNameType) getProperty(ARTIST);
         return tt == null ? null : tt.getStringValue();
     }
 
@@ -157,7 +157,7 @@ public class TiffSchema extends XMPSchema
      */
     public ArrayProperty getImageDescriptionProperty()
     {
-        return getPropertyAs(IMAGE_DESCRIPTION, ArrayProperty.class);
+        return (ArrayProperty) getProperty(IMAGE_DESCRIPTION);
     }
 
     /**
@@ -215,7 +215,7 @@ public class TiffSchema extends XMPSchema
      */
     public ArrayProperty getCopyrightProperty()
     {
-        return getPropertyAs(COPYRIGHT, ArrayProperty.class);
+        return (ArrayProperty) getProperty(COPYRIGHT);
     }
 
     /**

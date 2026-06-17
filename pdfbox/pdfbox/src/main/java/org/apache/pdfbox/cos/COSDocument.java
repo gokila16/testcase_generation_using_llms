@@ -25,8 +25,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.io.RandomAccessStreamCache;
 import org.apache.pdfbox.io.RandomAccessStreamCache.StreamCacheCreateFunction;
@@ -44,7 +44,7 @@ public class COSDocument extends COSBase implements Closeable
     /**
      * Log instance.
      */
-    private static final Logger LOG = LogManager.getLogger(COSDocument.class);
+    private static final Log LOG = LogFactory.getLog(COSDocument.class);
     
     private float version = 1.4f;
 
@@ -150,7 +150,7 @@ public class COSDocument extends COSBase implements Closeable
         catch (IOException exception1)
         {
             LOG.warn(
-                    "An error occurred when creating stream cache. Using memory only cache as fallback.",
+                    "An error occured when creating stream cache. Using memory only cache as fallback.",
                     exception1);
         }
         try
@@ -159,7 +159,7 @@ public class COSDocument extends COSBase implements Closeable
         }
         catch (IOException exception2)
         {
-            LOG.warn("An error occurred when creating stream cache for fallback.", exception2);
+            LOG.warn("An error occured when creating stream cache for fallback.", exception2);
         }
         return null;
     }
@@ -189,7 +189,6 @@ public class COSDocument extends COSBase implements Closeable
      * @return the new COSStream
      * @throws IOException if the random access view can't be read
      */
-    @SuppressWarnings("java:S2095") // RandomAccessReadView is owned by the created COSStream and will be closed 
     public COSStream createCOSStream(COSDictionary dictionary, long startPosition,
             long streamLength) throws IOException
     {
@@ -217,16 +216,13 @@ public class COSDocument extends COSBase implements Closeable
         for (COSObjectKey objectKey : objectKeys)
         {
             COSObject objectFromPool = getObjectFromPool(objectKey);
-            if (objectFromPool != null)
+            COSBase realObject = objectFromPool.getObject();
+            if (realObject instanceof COSDictionary)
             {
-                COSBase realObject = objectFromPool.getObject();
-                if (realObject instanceof COSDictionary)
+                COSDictionary dic = (COSDictionary) realObject;
+                if (dic.getItem(COSName.LINEARIZED) != null)
                 {
-                    COSDictionary dic = (COSDictionary) realObject;
-                    if (dic.getItem(COSName.LINEARIZED) != null)
-                    {
-                        return dic;
-                    }
+                    return dic;
                 }
             }
         }
@@ -274,16 +270,13 @@ public class COSDocument extends COSBase implements Closeable
         for (COSObjectKey objectKey : keys)
         {
             COSObject objectFromPool = getObjectFromPool(objectKey);
-            if (objectFromPool != null)
+            COSBase realObject = objectFromPool.getObject();
+            if (realObject instanceof COSDictionary)
             {
-                COSBase realObject = objectFromPool.getObject();
-                if (realObject instanceof COSDictionary)
+                COSName dictType = ((COSDictionary) realObject).getCOSName(COSName.TYPE);
+                if (type1.equals(dictType) || (type2 != null && type2.equals(dictType)))
                 {
-                    COSName dictType = ((COSDictionary) realObject).getCOSName(COSName.TYPE);
-                    if (type1.equals(dictType) || (type2 != null && type2.equals(dictType)))
-                    {
-                        retval.add(objectFromPool);
-                    }
+                    retval.add(objectFromPool);
                 }
             }
         }

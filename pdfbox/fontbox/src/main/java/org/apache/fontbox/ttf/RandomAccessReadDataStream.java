@@ -19,10 +19,10 @@ package org.apache.fontbox.ttf;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.io.RandomAccessRead;
 import org.apache.pdfbox.io.RandomAccessReadBuffer;
 
@@ -33,7 +33,7 @@ import org.apache.pdfbox.io.RandomAccessReadBuffer;
  */
 class RandomAccessReadDataStream extends TTFDataStream
 {
-    private static final Logger LOG = LogManager.getLogger(RandomAccessReadDataStream.class);
+    private static final Log LOG = LogFactory.getLog(RandomAccessReadDataStream.class);
 
     private final long length;
     private final byte[] data;
@@ -73,7 +73,7 @@ class RandomAccessReadDataStream extends TTFDataStream
      */
     RandomAccessReadDataStream(InputStream inputStream) throws IOException
     {
-        data = inputStream.readAllBytes();
+        data = IOUtils.toByteArray(inputStream);
         length = data.length;
     }
 
@@ -185,13 +185,11 @@ class RandomAccessReadDataStream extends TTFDataStream
     }
 
     @Override
-    @SuppressWarnings("java:S2095") // buffer is intentionally not closed, must remain alive for the lifetime of the view
     public RandomAccessRead createSubView(long length)
     {
         try
         {
-            RandomAccessReadBuffer buffer = new RandomAccessReadBuffer(data);
-            return buffer.createView(currentPosition, length);
+            return new RandomAccessReadBuffer(data).createView(currentPosition, length);
         }
         catch (IOException e)
         {

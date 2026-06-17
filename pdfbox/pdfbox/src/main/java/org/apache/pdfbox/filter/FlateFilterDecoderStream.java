@@ -23,8 +23,8 @@ import java.util.Arrays;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * Stream based decoder for the flate filter which uses zlib/deflate compression.
@@ -35,14 +35,14 @@ import org.apache.logging.log4j.Logger;
  */
 public final class FlateFilterDecoderStream extends FilterInputStream
 {
-    private static final Logger LOG = LogManager.getLogger(FlateFilterDecoderStream.class);
+    private static final Log LOG = LogFactory.getLog(FlateFilterDecoderStream.class);
 
     private boolean isEOF = false;
     private int currentDataIndex = 0;
     private int bytesDecoded = 0;
 
-    private final byte[] buffer = new byte[2048];
-    private final byte[] decodedData = new byte[4096];
+    private byte[] buffer = new byte[2048];
+    private byte[] decodedData = new byte[4096];
     // use nowrap mode to bypass zlib-header and checksum to avoid a DataFormatException
     private final Inflater inflater = new Inflater(true);
 
@@ -108,8 +108,8 @@ public final class FlateFilterDecoderStream extends FilterInputStream
             }
             bytesDecoded = decodedData.length - countZeros;
             // don't throw an exception, use the already read data or an empty stream
-            LOG.warn("FlateFilter: premature end of stream due to a DataFormatException = {}",
-                    exception.getMessage());
+            LOG.warn("FlateFilter: premature end of stream due to a DataFormatException = "
+                    + exception.getMessage());
             return bytesDecoded > 0;
         }
         return true;

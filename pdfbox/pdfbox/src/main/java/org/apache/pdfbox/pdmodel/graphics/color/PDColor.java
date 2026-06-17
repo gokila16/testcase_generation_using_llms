@@ -22,8 +22,8 @@ import org.apache.pdfbox.cos.COSNumber;
 
 import java.io.IOException;
 import java.util.Arrays;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSBase;
 
 /**
@@ -37,7 +37,7 @@ import org.apache.pdfbox.cos.COSBase;
  */
 public final class PDColor
 {
-    private static final Logger LOG = LogManager.getLogger(PDColor.class);
+    private static final Log LOG = LogFactory.getLog(PDColor.class);
 
     private final float[] components;
     private final COSName patternName;
@@ -50,7 +50,7 @@ public final class PDColor
      */
     public PDColor(COSArray array, PDColorSpace colorSpace)
     {
-        if (!array.isEmpty() && array.get(array.size() - 1) instanceof COSName)
+        if (array.size() > 0 && array.get(array.size() - 1) instanceof COSName)
         {
             // color components (optional), for the color of an uncoloured tiling pattern
             components = new float[array.size() - 1];
@@ -64,7 +64,7 @@ public final class PDColor
             }
             else
             {
-                LOG.warn("pattern name in {} isn't a name, ignored", array);
+                LOG.warn("pattern name in " + array + " isn't a name, ignored");
                 patternName = COSName.getPDFName("Unknown");
             }
         }
@@ -89,7 +89,7 @@ public final class PDColor
             }
             else
             {
-                LOG.warn("color component {} in {} isn't a number, ignored", i, array);
+                LOG.warn("color component " + i + " in " + array + " isn't a number, ignored");
             }
         }
     }
@@ -107,9 +107,8 @@ public final class PDColor
         if (colorSpace != null && colorSpace.getNumberOfComponents() != components.length)
         {
             // PDFBOX-5882
-            LOG.warn("Colorspace component count {} doesn't match components length {}",
-                    colorSpace.getNumberOfComponents(),
-                    components.length);
+            LOG.warn("Colorspace component count " + colorSpace.getNumberOfComponents() +
+                    " doesn't match components length " + components.length);
         }
     }
 
@@ -142,8 +141,8 @@ public final class PDColor
             if (ucs != null && ucs.getNumberOfComponents() != components.length)
             {
                 // PDFBOX-5882
-                LOG.warn("Pattern colorspace component count {} doesn't match components length {}",
-                        ucs.getNumberOfComponents(), components.length);
+                LOG.warn("Pattern colorspace component count " + ucs.getNumberOfComponents() +
+                        " doesn't match components length " + components.length);
             }
         }
     }
@@ -207,7 +206,8 @@ public final class PDColor
      */
     public COSArray toCOSArray()
     {
-        COSArray array = COSArray.of(components);
+        COSArray array = new COSArray();
+        array.setFloatArray(components);
         if (patternName != null)
         {
             array.add(patternName);

@@ -18,12 +18,10 @@ package org.apache.pdfbox.pdfparser;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.contentstream.PDContentStream;
 import org.apache.pdfbox.contentstream.operator.Operator;
 import org.apache.pdfbox.contentstream.operator.OperatorName;
@@ -40,20 +38,15 @@ import org.apache.pdfbox.io.RandomAccessReadBuffer;
  *
  * @author Ben Litchfield
  */
-public class PDFStreamParser extends COSParser
+public class PDFStreamParser extends BaseParser
 {
     /**
      * Log instance.
      */
-    private static final Logger LOG = LogManager.getLogger(PDFStreamParser.class);
+    private static final Log LOG = LogFactory.getLog(PDFStreamParser.class);
 
-    // Pattern to match numbers (integers or decimals). Safe from ReDoS: no overlapping quantifiers
-    // or character classes that cause backtracking. The optional decimal group is explicit and bounded.
-    private static final Pattern NUMBER_PATTERN = Pattern.compile("^\\d*(\\.\\d*)?$");
     private static final int MAX_BIN_CHAR_TEST_LENGTH = 10;
     private final byte[] binCharTestArr = new byte[MAX_BIN_CHAR_TEST_LENGTH];
-    private int inlineImageDepth = 0;
-    private long inlineOffset = 0;
     
     /**
      * Constructor.
@@ -70,9 +63,8 @@ public class PDFStreamParser extends COSParser
      * Constructor.
      *
      * @param bytes the bytes to parse.
-     * @throws IOException If there is an error initializing the stream.
      */
-    public PDFStreamParser(byte[] bytes) throws IOException
+    public PDFStreamParser(byte[] bytes)
     {
         super(new RandomAccessReadBuffer(bytes));
     }
@@ -119,28 +111,30 @@ public class PDFStreamParser extends COSParser
             case '<':
                 // pull off first left bracket
                 source.read();
+
                 // check for second left bracket
                 c = (char) source.peek();
 
+                // put back first bracket
+                source.rewind(1);
+
                 if (c == '<')
                 {
-                    // put back first bracket
-                    source.rewind(1);
                     try
                     {
                         return parseCOSDictionary(true);
                     }
                     catch (IOException exception)
                     {
-                        LOG.warn("Stop reading invalid dictionary from content stream at offset {}",
-                                source.getPosition());
+                        LOG.warn("Stop reading invalid dictionary from content stream at offset "
+                                + source.getPosition());
                         close();
                         return null;
                     }
                 }
                 else
                 {
-                    return parseCOSHexString();
+                    return parseCOSString();
                 }
             case '[':
                 // array
@@ -150,14 +144,14 @@ public class PDFStreamParser extends COSParser
                 }
                 catch (IOException exception)
                 {
-                    LOG.warn("Stop reading invalid array from content stream at offset {}",
-                            source.getPosition());
+                    LOG.warn("Stop reading invalid array from content stream at offset "
+                            + source.getPosition());
                     close();
                     return null;
                 }
             case '(':
                 // string
-                return parseCOSLiteralString();
+                return parseCOSString();
             case '/':
                 // name
                 return parseCOSName();
@@ -241,17 +235,6 @@ public class PDFStreamParser extends COSParser
                 Operator beginImageOP = Operator.getOperator(nextOperator);
                 if (nextOperator.equals(OperatorName.BEGIN_INLINE_IMAGE))
                 {
-                    inlineImageDepth++;
-                    if (inlineImageDepth > 1)
-                    {
-                        // PDFBOX-6038
-                        throw new IOException("Nested '" + OperatorName.BEGIN_INLINE_IMAGE +
-                                "' operator not allowed at offset " + source.getPosition() + ", first: " + inlineOffset);
-                    }
-                    else
-                    {
-                        inlineOffset = source.getPosition();
-                    }
                     COSDictionary imageParams = new COSDictionary();
                     beginImageOP.setImageParameters( imageParams );
                     Object nextToken = null;
@@ -260,8 +243,8 @@ public class PDFStreamParser extends COSParser
                         Object value = parseNextToken();
                         if (!(value instanceof COSBase))
                         {
-                            LOG.warn("Unexpected token in inline image dictionary at offset {}",
-                                    source.isClosed() ? "EOF" : source.getPosition());
+                            LOG.warn("Unexpected token in inline image dictionary at offset " +
+                                    (source.isClosed() ? "EOF" : source.getPosition()));
                             break;
                         }
                         imageParams.setItem( (COSName)nextToken, (COSBase)value );
@@ -272,17 +255,9 @@ public class PDFStreamParser extends COSParser
                         Operator imageData = (Operator) nextToken;
                         if (imageData.getImageData() == null || imageData.getImageData().length == 0)
                         {
-                            LOG.warn("empty inline image at stream offset {}",
-                                    (source.isClosed() ? "EOF" : source.getPosition()));
+                            LOG.warn("empty inline image at stream offset " + source.getPosition());
                         }
                         beginImageOP.setImageData(imageData.getImageData());
-                        inlineImageDepth--;
-                    }
-                    else
-                    {
-                        LOG.warn("nextToken {} at position {}, expected {}?!", 
-                                nextToken, (source.isClosed() ? "EOF" : source.getPosition()), 
-                                OperatorName.BEGIN_INLINE_IMAGE_DATA);
                     }
                 }
                 return beginImageOP;
@@ -297,10 +272,9 @@ public class PDFStreamParser extends COSParser
                             "' at stream offset " + currentPosition);
                 }
                 ByteArrayOutputStream imageData = new ByteArrayOutputStream();
-                // skip one line break (CR, LF or CRLF) or any one-byte whitespace
-                if (!skipLinebreak() && isWhitespace())
+                if( isWhitespace() )
                 {
-                    // pull off the whitespace character
+                    //pull off the whitespace character
                     source.read();
                 }
                 int lastByte = source.read();
@@ -335,7 +309,7 @@ public class PDFStreamParser extends COSParser
             default:
                 // we must be an operator
                 String operator = readOperator().trim();
-                if (!operator.isEmpty())
+                if (operator.length() > 0)
                 {
                     return Operator.getOperator(operator);
                 }
@@ -359,8 +333,6 @@ public class PDFStreamParser extends COSParser
         int startOpIdx = -1;
         int endOpIdx = -1;
         String s = "";
-
-        LOG.debug("String after EI: '{}'", () -> new String(binCharTestArr, StandardCharsets.US_ASCII));
 
         if (readBytes > 0)
         {
@@ -390,11 +362,11 @@ public class PDFStreamParser extends COSParser
             {
                 // usually, the operator here is Q, sometimes EMC (PDFBOX-2376), S (PDFBOX-3784),
                 // or a number (PDFBOX-5957)
-                s = new String(binCharTestArr, startOpIdx, endOpIdx - startOpIdx, StandardCharsets.US_ASCII);
+                s = new String(binCharTestArr, startOpIdx, endOpIdx - startOpIdx);
                 if (!"Q".equals(s) && !"EMC".equals(s) && !"S".equals(s) &&
-                    !NUMBER_PATTERN.matcher(s).find())
+                    !s.matches("^\\d*\\.?\\d*$"))
                 {
-                    // operator is not Q, not EMC, not S, nor a number -> assume binary data
+                    // operator is not Q, not EMC, not S, nur a number -> assume binary data
                     noBinData = false;
                 }
             }
@@ -405,11 +377,10 @@ public class PDFStreamParser extends COSParser
                 if (endOpIdx == -1)
                 {
                     endOpIdx = MAX_BIN_CHAR_TEST_LENGTH;
-                    s = new String(binCharTestArr, startOpIdx, endOpIdx - startOpIdx, StandardCharsets.US_ASCII);
+                    s = new String(binCharTestArr, startOpIdx, endOpIdx - startOpIdx);
                 }
-                LOG.debug("startOpIdx: {} endOpIdx: {} s = '{}'", startOpIdx, endOpIdx, s);
                 // look for token of 3 chars max or a number
-                if (endOpIdx - startOpIdx > 3 && !NUMBER_PATTERN.matcher(s).find())
+                if (endOpIdx - startOpIdx > 3 && !s.matches("^\\d*\\.?\\d*$"))
                 {
                     noBinData = false; // "operator" too long, assume binary data
                 }
@@ -418,9 +389,8 @@ public class PDFStreamParser extends COSParser
         }
         if (!noBinData)
         {
-            LOG.warn(
-                    "ignoring 'EI' assumed to be in the middle of inline image at stream offset {}, s = '{}'",
-                    source.getPosition(), s);
+            LOG.warn("ignoring 'EI' assumed to be in the middle of inline image at stream offset " + 
+                    source.getPosition() + ", s = '" + s + "'");
         }
         return noBinData;
     }
@@ -443,6 +413,7 @@ public class PDFStreamParser extends COSParser
         while(
             nextChar != -1 && // EOF
             !isWhitespace(nextChar) &&
+            !isClosing(nextChar) &&
             nextChar != '[' &&
             nextChar != '<' &&
             nextChar != '(' &&

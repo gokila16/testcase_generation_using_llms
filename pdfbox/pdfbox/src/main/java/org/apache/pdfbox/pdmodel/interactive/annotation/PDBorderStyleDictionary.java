@@ -145,7 +145,7 @@ public class PDBorderStyleDictionary implements COSObjectable
     /**
      * This will retrieve the border style, see the STYLE_* constants for valid values.
      *
-     * @return the style of the border, never null.
+     * @return the style of the border
      */
     public String getStyle()
     {

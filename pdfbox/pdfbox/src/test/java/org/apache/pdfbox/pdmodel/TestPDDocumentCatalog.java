@@ -18,7 +18,6 @@ package org.apache.pdfbox.pdmodel;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.pdfbox.Loader;
@@ -165,19 +164,4 @@ class TestPDDocumentCatalog
             assertNull(doc.getDocumentCatalog().getOpenAction());
         }
     }
-    
-    @Test
-    void testNullThreads() throws IOException
-    {
-        // PDFBOX-6186
-        try (PDDocument doc = new PDDocument())
-        {
-            PDDocumentCatalog documentCatalog = doc.getDocumentCatalog();
-            assertEquals(0, documentCatalog.getThreads().size());
-            documentCatalog.setThreads(new ArrayList<>());
-            assertEquals(0, documentCatalog.getThreads().size());
-            documentCatalog.setThreads(null);
-            assertEquals(0, documentCatalog.getThreads().size());
-        }
-   }
 }

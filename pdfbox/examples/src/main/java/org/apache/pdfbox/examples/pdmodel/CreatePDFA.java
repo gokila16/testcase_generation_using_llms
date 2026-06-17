@@ -77,8 +77,8 @@ public final class CreatePDFA
             // 
             if (!font.isEmbedded())
             {
-                throw new IllegalStateException("PDF/A compliance requires that all fonts used for"
-                        + " text rendering in rendering modes other than rendering mode 3 are embedded.");
+            	throw new IllegalStateException("PDF/A compliance requires that all fonts used for"
+            			+ " text rendering in rendering modes other than rendering mode 3 are embedded.");
             }
             
             // create a page with the message
@@ -118,12 +118,9 @@ public final class CreatePDFA
             }
 
             // sRGB output intent
-            PDOutputIntent intent;
-            try (InputStream colorProfile = CreatePDFA.class.getResourceAsStream(
-                            "/org/apache/pdfbox/resources/pdfa/sRGB.icc"))
-            {
-                intent = new PDOutputIntent(doc, colorProfile);
-            }
+            InputStream colorProfile = CreatePDFA.class.getResourceAsStream(
+                    "/org/apache/pdfbox/resources/pdfa/sRGB.icc");
+            PDOutputIntent intent = new PDOutputIntent(doc, colorProfile);
             intent.setInfo("sRGB IEC61966-2.1");
             intent.setOutputCondition("sRGB IEC61966-2.1");
             intent.setOutputConditionIdentifier("sRGB IEC61966-2.1");

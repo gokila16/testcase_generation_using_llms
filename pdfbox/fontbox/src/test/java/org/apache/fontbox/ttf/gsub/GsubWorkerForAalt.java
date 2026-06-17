@@ -22,11 +22,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import org.apache.fontbox.ttf.CmapLookup;
 import org.apache.fontbox.ttf.model.GsubData;
 import org.apache.fontbox.ttf.model.ScriptFeature;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * 
@@ -38,14 +40,16 @@ import org.apache.logging.log4j.Logger;
  */
 public class GsubWorkerForAalt implements GsubWorker
 {
-    private static final Logger LOG = LogManager.getLogger(GsubWorkerForAalt.class);
+    private static final Log LOG = LogFactory.getLog(GsubWorkerForAalt.class);
 
     private static final List<String> FEATURES_IN_ORDER = Arrays.asList("aalt");
 
+    private final CmapLookup cmapLookup;
     private final GsubData gsubData;
 
-    GsubWorkerForAalt(GsubData gsubData)
+    GsubWorkerForAalt(CmapLookup cmapLookup, GsubData gsubData)
     {
+        this.cmapLookup = cmapLookup;
         this.gsubData = gsubData;
     }
 
@@ -58,11 +62,11 @@ public class GsubWorkerForAalt implements GsubWorker
         {
             if (!gsubData.isFeatureSupported(feature))
             {
-                LOG.debug("the feature {} was not found", feature);
+                LOG.debug("the feature " + feature + " was not found");
                 continue;
             }
 
-            LOG.debug("applying the feature {}", feature);
+            LOG.debug("applying the feature " + feature);
 
             ScriptFeature scriptFeature = gsubData.getFeature(feature);
 
@@ -78,8 +82,7 @@ public class GsubWorkerForAalt implements GsubWorker
     {
         if (scriptFeature.getAllGlyphIdsForSubstitution().isEmpty())
         {
-            LOG.debug("getAllGlyphIdsForSubstitution() for {} is empty",
-                        scriptFeature.getName());
+            LOG.debug("getAllGlyphIdsForSubstitution() for " + scriptFeature.getName() + " is empty");
             return originalGlyphs;
         }
         
@@ -94,8 +97,8 @@ public class GsubWorkerForAalt implements GsubWorker
             if (scriptFeature.canReplaceGlyphs(chunk))
             {
                 // gsub system kicks in, you get the glyphId directly
-                List<Integer> replacementForGlyphs = scriptFeature.getReplacementForGlyphs(chunk);
-                gsubProcessedGlyphs.addAll(replacementForGlyphs);
+                int glyphId = scriptFeature.getReplacementForGlyphs(chunk);
+                gsubProcessedGlyphs.add(glyphId);
             }
             else
             {
@@ -103,7 +106,8 @@ public class GsubWorkerForAalt implements GsubWorker
             }
         }
 
-        LOG.debug("originalGlyphs: {}, gsubProcessedGlyphs: {}", originalGlyphs, gsubProcessedGlyphs);
+        LOG.debug("originalGlyphs: " + originalGlyphs + ", gsubProcessedGlyphs: "
+                + gsubProcessedGlyphs);
 
         return gsubProcessedGlyphs;
     }

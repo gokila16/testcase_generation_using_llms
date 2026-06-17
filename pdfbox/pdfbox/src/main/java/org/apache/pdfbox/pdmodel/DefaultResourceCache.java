@@ -25,9 +25,7 @@ import java.util.Set;
 
 import org.apache.pdfbox.cos.COSObject;
 import org.apache.pdfbox.pdmodel.documentinterchange.markedcontent.PDPropertyList;
-import org.apache.pdfbox.pdmodel.font.PDCIDFont;
 import org.apache.pdfbox.pdmodel.font.PDFont;
-import org.apache.pdfbox.pdmodel.font.PDFontDescriptor;
 import org.apache.pdfbox.pdmodel.graphics.PDXObject;
 import org.apache.pdfbox.pdmodel.graphics.color.PDColorSpace;
 import org.apache.pdfbox.pdmodel.graphics.pattern.PDAbstractPattern;
@@ -37,13 +35,13 @@ import org.apache.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState;
 /**
  * A resource cached based on SoftReference, retains resources until memory pressure causes them to be garbage
  * collected.
- * 
+ *
  * Cached resources may be removed pro actively.
  * 
  * Resources which are removed and added several times, can't be removed after hitting the threshold of
  * {@value #maxRemovals}. This may happen if resources are shared among several pages. This kind of stable caching is
  * enabled by default and can be deactivated.
- *
+ * 
  * @author John Hewson
  */
 public class DefaultResourceCache implements ResourceCache
@@ -56,11 +54,7 @@ public class DefaultResourceCache implements ResourceCache
             new HashMap<>();
     private final Map<Long, Integer> removedFonts = new HashMap<>();
     private final Set<Long> stableFonts = new HashSet<>();
-
-    private final Map<COSObject, SoftReference<PDCIDFont>> cidFonts = new HashMap<>();
-
-    private final Map<COSObject, SoftReference<PDFontDescriptor>> fontDescriptors = new HashMap<>();
-
+    
     private final Map<COSObject, SoftReference<PDColorSpace>> colorSpaces =
             new HashMap<>();
     private final Map<Long, Integer> removedColorSpaces = new HashMap<>();
@@ -114,7 +108,11 @@ public class DefaultResourceCache implements ResourceCache
     public PDFont getFont(COSObject indirect)
     {
         SoftReference<PDFont> font = fonts.get(indirect);
-        return font != null ? font.get() : null;
+        if (font != null)
+        {
+            return font.get();
+        }
+        return null;
     }
 
     @Override
@@ -151,62 +149,14 @@ public class DefaultResourceCache implements ResourceCache
     }
 
     @Override
-    public PDCIDFont getCIDFont(COSObject indirect)
-    {
-        SoftReference<PDCIDFont> font = cidFonts.get(indirect);
-        return font != null ? font.get() : null;
-    }
-
-    @Override
-    public void put(COSObject indirect, PDCIDFont font)
-    {
-        cidFonts.put(indirect, new SoftReference<>(font));
-    }
-
-    @Override
-    public PDCIDFont removeCIDFont(COSObject indirect)
-    {
-        if (cidFonts.isEmpty())
-        {
-            return null;
-        }
-        SoftReference<PDCIDFont> font = cidFonts.remove(indirect);
-        return font != null ? font.get() : null;
-    }
-
-    @Override
-    public PDFontDescriptor getFontDescriptor(COSObject indirect)
-    {
-        if (fontDescriptors.isEmpty())
-        {
-            return null;
-        }
-        SoftReference<PDFontDescriptor> fontDescriptor = fontDescriptors.get(indirect);
-        return fontDescriptor != null ? fontDescriptor.get() : null;
-    }
-
-    @Override
-    public void put(COSObject indirect, PDFontDescriptor fontDescriptor)
-    {
-        fontDescriptors.put(indirect, new SoftReference<>(fontDescriptor));
-    }
-
-    @Override
-    public PDFontDescriptor removeFontDescriptor(COSObject indirect)
-    {
-        if (fontDescriptors.isEmpty())
-        {
-            return null;
-        }
-        SoftReference<PDFontDescriptor> font = fontDescriptors.remove(indirect);
-        return font != null ? font.get() : null;
-    }
-
-    @Override
     public PDColorSpace getColorSpace(COSObject indirect)
     {
         SoftReference<PDColorSpace> colorSpace = colorSpaces.get(indirect);
-        return colorSpace != null ? colorSpace.get() : null;
+        if (colorSpace != null)
+        {
+            return colorSpace.get();
+        }
+        return null;
     }
 
     @Override
@@ -246,7 +196,11 @@ public class DefaultResourceCache implements ResourceCache
     public PDExtendedGraphicsState getExtGState(COSObject indirect)
     {
         SoftReference<PDExtendedGraphicsState> extGState = extGStates.get(indirect);
-        return extGState != null ? extGState.get() : null;
+        if (extGState != null)
+        {
+            return extGState.get();
+        }
+        return null;
     }
 
     @Override
@@ -286,7 +240,11 @@ public class DefaultResourceCache implements ResourceCache
     public PDShading getShading(COSObject indirect)
     {
         SoftReference<PDShading> shading = shadings.get(indirect);
-        return shading != null ? shading.get() : null;
+        if (shading != null)
+        {
+            return shading.get();
+        }
+        return null;
     }
 
     @Override
@@ -326,7 +284,11 @@ public class DefaultResourceCache implements ResourceCache
     public PDAbstractPattern getPattern(COSObject indirect)
     {
         SoftReference<PDAbstractPattern> pattern = patterns.get(indirect);
-        return pattern != null ? pattern.get() : null;
+        if (pattern != null)
+        {
+            return pattern.get();
+        }
+        return null;
     }
 
     @Override
@@ -366,7 +328,11 @@ public class DefaultResourceCache implements ResourceCache
     public PDPropertyList getProperties(COSObject indirect)
     {
         SoftReference<PDPropertyList> propertyList = properties.get(indirect);
-        return propertyList != null ? propertyList.get() : null;
+        if (propertyList != null)
+        {
+            return propertyList.get();
+        }
+        return null;
     }
 
     @Override
@@ -406,7 +372,11 @@ public class DefaultResourceCache implements ResourceCache
     public PDXObject getXObject(COSObject indirect)
     {
         SoftReference<PDXObject> xobject = xobjects.get(indirect);
-        return xobject != null ? xobject.get() : null;
+        if (xobject != null)
+        {
+            return xobject.get();
+        }
+        return null;
     }
 
     @Override

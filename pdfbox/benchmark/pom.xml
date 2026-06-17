@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.apache.pdfbox</groupId>
         <artifactId>pdfbox-parent</artifactId>
-        <version>4.0.0-SNAPSHOT</version>
+        <version>3.0.0-SNAPSHOT</version>
         <relativePath>../parent/pom.xml</relativePath>
     </parent>
 
@@ -37,11 +37,11 @@
       </description>
     <inceptionYear>2002</inceptionYear>
 
-	<scm>
-		<connection>scm:svn:https://svn.apache.org/repos/asf/pdfbox/trunk/benchmark</connection>
-		<developerConnection>scm:svn:https://svn.apache.org/repos/asf/pdfbox/trunk/benchmark</developerConnection>
-		<url>https://svn.apache.org/viewvc/pdfbox/trunk/benchmark</url>
-	</scm>
+  <scm>
+      <connection>scm:svn:https://svn.apache.org/repos/asf/pdfbox/branches/3.0/benchmark</connection>
+      <developerConnection>scm:svn:https://svn.apache.org/repos/asf/pdfbox/branches/3.0/benchmark</developerConnection>
+      <url>https://svn.apache.org/viewvc/pdfbox/branches/3.0/benchmark</url>
+  </scm>
 
     <dependencies>
         <dependency>
@@ -55,16 +55,11 @@
             <version>${jmh.version}</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>pdfbox</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-            <scope>runtime</scope>
-        </dependency>
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>pdfbox</artifactId>
+			<version>${project.version}</version>
+		</dependency>
     </dependencies>
 
     <properties>
@@ -78,6 +73,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.0</version>
                 <executions>
                     <execution>
                         <phase>package</phase>

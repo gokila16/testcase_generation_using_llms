@@ -18,7 +18,6 @@ package org.apache.pdfbox.pdmodel.fdf;
 
 import java.awt.Color;
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSDictionary;
@@ -81,8 +80,16 @@ public class FDFAnnotationLine extends FDFAnnotation
             throw new IOException("Error: missing attribute 'end'");
         }
         String line = startCoords + "," + endCoords;
-        float[] values = parseRectangleAttributes(
-                line, "Error: wrong amount of line coordinates");
+        String[] lineValues = line.split(",");
+        if (lineValues.length != 4)
+        {
+            throw new IOException("Error: wrong amount of line coordinates");
+        }
+        float[] values = new float[4];
+        for (int i = 0; i < 4; i++)
+        {
+            values[i] = Float.parseFloat(lineValues[i]);
+        }
         setLine(values);
 
         String leaderLine = element.getAttribute("leaderLength");
@@ -153,7 +160,9 @@ public class FDFAnnotationLine extends FDFAnnotation
      */
     public final void setLine(float[] line)
     {
-        annot.setItem(COSName.L, COSArray.of(line));
+        COSArray newLine = new COSArray();
+        newLine.setFloatArray(line);
+        annot.setItem(COSName.L, newLine);
     }
 
     /**
@@ -178,10 +187,9 @@ public class FDFAnnotationLine extends FDFAnnotation
         COSArray array = annot.getCOSArray(COSName.LE);
         if (array == null)
         {
-            array = new COSArray(Arrays.asList(
-                COSName.getPDFName(actualStyle),
-                COSName.getPDFName(PDAnnotationLine.LE_NONE)
-            ));
+            array = new COSArray();
+            array.add(COSName.getPDFName(actualStyle));
+            array.add(COSName.getPDFName(PDAnnotationLine.LE_NONE));
             annot.setItem(COSName.LE, array);
         }
         else
@@ -212,10 +220,9 @@ public class FDFAnnotationLine extends FDFAnnotation
         COSArray array = annot.getCOSArray(COSName.LE);
         if (array == null)
         {
-            array = new COSArray(Arrays.asList(
-                COSName.getPDFName(PDAnnotationLine.LE_NONE),
-                COSName.getPDFName(actualStyle)
-            ));
+            array = new COSArray();
+            array.add(COSName.getPDFName(PDAnnotationLine.LE_NONE));
+            array.add(COSName.getPDFName(actualStyle));
             annot.setItem(COSName.LE, array);
         }
         else
@@ -245,7 +252,9 @@ public class FDFAnnotationLine extends FDFAnnotation
         COSArray array = null;
         if (color != null)
         {
-            array = COSArray.of(color.getRGBColorComponents(null));
+            float[] colors = color.getRGBColorComponents(null);
+            array = new COSArray();
+            array.setFloatArray(colors);
         }
         annot.setItem(COSName.IC, array);
     }
@@ -257,7 +266,17 @@ public class FDFAnnotationLine extends FDFAnnotation
      */
     public Color getInteriorColor()
     {
-        return getColor(COSName.IC);
+        Color retval = null;
+        COSArray array = annot.getCOSArray(COSName.IC);
+        if (array != null)
+        {
+            float[] rgb = array.toFloatArray();
+            if (rgb.length >= 3)
+            {
+                retval = new Color(rgb[0], rgb[1], rgb[2]);
+            }
+        }
+        return retval;
     }
 
     /**
@@ -370,7 +389,8 @@ public class FDFAnnotationLine extends FDFAnnotation
         COSArray array = annot.getCOSArray(COSName.CO);
         if (array == null)
         {
-            array = COSArray.of(offset, 0.f);
+            array = new COSArray();
+            array.setFloatArray(new float[] { offset, 0.f });
             annot.setItem(COSName.CO, array);
         }
         else
@@ -400,7 +420,9 @@ public class FDFAnnotationLine extends FDFAnnotation
         COSArray array = annot.getCOSArray(COSName.CO);
         if (array == null)
         {
-            annot.setItem(COSName.CO, COSArray.of(0.f, offset));
+            array = new COSArray();
+            array.setFloatArray(new float[] { 0.f, offset });
+            annot.setItem(COSName.CO, array);
         }
         else
         {
