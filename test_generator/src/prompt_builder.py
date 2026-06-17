@@ -554,9 +554,9 @@ PLANNED IMPORTS (only what YOUR test methods actually need — not everything fr
 
 TEST METHODS (one test per path — every path must be tested):
 Naming convention (preferred, not required): <whatIsBeingTested>_<condition>_<expectedOutcome>
-  Examples: loadFDF_nullFile_throwsIllegalArgumentException
-            loadFDF_validResource_returnsParsedDocument
-            getPassword_emptyName_returnsEmptyString
+  Examples: parse_invalidJson_throwsSchemaParseException
+            parse_validJson_returnsRecordSchema
+            getField_unknownName_returnsNull
 A descriptive name is the test's documentation — if the name is good, almost no comments are needed.
 
 1. <camelCaseTestName>
@@ -702,15 +702,15 @@ translate each test into compilable code — not to re-derive or second-guess th
 === COMMENTS & NAMING ===
 The test method name IS the documentation. A descriptive name removes the need for comments.
 Preferred pattern (not required): <whatIsBeingTested>_<condition>_<expectedOutcome>
-  e.g. loadFDF_nullFile_throwsIllegalArgumentException
-       getPassword_emptyName_returnsEmptyString
+  e.g. parse_invalidJson_throwsSchemaParseException
+       getField_unknownName_returnsNull
 
 Comment rules — keep them MINIMAL and PURPOSEFUL:
 - DO NOT write comments that restate what the next line of code does.
   BAD:  // Construct the input file
         File f = new File(...);
   BAD:  // Call the method under test
-        FDFDocument result = Loader.loadFDF(f);
+        Schema result = new Schema.Parser().parse(json);
   BAD:  // Assert the expected exception is thrown
         assertThrows(IOException.class, () -> ...);
 - DO NOT write Javadoc, @author tags, file headers, "Test class for X" headers,
@@ -719,10 +719,10 @@ Comment rules — keep them MINIMAL and PURPOSEFUL:
 
 When a comment IS warranted (only these four cases):
 1. Non-obvious setup — explain WHY a value is constructed this way if it isn't clear.
-   e.g. // password is "" because the file uses an owner password, not a user password
+   e.g. // namespace is null here because the schema was declared without one
 2. Non-obvious expected value — explain WHY the expected value is what it is, when
    the value itself doesn't make that clear.
-   e.g. // expected 7 pages: cweb.pdf has 8 pages but page 0 is the cover (excluded)
+   e.g. // expected 2 fields: the record declares "id" and "name" (the alias is not a field)
 3. Intentionally surprising input — flag inputs chosen to expose a known edge case.
    e.g. // Integer.MIN_VALUE: triggers the overflow path in the size calculation
 4. Workaround for a real constraint — e.g. why a try/catch is needed, why a value is cast.

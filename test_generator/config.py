@@ -16,9 +16,19 @@ load_dotenv(os.path.join(REPO_ROOT, '.env'))
 # ============================================
 # PATHS
 # ============================================
-PDFBOX_REPO = os.path.join(REPO_ROOT, 'pdfbox')          # multi-module Maven repo root (bundled)
-PDFBOX_DIR  = os.path.join(PDFBOX_REPO, 'pdfbox')        # the actual pdfbox Maven module
-INPUTS_DIR  = os.path.join(REPO_ROOT, 'inputs')          # bundled precomputed inputs
+# --- AVRO PORT ---------------------------------------------------------------
+# Retargeted from the bundled PDFBox module to the Apache Avro 1.12.1 core Maven
+# module (avro/lang/java/avro), which builds and runs tests as-is (verified:
+# `mvn surefire:test` -> BUILD SUCCESS). Set AVRO_MODULE_DIR in .env (machine-
+# specific, git-ignored). Fallback assumes an `avro/` checkout next to this repo.
+# Variable names kept as PDFBOX_* so maven_runner.py / file_manager.py (which
+# read config.PDFBOX_DIR) need no edits.
+_AVRO_MODULE = os.getenv("AVRO_MODULE_DIR") or os.path.join(
+    REPO_ROOT, "avro", "lang", "java", "avro")
+PDFBOX_DIR  = _AVRO_MODULE                       # the avro core Maven module
+PDFBOX_REPO = os.path.dirname(_AVRO_MODULE)      # avro lang/java reactor
+# -----------------------------------------------------------------------------
+INPUTS_DIR  = os.path.join(REPO_ROOT, 'inputs')          # Avro precomputed inputs (Understand-derived)
 
 # Repo-local output location (git-ignored, regenerated on every run)
 OUTPUT_DIR          = os.path.join(REPO_ROOT, 'generated_files', 'v7')

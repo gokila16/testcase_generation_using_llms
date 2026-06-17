@@ -1,3 +1,23 @@
+"""
+java_post_processor.py  —  Avro 1.12.1 copy
+
+Adapted from the PDFBox pipeline
+(test-case-generation-using-llms/test_generator/src/java_post_processor.py).
+
+PORTING CHANGELOG (Avro):
+  - DOCSTRING ONLY: in _collapse_url_variable's "Before:/After:" example, the
+    illustrative resource filename was changed from "file.pdf" to "record.avro"
+    so the documentation reflects an Avro test fixture. This has NO runtime
+    effect — the example is not executed and is not emitted into generated tests.
+  - NO FUNCTIONAL / BEHAVIORAL CHANGES. Every validation and fix
+    (sut_missing, class_redefinition, nested_class_redefinition, no_test_methods,
+    mockito_import, constructor_arity, truncated, trivial_assertions, URL-collapse,
+    URL-import, throws-Exception, package-injection) is project-agnostic and is
+    byte-identical to the PDFBox original. _collapse_url_variable reuses whatever
+    getResource("...") argument the LLM wrote (regex: getResource\\([^)]*\\)), so it
+    already handles .avro/.avsc resources with no change.
+"""
+
 import re
 
 
@@ -280,11 +300,11 @@ def _collapse_url_variable(java_code):
     Handles an optional blank line between the two statements.
 
     Before:
-        URL url = getClass().getClassLoader().getResource("file.pdf");
+        URL url = getClass().getClassLoader().getResource("record.avro");
         File file = new File(url.toURI());
 
     After:
-        File file = new File(getClass().getClassLoader().getResource("file.pdf").toURI());
+        File file = new File(getClass().getClassLoader().getResource("record.avro").toURI());
     """
     def _replace(m):
         get_resource_expr = m.group(2).strip()
