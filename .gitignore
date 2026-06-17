@@ -21,3 +21,9 @@ pdfbox/**/generated_testsgpt5mini_v1/
 # Avro bundled module — build output and pipeline-generated tests
 avro/**/target/
 avro/lang/java/avro/src/test/java/**/*_*_Test.java
+
+# Wicket bundled reactor — build output and pipeline-generated tests
+wicket/**/target/
+wicket/**/generated_tests/
+wicket/wicket-core-tests/generated_testsgpt5mini_v1/
+wicket/wicket-core-tests/src/test/java/**/*_*_Test.java

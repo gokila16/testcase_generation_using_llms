@@ -16,17 +16,29 @@ load_dotenv(os.path.join(REPO_ROOT, '.env'))
 # ============================================
 # PATHS
 # ============================================
-# --- AVRO PORT ---------------------------------------------------------------
-# Retargeted from the bundled PDFBox module to the Apache Avro 1.12.1 core Maven
-# module (avro/lang/java/avro). Set AVRO_MODULE_DIR in .env (machine-specific,
-# git-ignored); fallback assumes an `avro/` checkout next to this repo. Variable
-# names kept as PDFBOX_* so maven_runner.py / file_manager.py need no edits.
-_AVRO_MODULE = os.getenv("AVRO_MODULE_DIR") or os.path.join(
-    REPO_ROOT, "avro", "lang", "java", "avro")
-PDFBOX_DIR  = _AVRO_MODULE                       # the avro core Maven module
-PDFBOX_REPO = os.path.dirname(_AVRO_MODULE)      # avro lang/java reactor
+# --- WICKET PORT -------------------------------------------------------------
+# Retargeted to Apache Wicket 10.9.1. System under test is wicket-core, but
+# generated WicketTester tests COMPILE & RUN in wicket-core-tests (wicket-core
+# does not depend on wicket-tester; wicket-core-tests does). So PDFBOX_DIR points
+# at wicket-core-tests. Set WICKET_MODULE_DIR in .env (machine-specific);
+# fallback is the bundled trimmed reactor. Variable names kept as PDFBOX_* so
+# maven_runner.py / file_manager.py need no edits.
+#
+# NOTE (v1 limitation): v1 reads only extracted_metadata_final.json and has no
+# per-method construction context, so it does NOT receive the explicit
+# WicketTester setup recipes (those live in dependency_chains.json, used by v7).
+# v1 only sees WicketTester/FormTester/TagTester listed in source_file_imports;
+# it must infer the harness usage. Expect weaker component-test quality than v7.
+#
+# Prereq: install wicket deps once so wicket-core-tests resolves them:
+#   cd wicket && mvn install -Dmaven.test.skip=true -Dmaven.javadoc.skip=true \
+#       -pl wicket-tester -am
+_WICKET_MODULE = os.getenv("WICKET_MODULE_DIR") or os.path.join(
+    REPO_ROOT, "wicket", "wicket-core-tests")
+PDFBOX_DIR  = _WICKET_MODULE                      # wicket-core-tests (tests run here)
+PDFBOX_REPO = os.path.dirname(_WICKET_MODULE)     # bundled wicket reactor root
 # -----------------------------------------------------------------------------
-INPUTS_DIR  = os.path.join(REPO_ROOT, 'inputs')          # Avro precomputed inputs (Understand-derived)
+INPUTS_DIR  = os.path.join(REPO_ROOT, 'inputs')          # Wicket precomputed inputs (Understand-derived)
 
 # Repo-local output location (git-ignored, regenerated on every run)
 GENRATED_FILES      = os.path.join(REPO_ROOT, 'generated_files', 'v1')

@@ -1,23 +1,35 @@
-# Test Case Generation using LLMs
+# Test Case Generation using LLMs — Wicket, v1
 
-Automated generation of JUnit unit tests for [Apache PDFBox](https://pdfbox.apache.org/)
-using a Large Language Model with an iterative **prompt-and-repair** loop.
+Automated generation of JUnit unit tests for [Apache Wicket](https://wicket.apache.org/)
+**10.9.1** using a Large Language Model with an iterative **prompt-and-repair** loop.
+This is the **v1** pipeline; the system under test is the `wicket-core` module.
 
 For each public method in the target codebase, the pipeline:
 
 1. Builds a prompt from the method's metadata (signature, Javadoc, body, usage snippets).
 2. Asks the LLM to generate a JUnit test.
-3. Compiles and runs the test against the bundled PDFBox module.
+3. Compiles and runs the test in the `wicket-core-tests` module (WicketTester on classpath).
 4. If compilation or the test fails, feeds the error back to the LLM and **repairs**
    the test — retrying up to a configurable number of times.
 5. Records the outcome (passed / failed / compile-failed / error) for every method.
+
+> **v1 vs v7 for Wicket.** v1 reads only `extracted_metadata_final.json` and has no
+> per-method construction context, so it does **not** get the explicit WicketTester
+> setup recipes that the **v7 (`wicketv7`)** branch injects via `dependency_chains.json`.
+> v1 only sees `WicketTester`/`FormTester`/`TagTester` in the available imports and
+> must infer the harness. For higher component-test quality, use the `wicketv7` branch.
 
 ## Repository layout
 
 ```
 .
-├── pdfbox/                 Apache PDFBox source (the system under test; bundled)
+├── wicket/                 Apache Wicket 10.9.1 source — trimmed reactor (the
+│                           system under test; bundled). Modules: wicket-util,
+│                           wicket-request, wicket-core, wicket-tester,
+│                           wicket-core-tests.
 ├── inputs/                 Precomputed method metadata consumed by the pipeline
+│                           (v1 uses extracted_metadata_final.json; the other
+│                           inputs are shipped for parity with v7).
 ├── test_generator/         The pipeline
 │   ├── config.py           All settings + repo-relative paths
 │   ├── pipeline_step3.py    Entry point: the prompt-and-repair generation loop
@@ -35,13 +47,15 @@ For each public method in the target codebase, the pipeline:
 
 ## Branches
 
-- **`prompt-and-repair`** — the v1 pipeline described here (gpt-5-mini).
-- (`main` holds the shared PDFBox source and inputs; future pipeline variants branch from it.)
+- **`wicketv1`** — this pipeline (Wicket, v1 prompt-and-repair, gpt-5-mini).
+- **`wicketv7`** — the multi-stage v7 / SAGE pipeline for Wicket (with WicketTester recipes).
+- **`avrov1` / `avrov7`** — the same two pipelines targeting Apache Avro.
+- **`SAGE-v7` / `prompt-and-repair`** — the original PDFBox pipelines.
 
 ## Prerequisites
 
 - **Python** 3.10+
-- **JDK** capable of building PDFBox (Java 11+; developed with a Java 25 build)
+- **JDK** capable of building Wicket 10 (Java 17+; verified with a Java 25 build)
 - **Apache Maven** 3.9.x
 - An **OpenAI API key**
 
@@ -57,12 +71,11 @@ pip install -r requirements.txt
 cp .env.example .env          # on Windows: copy .env.example .env
 #   then edit .env and set OPENAI_API_KEY (and MAVEN_EXECUTABLE / JAVA_HOME if needed)
 
-# 3. Install the bundled PDFBox modules into your local Maven repository (one time).
-#    PDFBox here is 4.0.0-SNAPSHOT, so its sibling modules (io, fontbox, xmpbox, ...)
-#    are NOT on Maven Central and must be built locally first, or test compilation
-#    will fail to resolve them.
-cd pdfbox
-mvn install -DskipTests
+# 3. Install the bundled Wicket modules into your local Maven repository (one time)
+#    so wicket-core-tests can resolve wicket-core / wicket-tester. Skip javadoc:
+#    JDK 25's doclint rejects old {@link} tags in a package.html.
+cd wicket
+mvn install -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -pl wicket-tester -am
 cd ..
 ```
 
@@ -90,9 +103,9 @@ All output is written under `generated_files/v1/` (git-ignored):
 - `results/results.json` — per-method outcome
 - `results/final_report.txt` — summary report
 
-Generated test files are written into the PDFBox module under
-`pdfbox/pdfbox/generated_testsgpt5mini_v1/` while compiling/running, and cleaned up
-afterward.
+Generated test files are written into the Wicket tests module under
+`wicket/wicket-core-tests/generated_testsgpt5mini_v1/` while compiling/running, and
+cleaned up afterward.
 
 ## Configuration
 
