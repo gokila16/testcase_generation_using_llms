@@ -2,15 +2,21 @@ import time
 from openai import OpenAI
 import config
 
-client = OpenAI(api_key=config.OPENAI_API_KEY)
+# DeepSeek serves an OpenAI-compatible API, so the OpenAI SDK works unchanged —
+# only api_key and base_url differ. The call/response contract
+# (call_llm(prompt) -> text | None) is identical, so the rest of the pipeline is
+# untouched.
+client = OpenAI(api_key=config.DEEPSEEK_API_KEY, base_url=config.DEEPSEEK_BASE_URL)
 
 
 def _is_reasoning_model(model):
-    """gpt-5 family and o-series are reasoning models with a different API contract:
-    they require max_completion_tokens (not max_tokens) and only accept the default
-    temperature."""
+    """Reasoning models use a different API contract: max_completion_tokens (not
+    max_tokens) and only the default temperature. Covers OpenAI gpt-5/o-series and
+    DeepSeek's reasoner. deepseek-chat (the v1 default) is NOT a reasoning model,
+    so it takes the standard max_tokens + temperature branch."""
     m = (model or '').lower()
-    return m.startswith('gpt-5') or m.startswith('o1') or m.startswith('o3') or m.startswith('o4')
+    return (m.startswith('gpt-5') or m.startswith('o1') or m.startswith('o3')
+            or m.startswith('o4') or 'reasoner' in m)
 
 
 def _build_request_kwargs(prompt):

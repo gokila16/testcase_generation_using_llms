@@ -53,19 +53,22 @@ FINAL_REPORT        = os.path.join(RESULTS_DIR, 'final_report.txt')
 # Understand-based extraction step, which is NOT part of this runnable repo.
 INPUT_JSON          = os.path.join(INPUTS_DIR, 'extracted_metadata_final.json')
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # unused now; kept for parity
 
 # ============================================
-# LLM SETTINGS
+# LLM SETTINGS  (DeepSeek — OpenAI-compatible API)
 # ============================================
-LLM_MODEL       = 'gpt-5-mini'
-# gpt-5 / o-series are reasoning models: this budget is shared by hidden reasoning
-# tokens AND the visible output, so keep it generous (sent as max_completion_tokens).
+# This v1 pipeline targets DeepSeek via its OpenAI-compatible endpoint. The
+# OpenAI SDK is reused (src/llm_client.py) with only api_key + base_url changed.
+DEEPSEEK_API_KEY  = os.getenv("DEEPSEEK_API_KEY")
+DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+
+LLM_MODEL       = 'deepseek-chat'   # DeepSeek's latest non-reasoning chat model
 LLM_MAX_TOKENS  = 16384
-# Reasoning models only allow the default temperature, so this is IGNORED for gpt-5
-# (handled in src/llm_client.py). Kept for non-reasoning fallback models.
+# deepseek-chat is a standard (non-reasoning) model, so this temperature applies.
 LLM_TEMPERATURE = 0
-# gpt-5 reasoning effort: 'minimal' | 'low' | 'medium' | 'high'.
+# Only used by reasoning models (e.g. OpenAI gpt-5/o-series). Ignored for
+# deepseek-chat; kept so the model can be swapped without code changes.
 LLM_REASONING_EFFORT = 'low'
 API_SLEEP_SEC   = 1
 MAX_RETRIES = 2

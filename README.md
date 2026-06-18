@@ -47,7 +47,7 @@ For each public method in the target codebase, the pipeline:
 
 ## Branches
 
-- **`wicketv1`** — this pipeline (Wicket, v1 prompt-and-repair, gpt-5-mini).
+- **`wicketv1`** — this pipeline (Wicket, v1 prompt-and-repair, DeepSeek `deepseek-chat`).
 - **`wicketv7`** — the multi-stage v7 / SAGE pipeline for Wicket (with WicketTester recipes).
 - **`avrov1` / `avrov7`** — the same two pipelines targeting Apache Avro.
 - **`SAGE-v7` / `prompt-and-repair`** — the original PDFBox pipelines.
@@ -57,7 +57,7 @@ For each public method in the target codebase, the pipeline:
 - **Python** 3.10+
 - **JDK** capable of building Wicket 10 (Java 17+; verified with a Java 25 build)
 - **Apache Maven** 3.9.x
-- An **OpenAI API key**
+- A **DeepSeek API key**
 
 Maven and the JDK must be on your `PATH`, or their locations set in `.env` (see below).
 
@@ -69,7 +69,7 @@ pip install -r requirements.txt
 
 # 2. Configure environment
 cp .env.example .env          # on Windows: copy .env.example .env
-#   then edit .env and set OPENAI_API_KEY (and MAVEN_EXECUTABLE / JAVA_HOME if needed)
+#   then edit .env and set DEEPSEEK_API_KEY (and MAVEN_EXECUTABLE / JAVA_HOME if needed)
 
 # 3. Install the bundled Wicket modules into your local Maven repository (one time)
 #    so wicket-core-tests can resolve wicket-core / wicket-tester. Skip javadoc:
@@ -113,7 +113,7 @@ Key settings live in `test_generator/config.py`:
 
 | Setting | Meaning |
 | --- | --- |
-| `LLM_MODEL` | Model id (default `gpt-5-mini`) |
+| `LLM_MODEL` | Model id (default `deepseek-chat`) |
 | `LLM_MAX_TOKENS` | Completion budget (reasoning + output) |
 | `LLM_REASONING_EFFORT` | `minimal` / `low` / `medium` / `high` |
 | `MAX_RETRIES` | Repair attempts per method |
@@ -121,15 +121,17 @@ Key settings live in `test_generator/config.py`:
 
 ## Changing the model
 
-This pipeline talks to OpenAI through `test_generator/src/llm_client.py`, which
-auto-detects reasoning vs. standard models.
+This pipeline talks to **DeepSeek** through `test_generator/src/llm_client.py`,
+using the OpenAI SDK against DeepSeek's OpenAI-compatible endpoint
+(`https://api.deepseek.com`). The client auto-detects reasoning vs. standard models.
 
-**To use a different OpenAI model — no code changes:**
+**To use a different DeepSeek model — no code changes:**
 
-- Edit `LLM_MODEL` in `test_generator/config.py`. Examples: `gpt-5`, `gpt-5-mini`
-  (default), `gpt-4o`, `o3`.
-- **Reasoning models** (`gpt-5*`, `o1`/`o3`/`o4`): `LLM_REASONING_EFFORT` applies and
-  temperature is ignored; the budget is sent as `max_completion_tokens`.
+- Edit `LLM_MODEL` in `test_generator/config.py`. Examples: `deepseek-chat`
+  (default, standard) or `deepseek-reasoner` (reasoning).
+- **Reasoning models** (`deepseek-reasoner`; also OpenAI `gpt-5*`/`o1`/`o3`/`o4` if you
+  switch vendor): `LLM_REASONING_EFFORT` applies and temperature is ignored; the
+  budget is sent as `max_completion_tokens`.
 - **Standard models** (`gpt-4o`, etc.): `LLM_TEMPERATURE` applies and reasoning effort
   is ignored.
 - `OPENAI_API_KEY` is unchanged. `LLM_MAX_TOKENS` still applies.
