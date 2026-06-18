@@ -85,8 +85,15 @@ MAX_RETRIES = 2
 # ============================================
 # MAVEN / JDK SETTINGS
 # ============================================
-TEST_TIMEOUT  = 30
-MAVEN_TIMEOUT = 60
+# IMPORTANT (Wicket): maven_runner compiles the WHOLE wicket-core-tests test
+# source set each call (~1160 files). A WARM incremental testCompile measured ~27s
+# on this machine; a COLD full compile is much longer. The old pdfbox defaults
+# (30/60s) caused EVERY method to time out -> false COMPILE_FAILED. These are
+# raised with headroom. Keep the target module pre-built (warm) so compiles stay
+# incremental — point WICKET_MODULE_DIR at a checkout whose target/test-classes
+# already exists.
+TEST_TIMEOUT  = 120   # per generated-test surefire run (WicketTester startup + 1 test)
+MAVEN_TIMEOUT = 240   # per compile (full test source set; generous for cold compiles)
 # Read tool locations from the environment so each machine provides its own.
 # Leave them unset (in .env) to let the pipeline use 'mvn' from PATH and the
 # system JAVA_HOME. Set them only if Maven / the JDK are not on PATH.
