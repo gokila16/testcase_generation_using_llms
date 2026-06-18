@@ -9,6 +9,50 @@ import config
 client = OpenAI(api_key=config.DEEPSEEK_API_KEY, base_url=config.DEEPSEEK_BASE_URL)
 
 
+# ---------------------------------------------------------------------------
+# Token-usage accounting (for the cost metric in the final report)
+# ---------------------------------------------------------------------------
+# Accumulated across every API call this run. DeepSeek's OpenAI-compatible usage
+# object adds prompt_cache_hit_tokens / prompt_cache_miss_tokens (cached input is
+# billed cheaper); we capture them when present and fall back to prompt_tokens
+# otherwise. Exposed via get_token_usage() so the contract of call_llm (text|None)
+# is unchanged.
+_usage = {
+    'calls':             0,
+    'prompt_tokens':     0,
+    'completion_tokens': 0,
+    'total_tokens':      0,
+    'cache_hit_tokens':  0,
+    'cache_miss_tokens': 0,
+}
+
+
+def _record_usage(response):
+    u = getattr(response, 'usage', None)
+    if u is None:
+        return
+    _usage['calls']             += 1
+    prompt     = getattr(u, 'prompt_tokens', 0) or 0
+    completion = getattr(u, 'completion_tokens', 0) or 0
+    _usage['prompt_tokens']     += prompt
+    _usage['completion_tokens'] += completion
+    _usage['total_tokens']      += getattr(u, 'total_tokens', prompt + completion) or 0
+    # DeepSeek-specific cache split (absent on other vendors -> 0)
+    hit  = getattr(u, 'prompt_cache_hit_tokens', None)
+    miss = getattr(u, 'prompt_cache_miss_tokens', None)
+    if hit is not None or miss is not None:
+        _usage['cache_hit_tokens']  += hit  or 0
+        _usage['cache_miss_tokens'] += miss or 0
+    else:
+        # No cache breakdown reported: treat all prompt tokens as cache-miss (full price)
+        _usage['cache_miss_tokens'] += prompt
+
+
+def get_token_usage():
+    """Return a copy of the accumulated token usage for this run."""
+    return dict(_usage)
+
+
 def _is_reasoning_model(model):
     """Reasoning models use a different API contract: max_completion_tokens (not
     max_tokens) and only the default temperature. Covers OpenAI gpt-5/o-series and
@@ -45,6 +89,7 @@ def call_llm(prompt):
     """
     try:
         response = client.chat.completions.create(**_build_request_kwargs(prompt))
+        _record_usage(response)
         # Sleep to avoid rate limits
         time.sleep(config.API_SLEEP_SEC)
         return response.choices[0].message.content
@@ -58,6 +103,7 @@ def call_llm(prompt):
             time.sleep(60)
             try:
                 response = client.chat.completions.create(**_build_request_kwargs(prompt))
+                _record_usage(response)
                 return response.choices[0].message.content
             except Exception as e2:
                 print(f"  Retry failed: {e2}")

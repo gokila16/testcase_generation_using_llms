@@ -3,7 +3,7 @@ from datetime import datetime
 import config
 from src.loader import load_methods
 from src.prompt_builder import build_base_prompt, build_retry_prompt
-from src.llm_client import call_llm
+from src.llm_client import call_llm, get_token_usage
 from src.code_extractor import extract_java_code
 from src.file_manager import (save_prompt, save_response,
                                save_test_file,
@@ -170,9 +170,10 @@ def run_pipeline():
             all_results = load_results(config.RESULTS_JSON)
             print_progress(i + 1, len(remaining), all_results)
 
-    # Final report
+    # Final report (includes token usage + estimated cost for this run)
     all_results = load_results(config.RESULTS_JSON)
-    print_final_report(all_results, config.FINAL_REPORT, start_time)
+    print_final_report(all_results, config.FINAL_REPORT, start_time,
+                       token_usage=get_token_usage())
 
 
 if __name__ == '__main__':

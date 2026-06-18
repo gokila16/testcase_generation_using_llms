@@ -101,7 +101,11 @@ All output is written under `generated_files/v1/` (git-ignored):
 - `prompts/`   — every prompt sent to the LLM
 - `responses/` — every raw LLM response
 - `results/results.json` — per-method outcome
-- `results/final_report.txt` — summary report
+- `results/final_report.txt` — summary report, including a **TOKEN USAGE & COST**
+  section: API calls, prompt/completion/total tokens (with DeepSeek cache hit/miss
+  split), estimated USD cost, and average cost per method. Prices come from the
+  `PRICE_*` constants in `config.py` — **verify them against current DeepSeek
+  pricing**, as list prices change.
 
 Generated test files are written into the Wicket tests module under
 `wicket/wicket-core-tests/generated_testsgpt5mini_v1/` while compiling/running, and

@@ -71,6 +71,15 @@ LLM_TEMPERATURE = 0
 # deepseek-chat; kept so the model can be swapped without code changes.
 LLM_REASONING_EFFORT = 'low'
 API_SLEEP_SEC   = 1
+
+# --- Token pricing (USD per 1,000,000 tokens) for the cost metric in the final
+# report. VERIFY against current DeepSeek pricing — these are deepseek-chat list
+# prices and may be out of date / not reflect off-peak discounts:
+#   https://api-docs.deepseek.com/quick_start/pricing
+# DeepSeek bills cached input tokens (cache HIT) cheaper than fresh input (MISS).
+PRICE_INPUT_CACHE_MISS_PER_1M = 0.27   # fresh prompt tokens
+PRICE_INPUT_CACHE_HIT_PER_1M  = 0.07   # cached prompt tokens
+PRICE_OUTPUT_PER_1M           = 1.10   # completion tokens
 MAX_RETRIES = 2
 
 # ============================================
