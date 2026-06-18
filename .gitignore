@@ -7,13 +7,15 @@ __pycache__/
 venv/
 .venv/
 
-# IDE / OS
+# IDE / OS / agent
 .idea/
 .DS_Store
+.claude/
 
 # Repo-local pipeline outputs (regenerated on every run)
 generated_files/
 
-# Maven build output and generated tests written into the pdfbox module
+# Maven build output and the per-condition generated tests written into the
+# PDFBox module (one folder per ablation label, e.g. generated_tests_v7-loo-no_facts)
 pdfbox/**/target/
-pdfbox/**/generated_testsgpt5mini_v1/
+pdfbox/**/generated_tests_v7-loo-*/

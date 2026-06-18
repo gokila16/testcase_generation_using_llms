@@ -1,0 +1,216 @@
+================================================================================
+ RQ3 — V7 ABLATION STUDY: WHAT WAS DONE, HOW, AND HOW TO RUN IT
+================================================================================
+ Target folder : C:\Users\Harini\Documents\thesis_research\RQ3_Ablation_Study\test_generator
+ Model         : gemini-3.5-flash  (Vertex AI, google.genai, temperature=0)
+ Run set       : all 1309 methods  (INCLUDE_DEVELOPER_TESTED = True)
+ Design        : leave-one-out (LOO) — baseline minus exactly ONE component per run
+ Last updated  : 2026-06-03
+================================================================================
+
+
+--------------------------------------------------------------------------------
+ 1. WHAT THIS STUDY DOES
+--------------------------------------------------------------------------------
+We take the full V7 generator (all components ON = "baseline") and run it again
+with exactly one component switched OFF at a time. Comparing each ablated run
+against the baseline isolates that one component's contribution.
+
+Components ablated (one per run):
+  slicing    method slicing behavioral guidance        (cfg_slicer)
+  chains     "HOW TO CONSTRUCT EACH INPUT" code         (dependency_chains.json)
+  callers    "REAL USAGE EXAMPLES" call-site snippets   (call_graph.json)
+  allowlist  import + method-call hallucination gate     (allowlist_checker)
+  facts      "PRE-COMPUTED BEHAVIORAL FACTS" section     (behavioral_analyzer)
+  repair     Maven compile/runtime retry loop            (MAX_RETRIES)
+
+  (two-step planning is DEFERRED — needs a new one-shot prompt builder; not wired yet)
+
+Baseline does NOT need re-running: the existing all-7 Gemini baseline lives at
+  C:\Users\Harini\Documents\thesis_research\test_generator\generated_files\gemini3_v7\results.json
+It used the same gemini-3.5-flash model, so the LOO runs compare directly to it.
+(If you prefer a clean in-folder baseline, you can also run ABLATION_LABEL='baseline'
+ here with all flags True — it should reproduce the same numbers within Gemini's
+ small run-to-run variance.)
+
+
+--------------------------------------------------------------------------------
+ 2. THE MODEL CHANGE (this RQ3 copy was originally gpt-5-mini)
+--------------------------------------------------------------------------------
+This folder was copied from the gpt-5-mini/OpenAI variant. It has been switched to
+Gemini to match your baseline:
+
+  * src/llm_client.py  — REPLACED with the Vertex/google.genai client (copied from
+                         the working baseline at ...\test_generator). Uses
+                         genai.Client(vertexai=True, project=..., location=...).
+  * config.py LLM block — now:
+        LLM_MODEL       = 'gemini-3.5-flash'
+        VERTEX_PROJECT  = "testgeneration-497318"
+        VERTEX_LOCATION = "global"     # Gemini 3.x is served only on the global endpoint
+        LLM_TEMPERATURE = 0
+     (the old gpt-5 / OPENAI_API_KEY / reasoning-effort settings were removed)
+
+
+--------------------------------------------------------------------------------
+ 3. HOW THE ABLATION SWITCH WORKS  (config.py)
+--------------------------------------------------------------------------------
+Two knobs in config.py drive everything:
+
+  ABLATION_LABEL = 'baseline'        # names the output directory for this run
+  ABLATION = {                       # True = component ON
+      'slicing':   True,
+      'chains':    True,
+      'callers':   True,
+      'allowlist': True,
+      'facts':     True,
+      'repair':    True,
+  }
+
+To run ONE leave-one-out condition you change TWO lines, e.g. to ablate facts:
+      ABLATION_LABEL = 'no_facts'
+      ABLATION = { ... 'facts': False ... }   # flip only this one to False
+
+RULE: the label and the False flag must agree (label 'no_facts' <-> 'facts': False).
+This is manual on purpose so a run can never silently mislabel its output.
+
+
+--------------------------------------------------------------------------------
+ 4. EXACTLY WHAT EACH FLAG CHANGES (the code edits)
+--------------------------------------------------------------------------------
+All edits are guard clauses; with every flag True the code path is identical to
+the original V7.
+
+ slicing=False   pipeline_step3.py (after slicing computed): testable_slices = []
+                 -> the behavioral-slice lines vanish from the facts section.
+
+ chains=False    pipeline_step3.py: dep_chain = None
+                 -> removes "HOW TO CONSTRUCT EACH INPUT" from the planning,
+                    generation, allowlist-violation and retry prompts (they all
+                    route through _format_construction_section, which emits "" on
+                    None). NOTE: this also suppresses the abstract-receiver hint,
+                    because that hint is derived from dep_chain. (Acceptable — the
+                    chains file is the single source of both.)
+
+ callers=False   pipeline_step3.py: caller_snippets = []
+                 -> removes "REAL USAGE EXAMPLES FROM CODEBASE".
+
+ facts=False     src/prompt_builder.py _format_pre_computed_facts(): returns ""
+                 -> removes the whole "PRE-COMPUTED BEHAVIORAL FACTS" section
+                    (branch map / throw contracts / literal returns). The LLM must
+                    derive expected values itself.
+
+ allowlist=False pipeline_step3.py: both validation loops are gated on the flag
+                 (while config.ABLATION['allowlist']). When off, validate_imports
+                 and check_against_allowlist never run; allowlist_passed stays True
+                 and code goes straight to Maven. No ALLOWLIST_FAILED outcomes can
+                 occur in this condition.
+
+ repair=False    pipeline_step3.py: max_retries = 0
+                 -> the Maven compile/runtime retry loop never executes; the first
+                    generated test is final. (The allowlist gate's own correction
+                    retries are part of the 'allowlist' component, not 'repair'.)
+
+
+--------------------------------------------------------------------------------
+ 5. OUTPUT ISOLATION  (so runs never overwrite each other)
+--------------------------------------------------------------------------------
+config.py derives all output paths from ABLATION_LABEL:
+
+  GENRATED_FILES      = ...\PDFBOX-v5\generated_files\v7-loo-<label>\
+                          prompts\  plans\  responses\  results\results.json
+  GENERATED_TESTS_DIR = ...\Apache_pdfbox\pdfbox\pdfbox\generated_tests_v7-loo-<label>\
+
+So each condition writes to its own folder, e.g. v7-loo-no_facts, v7-loo-no_repair.
+The per-method outcome you compare lives in each run's results/results.json.
+
+
+--------------------------------------------------------------------------------
+ 6. ONE-TIME SETUP BEFORE THE FIRST RUN
+--------------------------------------------------------------------------------
+ (a) Google auth (Application Default Credentials) — done once per machine:
+        gcloud auth application-default login
+        gcloud config set project testgeneration-497318
+
+ (b) Python deps in THIS folder's venv:
+        venv\Scripts\python.exe -m pip install google-genai
+     (the venv was the OpenAI one and was missing google-genai. If pip cannot
+      reach the network from this shell, run it yourself in a normal terminal.
+      The baseline venv at ...\test_generator already has it, proving it installs
+      fine on this same Python 3.14.)
+
+ (c) Sanity import check:
+        venv\Scripts\python.exe -c "import google.genai, config; print(config.LLM_MODEL)"
+     should print: gemini-3.5-flash
+
+
+--------------------------------------------------------------------------------
+ 7. HOW TO RUN
+--------------------------------------------------------------------------------
+ For each condition:
+   1. Edit config.py: set ABLATION_LABEL and flip the matching flag to False.
+   2. Run the generation stage:
+        venv\Scripts\python.exe pipeline_step3.py
+   3. Results land in generated_files\v7-loo-<label>\results\results.json
+
+ Suggested order (do baseline first only if you want an in-folder baseline):
+   no_facts, no_chains, no_callers, no_slicing, no_allowlist, no_repair
+
+ IMPORTANT: run ONE condition at a time and let it finish. Do not edit config.py
+ mid-run. Each full run is 1309 methods x ~2-8 Gemini calls + a Maven compile/run
+ per method, so a single condition is long — plan for it.
+
+
+--------------------------------------------------------------------------------
+ 8. THINGS TO WATCH OUT FOR
+--------------------------------------------------------------------------------
+ * LABEL/FLAG MISMATCH: the #1 footgun. If ABLATION_LABEL says 'no_facts' but you
+   forgot to set 'facts': False, you'll silently produce a second baseline in a
+   folder named no_facts. Double-check the two lines before each run.
+
+ * AUTH EXPIRY: ADC tokens expire. If you see 401/403/"reauth" errors mid-run,
+   re-run `gcloud auth application-default login`.
+
+ * VERTEX_LOCATION must stay "global" for Gemini 3.x. us-central1 will 404 the model.
+
+ * QUOTA / 429: the client backs off 60s once on RESOURCE_EXHAUSTED then retries.
+   Sustained 429s mean you're over Vertex quota — slow down or raise quota. A run
+   that dies mid-way leaves a partial results.json (the pipeline skips methods it
+   has already recorded, so you can usually just re-launch to resume).
+
+ * MAVEN / JAVA: config.py pins MAVEN_EXECUTABLE and JAVA_HOME to specific paths.
+   If Maven or the JDK move, fix those or every method will COMPILE_FAILED.
+
+ * SHARED INPUTS ARE READ-ONLY PER RUN: all conditions read the same
+   extracted_metadata_final.json, dependency_chains.json, class_inventory.json,
+   call_graph.json. Do NOT rebuild those between conditions or the runs stop being
+   comparable. The ablation removes context in code, never by editing these files.
+
+ * GENERATED_TESTS dir lives INSIDE the pdfbox project so Maven can compile it.
+   Each label gets its own generated_tests_v7-loo-<label> folder; they can pile up
+   disk — clean old ones when done.
+
+ * DETERMINISM: Gemini at temp=0 is near-deterministic but not bit-identical.
+   Small baseline-vs-baseline differences are expected; report them as noise, not
+   as a component effect.
+
+ * DROPPED COMPONENTS: operator-context fix and abstract-class substitution were
+   considered and dropped (too few methods affected to move aggregate metrics).
+   The abstract-receiver hint is incidentally also removed by chains=False (see 4).
+
+
+--------------------------------------------------------------------------------
+ 9. ANALYSIS
+--------------------------------------------------------------------------------
+ For each run, results/results.json holds a per-method terminal status:
+   PASSED, FAILED, COMPILE_FAILED, ALLOWLIST_FAILED, ALLOWLIST_FAILED_ON_RETRY,
+   EXTRACTION_FAILED, API_ERROR.
+
+ Headline per condition: PASSED / 1309 (pass rate). Compare each condition's pass
+ rate (and failure-mode shift) against the baseline. Expected sanity checks:
+   - no_allowlist  -> more COMPILE_FAILED (hallucinated calls reach Maven)
+   - no_repair     -> more COMPILE_FAILED/FAILED (no second chance)
+   - no_facts      -> more FAILED (wrong oracle/expected values)
+
+ (No aggregation script exists yet. Ask if you want a small aggregate.py that reads
+  every v7-loo-*/results/results.json into one comparison table.)
+================================================================================
