@@ -1,9 +1,25 @@
 import os
 import sys
+import glob
 import shutil
 import subprocess
 import config
 from src.file_manager import get_test_destination, get_test_class_name
+
+
+def _clean_stale_generated_tests(module_dir):
+    """Remove leftover generated test files from a previous interrupted run.
+    Generated tests always match ClassName_method[_idx]_Test.java; the bundled
+    wicket-core-tests has NO files matching *_*_Test.java (its tests are
+    CamelCaseTest.java), so this never touches real Wicket tests. Without this,
+    a single mid-compile interruption would leave a stray file that fails EVERY
+    subsequent method's full-module testCompile."""
+    pattern = os.path.join(module_dir, 'src', 'test', 'java', '**', '*_*_Test.java')
+    for stale in glob.glob(pattern, recursive=True):
+        try:
+            os.remove(stale)
+        except OSError:
+            pass
 
 def _find_maven_cmd():
     # 1. Explicit override in config
@@ -40,6 +56,10 @@ def compile_and_run(test_file_path, full_name, class_name, method_name, overload
     env = _maven_env()
 
     try:
+        # Remove any straggler from a previously interrupted run before compiling
+        # the whole module test set (else one stray file fails every method).
+        _clean_stale_generated_tests(config.PDFBOX_DIR)
+
         os.makedirs(dest_dir, exist_ok=True)
         shutil.copy2(test_file_path, dest_path)
 
