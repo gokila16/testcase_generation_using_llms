@@ -25,5 +25,5 @@ avro/lang/java/avro/src/test/java/**/*_*_Test.java
 # Wicket bundled reactor — build output and pipeline-generated tests
 wicket/**/target/
 wicket/**/generated_tests/
-wicket/wicket-core-tests/generated_testsgpt5mini_v1/
+wicket/wicket-core-tests/generated_tests_deepseekv4flash_v1/
 wicket/wicket-core-tests/src/test/java/**/*_*_Test.java

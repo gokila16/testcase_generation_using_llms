@@ -41,8 +41,8 @@ PDFBOX_REPO = os.path.dirname(_WICKET_MODULE)     # bundled wicket reactor root
 INPUTS_DIR  = os.path.join(REPO_ROOT, 'inputs')          # Wicket precomputed inputs (Understand-derived)
 
 # Repo-local output location (git-ignored, regenerated on every run)
-GENRATED_FILES      = os.path.join(REPO_ROOT, 'generated_files', 'v1')
-GENERATED_TESTS_DIR = os.path.join(PDFBOX_DIR, 'generated_testsgpt5mini_v1')
+GENRATED_FILES      = os.path.join(REPO_ROOT, 'generated_files', 'deepseekv4flash_v1')
+GENERATED_TESTS_DIR = os.path.join(PDFBOX_DIR, 'generated_tests_deepseekv4flash_v1')
 PROMPTS_DIR         = os.path.join(GENRATED_FILES, 'prompts')
 RESPONSES_DIR       = os.path.join(GENRATED_FILES, 'responses')
 RESULTS_DIR         = os.path.join(GENRATED_FILES, 'results')
