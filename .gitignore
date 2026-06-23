@@ -7,8 +7,10 @@ __pycache__/
 venv/
 .venv/
 
-# IDE / OS
+# IDE / OS / tooling
 .idea/
+.vscode/
+.claude/
 .DS_Store
 
 # Repo-local pipeline outputs (regenerated on every run)
@@ -16,4 +18,4 @@ generated_files/
 
 # Maven build output and generated tests written into the pdfbox module
 pdfbox/**/target/
-pdfbox/**/generated_testsgpt5mini_v1/
+pdfbox/**/generated_tests*/

@@ -1,2 +1,4 @@
-openai==2.32.0
+openai==2.38.0
 python-dotenv==1.2.2
+google-auth==2.55.0
+requests==2.34.2
