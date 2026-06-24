@@ -1,0 +1,81 @@
+HOW TO RUN — RQ3 V7 Leave-One-Out Ablation (Apache PDFBox 3.0.5)
+================================================================
+
+You need: Python 3.10+, a JDK (Java 11+), Apache Maven 3.9.x, and a Google
+Cloud project with the Vertex AI API enabled (plus the gcloud CLI).
+
+----------------------------------------------------------------
+STEP 1 — Get the code
+----------------------------------------------------------------
+On Windows, enable long paths first (PDFBox has deep folders):
+    git config --global core.longpaths true
+
+    git clone -b rq3-ablation https://github.com/gokila16/testcase_generation_using_llms.git
+    cd testcase_generation_using_llms
+
+----------------------------------------------------------------
+STEP 2 — Install Python dependencies
+----------------------------------------------------------------
+    pip install -r requirements.txt
+
+----------------------------------------------------------------
+STEP 3 — Sign in to Vertex AI (one time)
+----------------------------------------------------------------
+    gcloud auth application-default login
+    gcloud config set project <your-gcp-project>
+
+----------------------------------------------------------------
+STEP 4 — Configure .env
+----------------------------------------------------------------
+    copy .env.example .env          (Windows)
+    cp   .env.example .env          (Mac/Linux)
+
+Open .env and set:
+    VERTEX_PROJECT=<your-gcp-project>
+Only if Maven / the JDK are NOT on your PATH, also set:
+    MAVEN_EXECUTABLE=...
+    JAVA_HOME=...
+
+----------------------------------------------------------------
+STEP 5 — Build the bundled PDFBox once
+----------------------------------------------------------------
+    cd pdfbox
+    mvn install -DskipTests
+    cd ..
+
+----------------------------------------------------------------
+STEP 6 — Pick the condition to run
+----------------------------------------------------------------
+Edit test_generator/config.py and change TWO lines so they match:
+
+    ABLATION_LABEL = 'baseline'      # the run name
+    ABLATION = { ... }               # flip ONE flag to False
+
+The label and the False flag MUST agree. Options:
+
+    label            flag to set False
+    -----            -----------------
+    baseline         (none — all True)
+    no_slicing       'slicing':   False
+    no_chains        'chains':    False
+    no_callers       'callers':   False
+    no_allowlist     'allowlist': False
+    no_facts         'facts':     False
+    no_repair        'repair':    False
+
+----------------------------------------------------------------
+STEP 7 — Run it
+----------------------------------------------------------------
+    cd test_generator
+    python pipeline_step3.py
+
+Results appear in:
+    generated_files/v7-loo-<label>/results/results.json
+
+Notes:
+- Run ONE condition at a time and let it finish (it is long: 1309 methods).
+- Safe to stop and re-run — it resumes and skips methods already done.
+- To reproduce the full study, run all 7 labels:
+  baseline, no_slicing, no_chains, no_callers, no_allowlist, no_facts, no_repair
+
+(See README.md for full explanation, ABLATION_SPEC.md for the design.)
