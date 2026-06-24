@@ -24,9 +24,9 @@ component removed at a time, and compare outcome distributions over the same met
 | `no_allowlist` | Allowlist gate | skip import + method-call validation/retry loop | pipeline_step3.py:298-340 (and retry copy ~420) |
 | `no_facts` | Pre-computed behavioral facts | `_format_pre_computed_facts` → `""` | prompt_builder.py:284 |
 | `no_repair` | Self-repair / retry loop | `MAX_RETRIES=0` + `MAX_ALLOWLIST_RETRIES=0` | config.py:51 + pipeline_step3.py:294 |
-| `no_planning` *(DEFERRED)* | Two-step planning | one-shot generate prompt (new builder) | new code — out of scope for first pass |
+| `no_planning` | Two-step planning | `build_one_shot_prompt` replaces plan→generate with one call (same context + reasoning) | prompt_builder.py `build_one_shot_prompt`; pipeline_step3.py planning/one-shot branch |
 
-**6 active ablations + baseline = 7 runs** in the first pass. `no_planning` added later.
+**7 active ablations + baseline = 8 runs.**
 
 ## 3. Mechanism — single `ABLATION` config
 
@@ -41,7 +41,7 @@ ABLATION = {
     'allowlist': True,
     'facts':     True,
     'repair':    True,
-    # 'planning': True,   # deferred
+    'planning':  True,
 }
 ABLATION_LABEL = 'baseline'   # used to name the output directory
 ```
@@ -54,6 +54,7 @@ Threading (minimal, gated edits — no behavior change when all True):
 - **allowlist**: if `not ABLATION['allowlist']` → skip the `while` validation loop (treat as passed) in both the main path and the Maven-retry path.
 - **facts**: in `_format_pre_computed_facts`, early `return ""` when `not config.ABLATION['facts']` (import config there, or pass a flag in).
 - **repair**: if `not ABLATION['repair']` → set effective `max_retries = 0` and `MAX_ALLOWLIST_RETRIES = 0`.
+- **planning**: if `not ABLATION['planning']` → call `build_one_shot_prompt` (single LLM call, no separate plan) instead of `build_planning_prompt` + `build_generation_from_plan_prompt`. Same context sections and reasoning guidance; only the two-step decomposition is removed. `plan_response` is `None` (recovery prompt tolerates it).
 
 All edits are guard clauses; with the baseline dict the code path is byte-identical to current V7.
 
@@ -67,8 +68,8 @@ GENERATED_TESTS_DIR = os.path.join(PDFBOX_DIR, f'generated_tests_v7-loo-{ABLATIO
 ```
 
 Each condition produces its own `prompts/ plans/ responses/ results/results.json` and its own
-test source tree compiled by Maven. No cross-contamination. `ABLATION` flag dict also added to config
-(not yet wired into pipeline/prompt code — that is the scaffolding step pending approval).
+test source tree compiled by Maven. No cross-contamination. `ABLATION` flag dict is wired into the
+pipeline/prompt code; all seven flags (including `planning`) are active.
 
 ## 5. Metrics (per condition, from results.json)
 
@@ -104,9 +105,8 @@ the headline number uses the full 1309 once. (User indicated full 1309 — flag 
 1. Implement `ABLATION` dict + output-dir parameterization (guarded, baseline = no-op).
 2. Smoke test on ~5 methods with `baseline` to confirm parity with current V7.
 3. Run `baseline` (full or subset) → archive results.
-4. Run each of the 6 ablations, one flag flipped, own output dir.
+4. Run each of the 7 ablations, one flag flipped, own output dir.
 5. Aggregate results.json across conditions → comparison table + failure-mode deltas.
-6. (Later) implement and add `no_planning`.
 
 ## 9. Open decisions
 

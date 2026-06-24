@@ -62,6 +62,7 @@ The label and the False flag MUST agree. Options:
     no_allowlist     'allowlist': False
     no_facts         'facts':     False
     no_repair        'repair':    False
+    no_planning      'planning':  False
 
 ----------------------------------------------------------------
 STEP 7 — Run it
@@ -75,7 +76,7 @@ Results appear in:
 Notes:
 - Run ONE condition at a time and let it finish (it is long: 1309 methods).
 - Safe to stop and re-run — it resumes and skips methods already done.
-- To reproduce the full study, run all 7 labels:
-  baseline, no_slicing, no_chains, no_callers, no_allowlist, no_facts, no_repair
+- To reproduce the full study, run all 8 labels:
+  baseline, no_slicing, no_chains, no_callers, no_allowlist, no_facts, no_repair, no_planning
 
 (See README.md for full explanation, ABLATION_SPEC.md for the design.)

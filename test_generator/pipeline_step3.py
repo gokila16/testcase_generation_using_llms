@@ -7,7 +7,7 @@ import config
 from src.loader import load_methods
 from src.prompt_builder import (build_planning_prompt, build_generation_from_plan_prompt,
                                 build_retry_prompt, build_allowlist_violation_prompt,
-                                build_recovery_prompt)
+                                build_recovery_prompt, build_one_shot_prompt)
 from src.allowlist_checker import check_against_allowlist, validate_imports
 from src.llm_client import call_llm
 from src.code_extractor import extract_java_code
@@ -219,31 +219,45 @@ def run_pipeline(skip_set=None, only=None):
         if not config.ABLATION.get('slicing', True):
             testable_slices = []      # removes behavioral-slice guidance in the facts section
 
-        plan_prompt     = build_planning_prompt(method, dep_chain=dep_chain, caller_snippets=caller_snippets, class_inventory=class_inventory, testable_slices=testable_slices)
-        plan_response, _trunc = call_llm(plan_prompt, method_name=method_name)
-        if _trunc:
-            truncation_count += 1
+        # RQ3 ablation: when 'planning' is disabled (no_planning), the two-step
+        # plan->generate split collapses to a single LLM call that emits the test
+        # directly. All context above is identical; only the decomposition is removed.
+        if config.ABLATION.get('planning', True):
+            # ---- BASELINE: STEP 1 PLANNING + STEP 2 GENERATION FROM PLAN ----
+            plan_prompt     = build_planning_prompt(method, dep_chain=dep_chain, caller_snippets=caller_snippets, class_inventory=class_inventory, testable_slices=testable_slices)
+            plan_response, _trunc = call_llm(plan_prompt, method_name=method_name)
+            if _trunc:
+                truncation_count += 1
 
-        save_prompt(config.PROMPTS_DIR, unique_key, plan_prompt, is_plan=True)
-        save_plan(config.PLANS_DIR, unique_key, plan_response)
+            save_prompt(config.PROMPTS_DIR, unique_key, plan_prompt, is_plan=True)
+            save_plan(config.PLANS_DIR, unique_key, plan_response)
 
-        if not plan_response:
-            save_result(config.RESULTS_JSON, unique_key, {
-                'status':          'API_ERROR',
-                'retry_triggered': False,
-                'retry_succeeded': None,
-                'error_message':   'No response from LLM on planning step'
-            })
-            continue
+            if not plan_response:
+                save_result(config.RESULTS_JSON, unique_key, {
+                    'status':          'API_ERROR',
+                    'retry_triggered': False,
+                    'retry_succeeded': None,
+                    'error_message':   'No response from LLM on planning step'
+                })
+                continue
 
-        # ---- STEP 2: GENERATION FROM PLAN ----
-        gen_prompt = build_generation_from_plan_prompt(method, plan_response, dep_chain=dep_chain, class_inventory=class_inventory)
-        response, _trunc = call_llm(gen_prompt, method_name=method_name)
-        if _trunc:
-            truncation_count += 1
+            gen_prompt = build_generation_from_plan_prompt(method, plan_response, dep_chain=dep_chain, class_inventory=class_inventory)
+            response, _trunc = call_llm(gen_prompt, method_name=method_name)
+            if _trunc:
+                truncation_count += 1
 
-        save_prompt(config.PROMPTS_DIR, unique_key, gen_prompt)
-        save_response(config.RESPONSES_DIR, unique_key, response)
+            save_prompt(config.PROMPTS_DIR, unique_key, gen_prompt)
+            save_response(config.RESPONSES_DIR, unique_key, response)
+        else:
+            # ---- no_planning: ONE-SHOT GENERATION (no separate plan) ----
+            plan_response = None   # no plan artifact; recovery prompt tolerates None
+            one_shot_prompt = build_one_shot_prompt(method, dep_chain=dep_chain, caller_snippets=caller_snippets, class_inventory=class_inventory, testable_slices=testable_slices)
+            response, _trunc = call_llm(one_shot_prompt, method_name=method_name)
+            if _trunc:
+                truncation_count += 1
+
+            save_prompt(config.PROMPTS_DIR, unique_key, one_shot_prompt)
+            save_response(config.RESPONSES_DIR, unique_key, response)
 
         if not response:
             save_result(config.RESULTS_JSON, unique_key, {

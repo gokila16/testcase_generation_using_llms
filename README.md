@@ -15,7 +15,7 @@ off one of those components.
 The system under test is **Apache PDFBox 3.0.5**, bundled in this repo at
 [`pdfbox/`](pdfbox/) so generated tests compile and run without an external checkout.
 
-## The six ablated components
+## The seven ablated components
 
 | `ABLATION_LABEL` | Flag set to `False` | What is removed |
 | --- | --- | --- |
@@ -26,9 +26,9 @@ The system under test is **Apache PDFBox 3.0.5**, bundled in this repo at
 | `no_allowlist`| `allowlist` | import + method-call hallucination gate (and its correction retries) |
 | `no_facts`    | `facts`     | "PRE-COMPUTED BEHAVIORAL FACTS" section (branch map / throw contracts / literal returns) |
 | `no_repair`   | `repair`    | Maven compile/runtime retry loop (`MAX_RETRIES` → 0) |
+| `no_planning` | `planning`  | two-step plan→generate split — collapses to one-shot generation (same context & reasoning, single LLM call) |
 
-`6 ablations + baseline = 7 runs.` (Two-step planning, `no_planning`, is deferred —
-it needs a new one-shot prompt builder and is not wired here.)
+`7 ablations + baseline = 8 runs.`
 
 See [`ABLATION_SPEC.md`](ABLATION_SPEC.md) for the design and exact toggle points,
 and [`ABLATION_RUNBOOK.txt`](ABLATION_RUNBOOK.txt) for the original operator runbook.
@@ -117,7 +117,7 @@ resume. Run **one condition at a time** and let it finish — a full condition i
 methods × ~2–8 Gemini calls + a Maven compile/run each, so it is long.
 
 To reproduce the whole study, run all seven labels:
-`baseline, no_slicing, no_chains, no_callers, no_allowlist, no_facts, no_repair`.
+`baseline, no_slicing, no_chains, no_callers, no_allowlist, no_facts, no_repair, no_planning`.
 
 ## Output & analysis
 

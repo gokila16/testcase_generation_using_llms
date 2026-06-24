@@ -764,6 +764,184 @@ package"""
     return prompt
 
 
+def build_one_shot_prompt(method, dep_chain=None, caller_snippets=None, class_inventory=None, testable_slices=None):
+    """
+    RQ3 ablation: the 'planning' (no_planning) condition.
+
+    Baseline V7 generates each test in TWO LLM calls: build_planning_prompt
+    (produce a structured plan) then build_generation_from_plan_prompt (implement
+    that plan as code). This one-shot prompt collapses that into a SINGLE call: the
+    same grounding context and the same reasoning guidance, but the model emits the
+    JUnit test class directly instead of an intermediate plan document.
+
+    This is a clean leave-one-out: only the two-step decomposition is removed. The
+    reasoning scaffolding ('HOW YOU THINK', path-by-path analysis) is RETAINED — the
+    model still reasons about every execution path, it just does so internally and
+    outputs code rather than a plan another call has to implement. Every context
+    section (callers, construction, dep signatures, inventory, resources, imports,
+    pre-computed facts) is identical to build_planning_prompt, in the same order.
+
+    Output format matches build_generation_from_plan_prompt (raw Java, ```java
+    anchor) so _extract_and_process handles it unchanged.
+    """
+    class_name      = method['class_name']
+    test_class_name = f"{method['class_name']}_{method['method_name']}_Test"
+    package         = get_package_for_method(method['full_name'], class_inventory)
+
+    # ---- Build every context section up-front (identical to build_planning_prompt) ----
+    import_section       = _format_imports(method)
+    dep_section          = _format_dependency_signatures(method)
+    resource_block       = _format_resource_block(method)
+    inventory_section    = _format_class_inventory_section(method, class_inventory or {})
+    construction_section = _format_construction_section(dep_chain)
+    abstract_hint        = _format_abstract_receiver_hint(method, dep_chain, class_inventory or {})
+    caller_section       = _format_caller_snippets(caller_snippets)
+    pre_computed         = _format_pre_computed_facts(method, testable_slices)
+
+    # ---- Persona + reasoning guidance (same as the planning prompt) ----
+    prompt = f"""You are a senior SDET. You read the implementation to understand EVERY path
+the method can take — every branch, guard, early return, exception, and edge case.
+Then you design tests that EXERCISE each path from the outside: you craft an input
+that forces the method down a specific path, and you assert the known outcome for
+that path.
+
+=== HOW YOU THINK ===
+1. Read the implementation to build a complete map of all paths:
+   - Which conditions lead to which return values or exceptions?
+   - What inputs trigger each guard clause or early return?
+   - What are the boundary conditions where behavior changes?
+2. For EACH path, determine:
+   - What concrete input forces the method down THIS path?
+   - What is the KNOWN outcome (return value, exception, state change) for this path?
+   - Use PRE-COMPUTED BEHAVIORAL FACTS as ground truth for these outcomes.
+3. Write a test for each path: construct the input, call the method ONCE, assert
+   the known outcome. The expected value is a HARDCODED LITERAL in the test — you
+   already know what it should be from step 2.
+4. The test code itself must NEVER contain the same branching logic as the method.
+   You are not re-running the method's logic — you are verifying its result for a
+   specific input where you already know the answer.
+
+=== THE KEY DISTINCTION ===
+KNOWING all paths (good) vs. COPYING the logic (bad):
+- GOOD: "I see that if (x == null) the method throws IllegalArgumentException.
+         So my test passes null and does assertThrows(IllegalArgumentException.class, ...)."
+- BAD:  "My test checks if (x == null) and then expects an exception, else expects a value."
+         This mirrors the production code — if the production code is wrong, the test is
+         also wrong in the same way. It catches nothing.
+
+=== WHAT MAKES A BAD TEST (DO NOT WRITE THESE) ===
+- Re-implementing the method's if/else/switch in the test to compute expected values.
+- assertNotNull(x) as the only assertion — passes even if x is completely wrong.
+- assertTrue(true), empty test body, or no assertion at all.
+- Importing classes that are never referenced in any test method.
+- "Smoke tests" that just call the method without verifying the return value.
+
+=== METHOD UNDER TEST ===
+Signature: {method.get('signature', '')}
+"""
+
+    if method.get('javadoc'):
+        prompt += f"Javadoc:\n{method['javadoc']}\n"
+
+    prompt += f"""
+Implementation (read to understand all paths — do NOT copy this logic into your tests):
+{method.get('body', '')}
+
+"""
+
+    # ---- Context sections — SAME ORDER as build_planning_prompt ----
+    if caller_section:
+        prompt += caller_section + "\n\n"
+    if construction_section:
+        prompt += construction_section + "\n\n"
+    if abstract_hint:
+        prompt += abstract_hint + "\n\n"
+    if dep_section:
+        prompt += dep_section + "\n\n"
+    if inventory_section:
+        prompt += inventory_section + "\n\n"
+    if resource_block:
+        prompt += resource_block + "\n\n"
+    if import_section:
+        prompt += import_section + "\n\n"
+    if pre_computed:
+        prompt += pre_computed + "\n\n"
+
+    # ---- Reason internally, then output code directly (no separate plan artifact) ----
+    prompt += f"""=== YOUR TASK ===
+Work through the following analysis IN YOUR HEAD. Do NOT write it out — it is your
+reasoning, not part of the answer. Your only output is the Java test class.
+
+1. WHAT DOES THIS METHOD DO? State its purpose to yourself in one sentence: what it
+   computes, validates, or transforms, and what a caller expects back.
+2. PATH-BY-PATH ORACLE. Enumerate EVERY distinct execution path (every if/else branch,
+   guard clause, catch block, early return, loop-skip). For each, decide:
+     <input that forces this path> -> expected: <exact return value, exception type, or state change>
+   Use PRE-COMPUTED BEHAVIORAL FACTS as ground truth for outcomes. The expected value
+   must be a CONCRETE LITERAL or a specific exception type — never "returns an object"
+   or "non-null". If the method returns an object, decide which GETTER/FIELD to check
+   and its expected value. Use HOW TO CONSTRUCT and REAL USAGE EXAMPLES to find inputs
+   that reach each path; if no input can reach a path, skip it.
+3. REGRESSION SCENARIOS. For each parameter the method actually receives, pick the one
+   input most likely to expose a bug if the method were carelessly modified (null, empty,
+   negative, max-value, partially-initialised) and decide what SHOULD happen.
+
+Then write ONE @Test method per reachable path (plus regression tests), each with a
+hardcoded expected value from your path oracle.
+
+=== CRITICAL RULES ===
+1. ONLY call methods listed in DEPENDENCY SIGNATURES or AVAILABLE PROJECT CLASSES.
+   For any other class — do not call any instance or static method on it at all.
+2. Use the EXACT construction statements from HOW TO CONSTRUCT EACH INPUT verbatim.
+   Do not simplify, replace, or invent alternatives. If no construction is provided for
+   an input, omit that test rather than guessing.
+3. Every assertion must use a HARDCODED expected value from PRE-COMPUTED BEHAVIORAL FACTS
+   or your own path oracle. The expected value goes directly into the assertion — you must
+   NOT compute it by re-running the production logic in the test.
+   Acceptable: assertEquals("expected_string", result)
+   Acceptable: assertThrows(IOException.class, () -> method(null))
+   Acceptable: assertTrue(result.isEmpty())
+   FORBIDDEN: assertNotNull(x) as sole assertion, assertTrue(true), empty test body.
+4. Do NOT use Mockito or any mocking framework. Do NOT create anonymous subclasses
+   (new ClassName() {{ ... }} syntax is forbidden for all classes).
+5. The class under test is `{class_name}`. Never substitute a different class as receiver.
+   If it is abstract, use a listed concrete subclass but declare the variable as `{class_name}`.
+   `{class_name}` MUST appear in the code body as a type, constructor call, or static
+   reference — not just in an import.
+6. Class name MUST be exactly: {test_class_name}
+7. Package MUST be exactly: {package}
+8. Only import classes you actually reference in a test method body. Prefer imports from
+   SOURCE FILE IMPORTS or JUnit 5 / Java SE.
+9. Never chain method calls — assign every return value to a named variable first.
+10. NEVER pass bare null to an overloaded method — cast it (e.g. (File) null).
+11. If the method throws a checked exception, declare `throws <ExceptionType>` on the test.
+12. One top-level type only: `{test_class_name}`. Helper types must be static nested classes
+    inside it and must not share a name with any production class.
+
+=== COMMENTS & NAMING ===
+The test method name IS the documentation. A descriptive name removes the need for comments.
+Preferred pattern (not required): <whatIsBeingTested>_<condition>_<expectedOutcome>
+  e.g. loadFDF_nullFile_throwsIllegalArgumentException
+       getPassword_emptyName_returnsEmptyString
+
+Comment rules — keep them MINIMAL and PURPOSEFUL:
+- DO NOT write comments that restate what the next line of code does.
+- DO NOT write Javadoc, @author tags, file headers, "Test class for X" headers,
+  or section banners (// ---- Setup ----, // Arrange/Act/Assert).
+Write a comment ONLY for: non-obvious setup, a non-obvious expected value, an
+intentionally surprising input, or a workaround for a real constraint. Otherwise none.
+
+=== OUTPUT FORMAT ===
+Output ONLY the raw Java source code starting with the package declaration. No plan,
+no explanations, no markdown fences.
+
+Generate the test class now:
+```java
+package"""
+
+    return prompt
+
+
 def _format_inventory_for_retry(method, class_inventory):
     """
     Compact version of the inventory section for retry/violation prompts.

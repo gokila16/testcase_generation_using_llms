@@ -54,7 +54,7 @@ ABLATION = {
     'allowlist': True,   # import + method-call hallucination gate (incl. its correction retries)
     'facts':     True,   # pre-computed behavioral facts section -> "" (prompt_builder)
     'repair':    True,   # Maven compile/runtime retry loop      -> MAX_RETRIES forced to 0
-    # 'planning': True,  # deferred: needs a one-shot generation prompt builder
+    'planning':  True,   # two-step plan->generate split         -> one-shot generation (pipeline_step3)
 }
 
 # ============================================================
