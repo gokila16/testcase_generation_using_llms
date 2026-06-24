@@ -1,2 +1,11 @@
+# Core pipeline (required to generate & run tests)
 google-genai==2.8.0
 python-dotenv==1.2.2
+
+# Only needed to REBUILD the precomputed inputs/ files from source:
+#   javalang -> build_class_inventory.py   (parses PDFBox .java sources)
+#   pypdf    -> build_resource_metadata.py (reads test PDF resources)
+# The shipped inputs/ already contain this data, so these are optional for a
+# normal run.
+javalang==0.13.0
+pypdf==6.10.2
