@@ -1,0 +1,4 @@
+# Preserve bytes exactly for the vendored PDFBox snapshot and all inputs.
+# Disables end-of-line conversion so binary test resources (PDFs, fonts, images)
+# are never corrupted by CRLF/LF normalization on checkout.
+* -text

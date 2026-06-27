@@ -1,0 +1,22 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# IDE / OS
+.idea/
+.DS_Store
+
+# Repo-local pipeline outputs (regenerated on every run)
+generated_files/
+
+# Maven build output and generated tests written into the pdfbox module
+pdfbox/**/target/
+# Per-model pipeline test output (regenerated on every run), e.g.
+# generated_tests_zeroshot_deepseek-v4-pro/, and any older run artifacts.
+pdfbox/**/generated_tests_zeroshot*/
+pdfbox/**/generated_tests_deepseek*/
