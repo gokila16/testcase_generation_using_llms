@@ -80,17 +80,15 @@ FINAL_REPORT        = os.path.join(RESULTS_DIR, 'final_report.txt')
 INCLUDE_DEVELOPER_TESTED = True
 
 # ============================================================
-# LLM SETTINGS  (Gemini via Vertex AI)
+# LLM SETTINGS  (DeepSeek via its OpenAI-compatible API)
 # ============================================================
-# Auth uses Application Default Credentials. One-time per machine:
-#   gcloud auth application-default login
-#   gcloud config set project <your-gcp-project>
-# Then set VERTEX_PROJECT in .env to your own GCP project id.
-VERTEX_PROJECT  = os.getenv("VERTEX_PROJECT")             # REQUIRED — your GCP project
-VERTEX_LOCATION = os.getenv("VERTEX_LOCATION", "global")  # Gemini 3.x is served only on 'global'
-GEMINI_API_KEY  = os.getenv("GEMINI_API_KEY")             # only if you switch to the Gemini Developer API
+# Auth uses an API key. One-time per machine: get a key from
+# https://platform.deepseek.com and set it in .env:
+#   DEEPSEEK_API_KEY=<your key>
+DEEPSEEK_API_KEY  = os.getenv("DEEPSEEK_API_KEY")                         # REQUIRED
+DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
 
-LLM_MODEL       = 'gemini-3.5-flash'
+LLM_MODEL       = 'deepseek-v4-flash'
 LLM_MAX_TOKENS  = 16384
 LLM_TEMPERATURE = 0
 API_SLEEP_SEC   = 1
